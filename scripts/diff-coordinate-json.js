@@ -15,8 +15,8 @@ function main() {
 
   const baseItems = readJson(basePath);
   const headItems = readJson(headPath);
-  const baseByCoordinate = new Map(baseItems.map(item => [item.coordinate, JSON.stringify(item)]));
-  const changed = headItems.filter(item => baseByCoordinate.get(item.coordinate) !== JSON.stringify(item));
+  const baseCoordinates = new Set(baseItems.map(item => item.coordinate));
+  const changed = headItems.filter(item => !baseCoordinates.has(item.coordinate));
 
   fs.writeFileSync(outputPath, JSON.stringify(changed));
 }
