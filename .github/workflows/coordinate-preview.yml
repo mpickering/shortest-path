@@ -61,6 +61,11 @@ jobs:
         env:
           BASE_COORDINATES_PATH: ${{ runner.temp }}/base-coordinates.json
 
+      - name: Print changed coordinates
+        if: ${{ steps.compute-coordinates.outputs.has_changes == 'true' }}
+        shell: bash
+        run: cat build/changed-coordinates.json
+
       - name: Preview coordinates
         if: ${{ steps.compute-coordinates.outputs.has_changes == 'true' }}
         uses: mpickering/osrs-coord-preview-action@e91d1beb4b86a1609387ea13ed3e14b1cf699aee
