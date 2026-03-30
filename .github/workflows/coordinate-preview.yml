@@ -1,0 +1,77 @@
+name: Coordinate Preview
+
+on:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  preview-coordinates:
+    name: Preview Changed Coordinates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "11"
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - id: compute-coordinates
+        name: Compute changed coordinates
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          MERGE_BASE="$(git merge-base "origin/${{ github.base_ref }}" HEAD)"
+          BASE_DIR="$(mktemp -d)"
+          BASE_COORDINATES_PATH="${{ runner.temp }}/base-coordinates.json"
+
+          git worktree add "$BASE_DIR" "$MERGE_BASE"
+          trap 'git worktree remove --force "$BASE_DIR"' EXIT
+
+          ./gradlew --no-daemon dumpTransportCoordinates --args="--output build/head-coordinates.json"
+          (
+            cd "$BASE_DIR"
+            chmod +x gradlew
+            ./gradlew --no-daemon dumpTransportCoordinates --args="--output build/base-coordinates.json"
+          )
+          cp "$BASE_DIR/build/base-coordinates.json" "$BASE_COORDINATES_PATH"
+
+          node <<'EOF'
+          const fs = require('fs');
+
+          const headItems = JSON.parse(fs.readFileSync('build/head-coordinates.json', 'utf8'));
+          const baseItems = JSON.parse(fs.readFileSync(process.env.BASE_COORDINATES_PATH, 'utf8'));
+
+          const baseByCoordinate = new Map(baseItems.map(item => [item.coordinate, JSON.stringify(item)]));
+          const changed = headItems.filter(item => {
+            const baseItem = baseByCoordinate.get(item.coordinate);
+            return baseItem !== JSON.stringify(item);
+          });
+
+          fs.writeFileSync('build/changed-coordinates.json', JSON.stringify(changed));
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `coordinates=${JSON.stringify(changed)}\n`);
+          EOF
+        env:
+          BASE_COORDINATES_PATH: ${{ runner.temp }}/base-coordinates.json
+
+      - name: Preview coordinates
+        if: ${{ steps.compute-coordinates.outputs.coordinates != '[]' }}
+        uses: mpickering/osrs-coord-preview-action@v1
+        with:
+          coordinates: ${{ steps.compute-coordinates.outputs.coordinates }}
+          comment: "true"
+          renderer-url: https://osrs-coordinate-preview-nt7ywvsdgq-nw.a.run.app/render
+          github-token: ${{ github.token }}
