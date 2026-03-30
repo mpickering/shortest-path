@@ -11,6 +11,8 @@ import shortestpath.Util;
 import shortestpath.WorldPointUtil;
 
 public class TransportCoordinateExporter {
+    private static final String MERGED_VALUE_SEPARATOR = "; ";
+
     public List<TransportCoordinateItem> exportAllFromResources() {
         LinkedHashMap<String, TransportCoordinateItem> items = new LinkedHashMap<>();
         for (TransportResourceSpec spec : TransportLoader.resourceSpecs()) {
@@ -194,6 +196,6 @@ public class TransportCoordinateExporter {
         if (existing.equals(next)) {
             return existing;
         }
-        return existing + " | " + next;
+        return existing + MERGED_VALUE_SEPARATOR + next;
     }
 }
