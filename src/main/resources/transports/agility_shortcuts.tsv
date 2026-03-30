@@ -538,3 +538,7 @@
 2547 3744 0	2547 3749 0	Climb Rocks 53254	85 Agility				5
 3500 9510 2	3506 9505 2	Squeeze-through Crevice 16465	86 Agility				
 3506 9505 2	3500 9510 2	Squeeze-through Crevice 16465	86 Agility				
+3504 3559 0	3504 3562 0	Cross Bridge 57717	69 Agility		4441=2;5023=2		4
+3504 3562 0	3504 3559 0	Cross Bridge 57716	69 Agility		4441=2;5023=2		4
+3503 3559 0	3503 3562 0	Cross Bridge 57718	69 Agility		4441=2;5023=2		4
+3503 3562 0	3503 3559 0	Cross Bridge 57715	69 Agility		4441=2;5023=2		4
