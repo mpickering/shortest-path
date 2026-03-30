@@ -84,14 +84,26 @@ public class TransportCoordinateExporter {
             return;
         }
         String coordinate = toCoordinateString(packedCoordinate);
-        if (items.containsKey(coordinate)) {
+        String label = buildLabel(row, role);
+        String source = row.getSourceReference();
+        TransportCoordinateItem existing = items.get(coordinate);
+        if (existing == null) {
+            items.put(coordinate, new TransportCoordinateItem(
+                buildId(packedCoordinate),
+                label,
+                coordinate,
+                source
+            ));
             return;
         }
+
+        // A single tile can be referenced by multiple transport rows or by both
+        // directions of the same transport, so preserve all labels and source refs.
         items.put(coordinate, new TransportCoordinateItem(
-            buildId(packedCoordinate),
-            buildLabel(row, role),
+            existing.getId(),
+            mergeValues(existing.getLabel(), label),
             coordinate,
-            row.getSourceReference()
+            mergeValues(existing.getSource(), source)
         ));
     }
 
@@ -176,5 +188,12 @@ public class TransportCoordinateExporter {
             }
         }
         return escaped.toString();
+    }
+
+    private static String mergeValues(String existing, String next) {
+        if (existing.equals(next)) {
+            return existing;
+        }
+        return existing + " | " + next;
     }
 }
