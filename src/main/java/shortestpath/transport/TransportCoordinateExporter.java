@@ -1,5 +1,7 @@
 package shortestpath.transport;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -12,6 +14,8 @@ import shortestpath.WorldPointUtil;
 
 public class TransportCoordinateExporter {
     private static final String MERGED_VALUE_SEPARATOR = "; ";
+    private static final Gson GSON = new Gson();
+    private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
 
     public List<TransportCoordinateItem> exportAllFromResources() {
         LinkedHashMap<String, TransportCoordinateItem> items = new LinkedHashMap<>();
@@ -35,43 +39,7 @@ public class TransportCoordinateExporter {
     }
 
     static String toJson(List<TransportCoordinateItem> items, boolean pretty) {
-        String indent = pretty ? "  " : "";
-        String newline = pretty ? "\n" : "";
-        StringBuilder json = new StringBuilder();
-        json.append("[").append(newline);
-        for (int i = 0; i < items.size(); i++) {
-            TransportCoordinateItem item = items.get(i);
-            if (pretty) {
-                json.append(indent);
-            }
-            json.append("{");
-            if (pretty) {
-                json.append(newline).append(indent).append(indent);
-            }
-            json.append("\"id\":\"").append(escapeJson(item.getId())).append("\",");
-            if (pretty) {
-                json.append(newline).append(indent).append(indent);
-            }
-            json.append("\"label\":\"").append(escapeJson(item.getLabel())).append("\",");
-            if (pretty) {
-                json.append(newline).append(indent).append(indent);
-            }
-            json.append("\"coordinate\":\"").append(escapeJson(item.getCoordinate())).append("\",");
-            if (pretty) {
-                json.append(newline).append(indent).append(indent);
-            }
-            json.append("\"source\":\"").append(escapeJson(item.getSource())).append("\"");
-            if (pretty) {
-                json.append(newline).append(indent);
-            }
-            json.append("}");
-            if (i < items.size() - 1) {
-                json.append(",");
-            }
-            json.append(newline);
-        }
-        json.append("]");
-        return json.toString();
+        return pretty ? PRETTY_GSON.toJson(items) : GSON.toJson(items);
     }
 
     static List<TransportSourceRow> parseRows(String sourcePath, String contents, TransportType transportType) {
@@ -163,33 +131,6 @@ public class TransportCoordinateExporter {
         } catch (IOException e) {
             throw new IllegalStateException("Unable to read transport resource " + path, e);
         }
-    }
-
-    private static String escapeJson(String value) {
-        StringBuilder escaped = new StringBuilder();
-        for (int i = 0; i < value.length(); i++) {
-            char c = value.charAt(i);
-            switch (c) {
-                case '\\':
-                    escaped.append("\\\\");
-                    break;
-                case '"':
-                    escaped.append("\\\"");
-                    break;
-                case '\n':
-                    escaped.append("\\n");
-                    break;
-                case '\r':
-                    escaped.append("\\r");
-                    break;
-                case '\t':
-                    escaped.append("\\t");
-                    break;
-                default:
-                    escaped.append(c);
-            }
-        }
-        return escaped.toString();
     }
 
     private static String mergeValues(String existing, String next) {
