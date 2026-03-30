@@ -2,7 +2,6 @@ name: Coordinate Preview
 
 on:
   pull_request:
-    branches: [master]
   workflow_dispatch:
 
 jobs:
@@ -26,7 +25,9 @@ jobs:
           java-version: "11"
 
       - name: Make Gradle wrapper executable
-        run: chmod +x gradlew
+        run: |
+          chmod +x gradlew
+          chmod +x scripts/diff-coordinate-json.js
 
       - id: compute-coordinates
         name: Compute changed coordinates
@@ -48,22 +49,11 @@ jobs:
             ./gradlew --no-daemon dumpTransportCoordinates --args="--output build/base-coordinates.json"
           )
           cp "$BASE_DIR/build/base-coordinates.json" "$BASE_COORDINATES_PATH"
-
-          node <<'EOF'
-          const fs = require('fs');
-
-          const headItems = JSON.parse(fs.readFileSync('build/head-coordinates.json', 'utf8'));
-          const baseItems = JSON.parse(fs.readFileSync(process.env.BASE_COORDINATES_PATH, 'utf8'));
-
-          const baseByCoordinate = new Map(baseItems.map(item => [item.coordinate, JSON.stringify(item)]));
-          const changed = headItems.filter(item => {
-            const baseItem = baseByCoordinate.get(item.coordinate);
-            return baseItem !== JSON.stringify(item);
-          });
-
-          fs.writeFileSync('build/changed-coordinates.json', JSON.stringify(changed));
-          fs.appendFileSync(process.env.GITHUB_OUTPUT, `coordinates=${JSON.stringify(changed)}\n`);
-          EOF
+          node scripts/diff-coordinate-json.js \
+            "$BASE_COORDINATES_PATH" \
+            build/head-coordinates.json \
+            build/changed-coordinates.json
+          echo "coordinates=$(cat build/changed-coordinates.json)" >> "$GITHUB_OUTPUT"
         env:
           BASE_COORDINATES_PATH: ${{ runner.temp }}/base-coordinates.json
 
