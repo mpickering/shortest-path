@@ -526,18 +526,18 @@ public class ShortestPathPlugin extends Plugin {
 
         // Populate spirit tree cache, but only once.
         // The values here almost never change, we only need to load it once.
-        if (pathfinderConfig.availableSpiritTrees == null && event.getGroupId() == InterfaceID.MENU) {
+        if (pathfinderConfig.availableSpiritTrees == null && event.getGroupId() == InterfaceID.MENU_NEW) {
             clientThread.invokeLater(this::parseSpiritTreeWidget);
         }
     }
 
-    private static final Pattern SPIRIT_TREE_LABEL_PATTERN = Pattern.compile("<col=735a28>(.+)</col>: (<col=5f5f5f>)?(.+)");
+    private static final Pattern SPIRIT_TREE_LABEL_PATTERN = Pattern.compile("<col=ffffff>(.+)</col>: (<col=5f5f5f>)?(.+)");
 
     private void parseSpiritTreeWidget() {
         // Referencing
         // https://github.com/trs/runelite-teleport-maps/blob/e006270494500ab8e4826903b377bb945ca9fc96/src/main/java/com/mjhylkema/TeleportMaps/components/adventureLog/SpiritTreeMap.java#L141
 
-        Widget container = client.getWidget(InterfaceID.MENU, 3);
+        Widget container = client.getWidget(InterfaceID.MENU_NEW, 9);
         if (container == null) {
             return;
         }
