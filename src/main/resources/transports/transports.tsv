@@ -16,7 +16,7 @@
 3084 3124 1	3083 3123 0	Climb-down Staircase 16673						1	
 3084 3124 0	3084 3124 1	Climb-up Staircase 16671						1	
 3083 3123 0	3084 3124 1	Climb-up Staircase 16671						1	
-3088 3120 0	3088 9520 0	Climb-down Ladder 9726						2	
+3089 3120 0	3088 9520 0	Climb-down Ladder 9726						2	
 3088 9520 0	3088 3120 0	Climb-up Ladder 9725						2	
 3094 9503 0	3095 9503 0	Open Gate 9717						1	
 3095 9503 0	3094 9503 0	Open Gate 9717						1	
