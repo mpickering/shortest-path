@@ -51,11 +51,11 @@ jobs:
           unzip artifact.zip -d artifact
           mkdir -p build
           cp artifact/changed-coordinates.json build/
-          echo "number=$(cat pr-number.txt)" >> "$GITHUB_OUTPUT"
+          echo "number=$(cat artifact/pr-number.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Render coordinate previews
         if: env.SKIP_COMMENT != 'true'
-        uses: mpickering/osrs-coord-preview-action@bac4457a71f6aa8193424648ade7a8ccca74884b
+        uses: mpickering/osrs-coord-preview-action@bac4457a71f6aa8193424648ade7a8ccca74884b
         with:
           coordinates-file: build/changed-coordinates.json
           comment: "true"
