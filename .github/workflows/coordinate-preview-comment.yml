@@ -54,11 +54,10 @@ jobs:
 
       - name: Render coordinate previews
         if: env.SKIP_COMMENT != 'true'
-        uses: mpickering/osrs-coord-preview-action@1637b66ba49dacfc4a3afc107a5900dac5491a5c
+        uses: mpickering/osrs-coord-preview-action@fd3bcd368183d35f3ab1196dc4c7a137ed024a54
         with:
           coordinates-file: build/changed-coordinates.json
           comment: "true"
-          renderer-url: https://osrs-coordinate-preview-nt7ywvsdgq-nw.a.run.app/render
           pr-number: ${{ steps.unpack.outputs.number }}
           github-token: ${{ github.token }}
           output-dir: build/preview
