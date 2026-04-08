@@ -54,7 +54,7 @@ jobs:
 
       - name: Render coordinate previews
         if: env.SKIP_COMMENT != 'true'
-        uses: mpickering/osrs-coord-preview-action@c05e50f74d18ef9a34fe00c619cf6ef3e81b159e
+        uses: mpickering/osrs-coord-preview-action@b446b1fe1873ccfc1e8c3e64b35ef0a4369205c5
         with:
           coordinates-file: build/changed-coordinates.json
           comment: "true"
