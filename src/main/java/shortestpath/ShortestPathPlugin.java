@@ -729,6 +729,20 @@ public class ShortestPathPlugin extends Plugin {
     }
 
     /**
+     * WARNING: This is a legacy wrapper for coarse display-oriented callers only.
+     *
+     * It collapses banked/unbanked transport availability into a single view via
+     * PathfinderConfig.getTransports(), which is not valid for path-state-sensitive logic.
+     *
+     * Do not use this for reasoning about which transports are available at a specific
+     * step of a path. Use PathfinderConfig.getTransportAvailability(boolean) and the
+     * path's PathStep state instead.
+     */
+    public Map<Integer, Set<Transport>> getTransports() {
+        return pathfinderConfig.getTransports();
+    }
+
+    /**
      * Checks if the given coordinates are inside the POH (Player Owned House) area.
      * @param x The world X coordinate
      * @param y The world Y coordinate
