@@ -19,6 +19,7 @@ dependencies {
 
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:3.4.6'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
@@ -32,6 +33,17 @@ tasks.withType(JavaCompile) {
 }
 
 test {
+    jvmArgs = ['-Xms1g', '-Xmx8g']
+}
+
+tasks.register('reachabilityVerification', Test) {
+    group = 'verification'
+    description = 'Runs the heavy reachability dashboard sweep'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnit()
+    include 'shortestpath/reachability/ReachabilityDashboardTest.class'
+    systemProperty 'runReachabilityVerification', 'true'
     jvmArgs = ['-Xms1g', '-Xmx8g']
 }
 

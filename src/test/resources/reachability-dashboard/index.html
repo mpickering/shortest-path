@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pathfinder Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="sidebar">
+      <h1>Pathfinder Dashboard</h1>
+      <p id="summary">Loading report...</p>
+      <label class="search">
+        <span>Search scenarios</span>
+        <input id="run-search" type="search" placeholder="e.g. conch bank grapple">
+      </label>
+      <pre id="run-details">Select a run to inspect its route.</pre>
+      <label class="toggle">
+        <input id="collision-toggle" type="checkbox" checked>
+        <span>Show collision window on map</span>
+      </label>
+      <button id="center-target" type="button">Center on target</button>
+      <ol id="run-list"></ol>
+    </section>
+    <section class="map-panel">
+      <div id="map"></div>
+    </section>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="app.js"></script>
+</body>
+</html>
