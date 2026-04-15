@@ -1,12 +1,17 @@
 plugins {
     id 'java'
     id 'jacoco'
+    id 'me.champeau.jmh' version '0.7.2'
 }
 
 repositories {
     mavenLocal()
     maven { url = 'https://repo.runelite.net' }
     mavenCentral()
+}
+
+configurations.matching { it.name.toLowerCase(Locale.ROOT).startsWith('jmh') }.all {
+    exclude group: 'org.slf4j', module: 'slf4j-simple'
 }
 
 def runeLiteVersion = 'latest.release'
@@ -23,6 +28,10 @@ dependencies {
     testImplementation 'com.google.code.gson:gson:2.10.1'
     testImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
     testImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
+
+    jmhImplementation 'org.mockito:mockito-core:3.4.6'
+    jmhImplementation group: 'net.runelite', name:'client', version: runeLiteVersion
+    jmhImplementation group: 'net.runelite', name:'jshell', version: runeLiteVersion
 }
 
 group = 'shortestpath'
@@ -46,6 +55,160 @@ def logDashboardLocation = { String taskName ->
     logger.lifecycle("Serve it locally with:")
     logger.lifecycle("  python -m http.server --directory ${dashboardDir.absolutePath} 8000")
     logger.lifecycle("Then open: http://localhost:8000")
+}
+
+def reachabilityBenchmarkCsv = providers.gradleProperty('reachabilityBenchmarkCsv')
+    .orElse(file('src/test/resources/reachability/clue_locations_full.csv').absolutePath)
+
+def generatedBenchmarkSourceDir = layout.buildDirectory.dir('generated/sources/reachability-benchmarks/jmh')
+
+def escapeJava = { String value ->
+    value
+        .replace('\\', '\\\\')
+        .replace('"', '\\"')
+}
+
+def benchmarkScenarioId = { String clueType, int x, int y, int plane ->
+    String slug = clueType
+        .toLowerCase(Locale.ROOT)
+        .replaceAll('[^a-z0-9]+', '_')
+        .replaceAll('^_+|_+$', '')
+    return "${slug}_${x}_${y}_${plane}"
+}
+
+def renderGeneratedBenchmarkSource = { List<Map<String, Object>> scenarios ->
+    String ids = scenarios.collect { "            \"${escapeJava(it.id as String)}\"" }.join(",\n")
+    String cases = scenarios.collect {
+        """            case "${escapeJava(it.id as String)}":
+                return new Scenario("${escapeJava(it.id as String)}", "${escapeJava(it.clueType as String)}", ${it.x}, ${it.y}, ${it.plane});"""
+    }.join("\n")
+
+    return """package shortestpath.benchmark.generated;
+
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+
+public final class GeneratedReachabilityBenchmarkScenarios {
+    private GeneratedReachabilityBenchmarkScenarios() {
+    }
+
+    @State(Scope.Benchmark)
+    public static class ScenarioState {
+        @Param({
+${ids}
+        })
+        public String scenarioId;
+    }
+
+    public static Scenario byId(String id) {
+        switch (id) {
+${cases}
+            default:
+                throw new IllegalArgumentException("Unknown reachability benchmark scenario: " + id);
+        }
+    }
+
+    public static final class Scenario {
+        private final String id;
+        private final String clueType;
+        private final int x;
+        private final int y;
+        private final int plane;
+
+        public Scenario(String id, String clueType, int x, int y, int plane) {
+            this.id = id;
+            this.clueType = clueType;
+            this.x = x;
+            this.y = y;
+            this.plane = plane;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getClueType() {
+            return clueType;
+        }
+
+        public int getX() {
+            return x;
+        }
+
+        public int getY() {
+            return y;
+        }
+
+        public int getPlane() {
+            return plane;
+        }
+    }
+}
+"""
+}
+
+tasks.register('generateReachabilityBenchmarkParams') {
+    description = 'Generates JMH benchmark scenario params from the clue reachability CSV'
+    inputs.file(reachabilityBenchmarkCsv)
+    outputs.dir(generatedBenchmarkSourceDir)
+
+    doLast {
+        File csvFile = file(reachabilityBenchmarkCsv.get())
+        if (!csvFile.exists()) {
+            throw new GradleException("Reachability benchmark CSV not found: ${csvFile}")
+        }
+
+        File outputDir = generatedBenchmarkSourceDir.get().file('shortestpath/benchmark/generated').asFile
+        outputDir.mkdirs()
+
+        List<String> lines = csvFile.readLines('UTF-8')
+        if (lines.isEmpty()) {
+            throw new GradleException("Reachability benchmark CSV is empty: ${csvFile}")
+        }
+
+        List<String> headers = lines[0].split(',', -1) as List<String>
+        int clueTypeIndex = headers.indexOf('clue_type')
+        int xIndex = headers.indexOf('x')
+        int yIndex = headers.indexOf('y')
+        int planeIndex = headers.indexOf('plane')
+        if ([clueTypeIndex, xIndex, yIndex, planeIndex].any { it < 0 }) {
+            throw new GradleException("Reachability benchmark CSV is missing one of: clue_type, x, y, plane")
+        }
+
+        Map<String, Map<String, Object>> scenarios = new LinkedHashMap<>()
+        lines.drop(1).each { String line ->
+            if (line.isBlank()) {
+                return
+            }
+
+            String[] fields = line.split(',', 6)
+            int x = Integer.parseInt(fields[xIndex])
+            int y = Integer.parseInt(fields[yIndex])
+            int plane = Integer.parseInt(fields[planeIndex])
+            String pointKey = "${x},${y},${plane}"
+            scenarios.putIfAbsent(pointKey, [
+                id         : benchmarkScenarioId(fields[clueTypeIndex], x, y, plane),
+                clueType   : fields[clueTypeIndex],
+                x          : x,
+                y          : y,
+                plane      : plane,
+            ])
+        }
+
+        File outputFile = new File(outputDir, 'GeneratedReachabilityBenchmarkScenarios.java')
+        outputFile.text = renderGeneratedBenchmarkSource(scenarios.values() as List<Map<String, Object>>)
+    }
+}
+
+sourceSets {
+    jmh {
+        java.srcDir(generatedBenchmarkSourceDir)
+    }
+}
+
+tasks.named('compileJmhJava') {
+    dependsOn tasks.named('generateReachabilityBenchmarkParams')
 }
 test {
     jvmArgs = ['-Xms1g', '-Xmx8g']
@@ -115,6 +278,30 @@ tasks.register('dashboardSite') {
     doLast {
         logDashboardLocation(name)
     }
+}
+
+jmh {
+    includes = ['shortestpath\\.benchmark\\.ReachabilityBenchmark.*']
+    warmupIterations = 5
+    iterations = 10
+    fork = 1
+    benchmarkMode = ['avgt']
+    timeUnit = 'ms'
+    resultFormat = 'JSON'
+    resultsFile = layout.buildDirectory.file('reports/jmh/results.json').get().asFile
+}
+
+tasks.register('jmhReachability') {
+    group = 'verification'
+    description = 'Runs the generated clue reachability JMH benchmarks'
+    dependsOn tasks.named('jmh')
+}
+
+tasks.named('jmhJar') {
+    exclude 'org/slf4j/impl/StaticLoggerBinder.class'
+    exclude 'org/slf4j/impl/StaticMDCBinder.class'
+    exclude 'org/slf4j/impl/StaticMarkerBinder.class'
+    exclude 'logback.xml'
 }
 
 jacoco {
