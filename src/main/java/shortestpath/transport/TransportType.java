@@ -29,7 +29,12 @@ public enum TransportType {
     MAGIC_MUSHTREE("/transports/magic_mushtrees.tsv", "useMagicMushtrees", ShortestPathConfig::useMagicMushtrees, "costMagicMushtrees", ShortestPathConfig::costMagicMushtrees, 5),
     MINECART("/transports/minecarts.tsv", "useMinecarts", ShortestPathConfig::useMinecarts, "costMinecarts", ShortestPathConfig::costMinecarts),
     QUETZAL("/transports/quetzals.tsv", "useQuetzals", ShortestPathConfig::useQuetzals, "costQuetzals", ShortestPathConfig::costQuetzals, 5),
-    SEASONAL_TRANSPORTS("/transports/seasonal_transports.tsv", "useSeasonalTransports", ShortestPathConfig::useSeasonalTransports, "costSeasonalTransports", ShortestPathConfig::costSeasonalTransports),
+    SEASONAL_TRANSPORTS("/transports/seasonal_transports.tsv", "useSeasonalTransports", ShortestPathConfig::useSeasonalTransports, "costSeasonalTransports", ShortestPathConfig::costSeasonalTransports) {
+        @Override
+        public boolean isTeleport() {
+            return true;
+        }
+    },
     SPIRIT_TREE("/transports/spirit_trees.tsv", "useSpiritTrees", ShortestPathConfig::useSpiritTrees, "costSpiritTrees", ShortestPathConfig::costSpiritTrees, 5),
     TELEPORTATION_BOX("/transports/teleportation_boxes.tsv", null, null, "costTeleportationBoxes", ShortestPathConfig::costTeleportationBoxes),
     TELEPORTATION_ITEM("/transports/teleportation_items.tsv", null, null, "costNonConsumableTeleportationItems", ShortestPathConfig::costNonConsumableTeleportationItems) {

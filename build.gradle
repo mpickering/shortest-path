@@ -327,3 +327,13 @@ tasks.register('runelite', JavaExec) {
     jvmArgs '-ea'
     args '--developer-mode'
 }
+
+tasks.register('mapComponentAnalysis', JavaExec) {
+    group = 'verification'
+    description = 'Computes walkable world-map components and transport links between them'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass.set('shortestpath.analysis.MapComponentAnalysis')
+    jvmArgs = ['-Xms1g', '-Xmx8g']
+    args '--output', layout.buildDirectory.file('reports/component-dashboard/report.json').get().asFile.absolutePath
+    args '--pretty'
+}
