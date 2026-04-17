@@ -94,7 +94,7 @@ public class PathfinderTest {
 
         assertScenarioPathLength(
             "Banked mith grapple should not leak to non-bank grapple branch",
-            66, 
+            66,
             WorldPointUtil.packWorldPoint(3025, 3365, 0),
             WorldPointUtil.packWorldPoint(3026, 3393, 0));
     }
@@ -1431,6 +1431,17 @@ public class PathfinderTest {
         }
         return pathfinder;
     }
+    @Test
+    public void testTrollweissSledRouteUsesNewSledItem() {
+        int origin = WorldPointUtil.packWorldPoint(2785, 3858, 0);
+        int destination = WorldPointUtil.packWorldPoint(2796, 3719, 0);
+        int expectedLength = -1; // Replace after measuring the path length once.
+    
+        setupInventory(new Item(ItemID.TROLLROMANCE_TOBOGGON_WAXED, 1));
+        setupConfig(QuestState.NOT_STARTED, 99, TeleportationItem.NONE);
+        assertScenarioPathLength("Trollweiss Sled Shortcuts", -1, origin, destination);
+    }
+    
 
     private void assertScenarioMinimumPathLength(String label, int minimumLength, int origin, int destination) {
         Pathfinder pathfinder = runPathfinder(origin, destination);
