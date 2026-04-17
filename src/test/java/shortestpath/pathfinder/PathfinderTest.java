@@ -741,6 +741,29 @@ public class PathfinderTest {
     }
 
     @Test
+    public void testVarlamoreRoutingUsesQuetzalWhistleToKastori() {
+        int origin = WorldPointUtil.packWorldPoint(1746, 3100, 0);
+        int destination = WorldPointUtil.packWorldPoint(1343, 3055, 0);
+
+        when(config.useQuetzals()).thenReturn(true);
+        setupInventory(new Item(29271, 1));
+
+        pathfinderConfig = new TestPathfinderConfig(client, config, QuestState.FINISHED, false, false);
+        when(client.getGameState()).thenReturn(GameState.LOGGED_IN);
+        when(client.getClientThread()).thenReturn(Thread.currentThread());
+        when(client.getBoostedSkillLevel(any(Skill.class))).thenReturn(99);
+        when(config.useTeleportationItems()).thenReturn(TeleportationItem.INVENTORY);
+        when(client.getVarpValue(4182)).thenReturn(16384);
+        pathfinderConfig.refresh();
+
+        Pathfinder pathfinder = runScenario("Varlamore routing uses quetzal whistle to Kastori", origin, destination);
+
+        assertEquals(35, pathfinder.getPath().size());
+        assertTrue("Route should use the Kastori whistle teleport",
+            usedTransportWithDisplayInfo(pathfinder, TransportType.TELEPORTATION_ITEM, "Quetzal whistle: Kastori"));
+    }
+
+    @Test
     public void testSpiritTrees() {
         when(config.useSpiritTrees()).thenReturn(true);
         when(client.getVarbitValue(any(Integer.class))).thenReturn(20);
