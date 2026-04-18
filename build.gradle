@@ -210,6 +210,33 @@ sourceSets {
 tasks.named('compileJmhJava') {
     dependsOn tasks.named('generateReachabilityBenchmarkParams')
 }
+
+tasks.register('heuristicVisualizer', JavaExec) {
+    group = 'verification'
+    description = 'Runs the developer heuristic visualizer CLI'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    def visualizerArgs = providers.gradleProperty('visualizerArgs')
+    if (visualizerArgs.present) {
+        args visualizerArgs.get().trim().split(/\s+/) as List<String>
+    } else {
+        args '--mode', 'BASE_MAP',
+            '--output', 'build/heuristic-visualizer/full-basemap.png'
+    }
+}
+
+tasks.register('heuristicVisualizerSearchSpace', JavaExec) {
+    group = 'verification'
+    description = 'Renders a fixed search-space visualization for a representative pathfinder query'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    args '--start', '3222,3218,0',
+        '--goal', '1503,3553,0',
+        '--show-visited',
+        '--show-path',
+        '--output', 'build/heuristic-visualizer/search-space.png'
+}
+
 test {
     jvmArgs = ['-Xms1g', '-Xmx8g']
 }

@@ -30,6 +30,7 @@ public class Pathfinder implements Runnable {
     private final Deque<Node> boundary = new ArrayDeque<>(4096);
     private final Queue<Node> pending = new PriorityQueue<>(256);
     private final VisitedTiles visited;
+    private VisitedTiles visitedSnapshot;
 
     private List<PathStep> pathSteps = List.of();
     private boolean pathNeedsUpdate = false;
@@ -114,6 +115,10 @@ public class Pathfinder implements Runnable {
             currentStats.getElapsedTimeNanos(),
             terminationReason
         );
+    }
+
+    public VisitedTiles getVisitedSnapshot() {
+        return visitedSnapshot;
     }
 
     private void addNeighbors(Node node) {
@@ -238,6 +243,7 @@ public class Pathfinder implements Runnable {
         }
 
         done = !cancelled;
+        visitedSnapshot = visited.snapshot();
 
         boundary.clear();
         visited.clear();

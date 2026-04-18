@@ -57,3 +57,31 @@ For a lightweight regression workflow, add a reported destination to
 ```
 
 For the current bundles and when to use each dataset, see [docs/dashboard-design.md](docs/dashboard-design.md).
+
+## Heuristic visualizer
+The repo includes a developer PNG visualizer for collision maps, zero-heuristic heatmaps, visited overlays, and
+consistency slack under `src/test/java/shortestpath/analysis/visualizer`.
+
+Run the synthetic demo with:
+
+```bash
+./gradlew heuristicVisualizer -PvisualizerArgs="--demo synthetic --output build/heuristic-visualizer/synthetic.png --mode BASE_MAP"
+```
+
+Run a repo-backed basemap with:
+
+```bash
+./gradlew heuristicVisualizer -PvisualizerArgs="--bounds 3200,3200,3264,3264,0 --output build/heuristic-visualizer/repo-basemap.png --mode BASE_MAP"
+```
+
+To render a visited/path overlay for a real search:
+
+```bash
+./gradlew heuristicVisualizer -PvisualizerArgs="--bounds 3200,3200,3264,3264,0 --start 3222,3218,0 --goal 3213,3424,0 --show-visited --show-path --output build/heuristic-visualizer/visited.png"
+```
+
+For an IDE-friendly fixed search-space render with no extra arguments:
+
+```bash
+./gradlew heuristicVisualizerSearchSpace
+```

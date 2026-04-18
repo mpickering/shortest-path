@@ -114,6 +114,21 @@ public class VisitedTiles {
         }
     }
 
+    public VisitedTiles snapshot() {
+        VisitedTiles copy = new VisitedTiles(regionExtents, widthInclusive, visitedRegionPlanes.clone());
+        for (int i = 0; i < visitedRegionsWithoutBank.length; ++i) {
+            if (visitedRegionsWithoutBank[i] != null) {
+                copy.visitedRegionsWithoutBank[i] = visitedRegionsWithoutBank[i].copy();
+            }
+            if (visitedRegionsWithBank[i] != null) {
+                copy.visitedRegionsWithBank[i] = visitedRegionsWithBank[i].copy();
+            }
+        }
+        System.arraycopy(abstractVisitedWithoutBank, 0, copy.abstractVisitedWithoutBank, 0, abstractVisitedWithoutBank.length);
+        System.arraycopy(abstractVisitedWithBank, 0, copy.abstractVisitedWithBank, 0, abstractVisitedWithBank.length);
+        return copy;
+    }
+
     private int getRegionIndex(int regionX, int regionY) {
         return (regionX - regionExtents.minX) + (regionY - regionExtents.minY) * widthInclusive;
     }
@@ -157,5 +172,20 @@ public class VisitedTiles {
             }
             return (planes[y + plane * REGION_SIZE] & (1L << x)) != 0;
         }
+
+        private VisitedRegion copy() {
+            VisitedRegion copy = new VisitedRegion(planeCount);
+            System.arraycopy(planes, 0, copy.planes, 0, planes.length);
+            return copy;
+        }
+    }
+
+    private VisitedTiles(SplitFlagMap.RegionExtent regionExtents, int widthInclusive, byte[] visitedRegionPlanes) {
+        this.regionExtents = regionExtents;
+        this.widthInclusive = widthInclusive;
+        this.visitedRegionPlanes = visitedRegionPlanes;
+        int heightInclusive = regionExtents.getHeight() + 1;
+        this.visitedRegionsWithoutBank = new VisitedRegion[widthInclusive * heightInclusive];
+        this.visitedRegionsWithBank = new VisitedRegion[widthInclusive * heightInclusive];
     }
 }
