@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Set;
 import net.runelite.api.Client;
@@ -70,6 +72,9 @@ public class HeuristicVisualizerMain {
             System.out.println("Visited tiles (unbanked): " + visited.countVisitedTiles(false));
             System.out.println("Visited tiles (banked): " + visited.countVisitedTiles(true));
         }
+        if (repo.heuristicField instanceof AbstractGraphHeuristicField) {
+            printAbstractGraphDiagnostics((AbstractGraphHeuristicField) repo.heuristicField);
+        }
     }
 
     private static class RepoContext {
@@ -106,7 +111,8 @@ public class HeuristicVisualizerMain {
             SplitFlagMap splitFlagMap = SplitFlagMap.fromResources();
             CollisionMap collisionMap = new CollisionMap(splitFlagMap);
             ComponentLabelIndex componentLabelIndex = (parsed.renderMode == RenderMode.COMPONENTS
-                || "component-teleport".equals(parsed.heuristicName))
+                || "component-teleport".equals(parsed.heuristicName)
+                || "abstract-graph".equals(parsed.heuristicName))
                 ? ComponentLabelIndex.build(collisionMap, splitFlagMap)
                 : null;
             Set<Integer> starts = parsed.start != null ? Set.of(parsed.start) : Collections.emptySet();
@@ -123,7 +129,7 @@ public class HeuristicVisualizerMain {
                 TransportMarkerIndex.fromResources());
 
             SearchOverlay overlay = SearchOverlay.NONE;
-            HeuristicField heuristicField = createHeuristicField(parsed, componentLabelIndex);
+            HeuristicField heuristicField = createHeuristicField(parsed, componentLabelIndex, collisionMap);
             if (parsed.showVisited || parsed.showPath) {
                 if (parsed.start == null || parsed.goal == null) {
                     throw new IllegalArgumentException("--start and --goal are required when visited/path overlay is enabled");
@@ -149,12 +155,22 @@ public class HeuristicVisualizerMain {
             return new RepoContext(parsed.region, query, overlay, componentLabelIndex, heuristicField);
         }
 
-        private static HeuristicField createHeuristicField(Arguments parsed, ComponentLabelIndex componentLabelIndex) {
+        private static HeuristicField createHeuristicField(
+            Arguments parsed,
+            ComponentLabelIndex componentLabelIndex,
+            CollisionMap collisionMap
+        ) {
             if ("component-teleport".equals(parsed.heuristicName)) {
                 if (parsed.goal == null) {
                     throw new IllegalArgumentException("--goal is required for heuristic=component-teleport");
                 }
                 return new ComponentTeleportHeuristicField(componentLabelIndex, parsed.goal);
+            }
+            if ("abstract-graph".equals(parsed.heuristicName)) {
+                if (parsed.goal == null) {
+                    throw new IllegalArgumentException("--goal is required for heuristic=abstract-graph");
+                }
+                return new AbstractGraphHeuristicField(collisionMap, componentLabelIndex, parsed.goal);
             }
             return new ZeroHeuristicField();
         }
@@ -274,5 +290,58 @@ public class HeuristicVisualizerMain {
         return WorldPointUtil.unpackWorldX(packedPoint)
             + "," + WorldPointUtil.unpackWorldY(packedPoint)
             + "," + WorldPointUtil.unpackWorldPlane(packedPoint);
+    }
+
+    private static void printAbstractGraphDiagnostics(AbstractGraphHeuristicField heuristicField) {
+        AbstractTransportGraph.BuildStats buildStats = heuristicField.getGraph().getBuildStats();
+        AbstractTransportGraph.ReverseSearchResult reverseStats = heuristicField.getReverseSearchResult();
+
+        System.out.println("Abstract graph:");
+        System.out.println(" - components: " + buildStats.getComponentCount());
+        System.out.println(" - walkable tiles: " + buildStats.getWalkableTileCount());
+        System.out.println(" - attachment nodes: " + buildStats.getAttachmentNodeCount());
+        System.out.println(" - hub nodes: " + buildStats.getHubNodeCount());
+        System.out.println(" - global source nodes: " + buildStats.getGlobalSourceNodeCount());
+        System.out.println(" - stored edges: " + buildStats.getStoredEdgeCount());
+        System.out.println(" - attachment counts per component: min="
+            + buildStats.getMinAttachmentsPerComponent()
+            + ", median=" + buildStats.getMedianAttachmentsPerComponent()
+            + ", p95=" + buildStats.getP95AttachmentsPerComponent()
+            + ", max=" + buildStats.getMaxAttachmentsPerComponent());
+        System.out.println(" - total implicit walk neighbor pairs: " + buildStats.getTotalImplicitWalkNeighborPairs());
+        System.out.println(" - build elapsed nanos: " + buildStats.getBuildElapsedNanos());
+
+        if (!buildStats.getStoredEdgeCountsByKind().isEmpty()) {
+            System.out.println(" - stored edges by kind:");
+            for (Map.Entry<AbstractTransportGraph.EdgeKind, Integer> entry : buildStats.getStoredEdgeCountsByKind().entrySet()) {
+                System.out.println("   " + entry.getKey() + ": " + entry.getValue());
+            }
+        }
+
+        if (!buildStats.getHubCompressionByType().isEmpty()) {
+            System.out.println(" - hub compression savings:");
+            buildStats.getHubCompressionByType().entrySet().stream()
+                .sorted(Comparator.comparing(entry -> entry.getKey().name()))
+                .forEach(entry -> System.out.println("   " + entry.getKey()
+                    + ": naive=" + entry.getValue().getNaiveEdgeCount()
+                    + ", compressed=" + entry.getValue().getCompressedEdgeCount()));
+        }
+
+        System.out.println("Reverse Dijkstra:");
+        System.out.println(" - seeded nodes: " + reverseStats.getSeededNodeCount());
+        System.out.println(" - reachable nodes: " + reverseStats.getReachableNodeCount());
+        System.out.println(" - pops: " + reverseStats.getPopCount());
+        System.out.println(" - stored-edge relaxations: " + reverseStats.getStoredEdgeRelaxCount());
+        System.out.println(" - implicit-walk relaxations: " + reverseStats.getImplicitWalkRelaxCount());
+        System.out.println(" - elapsed nanos: " + reverseStats.getElapsedNanos());
+
+        System.out.println("Heuristic queries:");
+        System.out.println(" - count: " + heuristicField.getEvaluationCount());
+        System.out.println(" - total nanos: " + heuristicField.getTotalEvaluationNanos());
+        System.out.println(" - average nanos: " + averageNanos(heuristicField.getTotalEvaluationNanos(), heuristicField.getEvaluationCount()));
+    }
+
+    private static long averageNanos(long totalNanos, long count) {
+        return count <= 0L ? 0L : totalNanos / count;
     }
 }

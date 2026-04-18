@@ -3,21 +3,41 @@ package shortestpath.analysis.visualizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import shortestpath.analysis.ComponentAnalysisSupport;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.SplitFlagMap;
 
 public class ComponentLabelIndex {
     private final Map<Integer, Integer> tileToComponent;
+    private final Map<Integer, Integer> componentSizes;
+    private final long walkableTileCount;
 
-    private ComponentLabelIndex(Map<Integer, Integer> tileToComponent) {
+    private ComponentLabelIndex(Map<Integer, Integer> tileToComponent, Map<Integer, Integer> componentSizes, long walkableTileCount) {
         this.tileToComponent = tileToComponent;
+        this.componentSizes = componentSizes;
+        this.walkableTileCount = walkableTileCount;
     }
 
     public static ComponentLabelIndex build(CollisionMap collisionMap, SplitFlagMap splitFlagMap) {
-        return new ComponentLabelIndex(new HashMap<>(ComponentAnalysisSupport.computeComponents(collisionMap, splitFlagMap).getPackedPointToComponent()));
+        ComponentAnalysisSupport.ComponentComputation computation = ComponentAnalysisSupport.computeComponents(collisionMap, splitFlagMap);
+        return fromPackedPointToComponent(computation.getPackedPointToComponent(), computation.getWalkableTileCount());
+    }
+
+    public static ComponentLabelIndex fromPackedPointToComponent(Map<Integer, Integer> tileToComponent) {
+        return fromPackedPointToComponent(tileToComponent, tileToComponent.size());
+    }
+
+    public static ComponentLabelIndex fromPackedPointToComponent(Map<Integer, Integer> tileToComponent, long walkableTileCount) {
+        Map<Integer, Integer> copied = new HashMap<>(tileToComponent);
+        Map<Integer, Integer> componentSizes = new HashMap<>();
+        for (Integer componentId : copied.values()) {
+            componentSizes.merge(componentId, 1, Integer::sum);
+        }
+        return new ComponentLabelIndex(copied, componentSizes, walkableTileCount);
     }
 
     public Integer getComponentId(int packedPoint) {
@@ -28,14 +48,25 @@ public class ComponentLabelIndex {
         return ComponentAnalysisSupport.getAnalysisBlockedTiles().contains(packedPoint);
     }
 
-    public List<ComponentSize> largestComponents(int limit) {
-        Map<Integer, Integer> sizes = new HashMap<>();
-        for (Integer componentId : tileToComponent.values()) {
-            sizes.merge(componentId, 1, Integer::sum);
-        }
+    Map<Integer, Integer> getTileToComponent() {
+        return tileToComponent;
+    }
 
-        List<ComponentSize> ranked = new ArrayList<>(sizes.size());
-        for (Map.Entry<Integer, Integer> entry : sizes.entrySet()) {
+    public int getComponentCount() {
+        return componentSizes.size();
+    }
+
+    public long getWalkableTileCount() {
+        return walkableTileCount;
+    }
+
+    public Set<Integer> getComponentIds() {
+        return new HashSet<>(componentSizes.keySet());
+    }
+
+    public List<ComponentSize> largestComponents(int limit) {
+        List<ComponentSize> ranked = new ArrayList<>(componentSizes.size());
+        for (Map.Entry<Integer, Integer> entry : componentSizes.entrySet()) {
             ranked.add(new ComponentSize(entry.getKey(), entry.getValue()));
         }
         ranked.sort(Comparator

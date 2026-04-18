@@ -216,6 +216,7 @@ tasks.register('heuristicVisualizer', JavaExec) {
     description = 'Runs the developer heuristic visualizer CLI'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
     def visualizerArgs = providers.gradleProperty('visualizerArgs')
     if (visualizerArgs.present) {
         args visualizerArgs.get().trim().split(/\s+/) as List<String>
@@ -230,6 +231,7 @@ tasks.register('heuristicVisualizerSearchSpace', JavaExec) {
     description = 'Renders a fixed search-space visualization for a representative pathfinder query'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
     args '--start', '3222,3218,0',
         '--goal', '1503,3553,0',
         '--show-visited',
@@ -242,6 +244,7 @@ tasks.register('heuristicVisualizerSearchSpaceHeuristic', JavaExec) {
     description = 'Renders the fixed search-space visualization using the component teleport heuristic'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
     args '--heuristic', 'component-teleport',
         '--start', '3222,3218,0',
         '--goal', '1503,3553,0',
@@ -255,6 +258,7 @@ tasks.register('heuristicVisualizerComponents', JavaExec) {
     description = 'Renders the map component analysis as a component-colored PNG'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
     args '--mode', 'COMPONENTS',
         '--output', 'build/heuristic-visualizer/components.png'
 }
@@ -264,10 +268,37 @@ tasks.register('heuristicVisualizerComponentHeuristic', JavaExec) {
     description = 'Renders the component-based teleport lower-bound heuristic'
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
     args '--mode', 'HEURISTIC_VALUE',
         '--heuristic', 'component-teleport',
         '--goal', '1503,3553,0',
         '--output', 'build/heuristic-visualizer/component-heuristic.png'
+}
+
+tasks.register('heuristicVisualizerAbstractGraphHeuristic', JavaExec) {
+    group = 'verification'
+    description = 'Renders the abstract-graph transport lower-bound heuristic'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
+    args '--mode', 'HEURISTIC_VALUE',
+        '--heuristic', 'abstract-graph',
+        '--goal', '1503,3553,0',
+        '--output', 'build/heuristic-visualizer/abstract-graph-heuristic.png'
+}
+
+tasks.register('heuristicVisualizerSearchSpaceAbstractGraph', JavaExec) {
+    group = 'verification'
+    description = 'Renders the fixed search-space visualization using the abstract graph heuristic'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
+    args '--heuristic', 'abstract-graph',
+        '--start', '3222,3218,0',
+        '--goal', '1503,3553,0',
+        '--show-visited',
+        '--show-path',
+        '--output', 'build/heuristic-visualizer/search-space-abstract-graph.png'
 }
 
 test {

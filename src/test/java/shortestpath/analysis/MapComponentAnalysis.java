@@ -119,7 +119,7 @@ public class MapComponentAnalysis {
                 }
 
                 totalTeleports++;
-                Set<Integer> destinationComponents = resolveComponents(
+                Set<Integer> destinationComponents = ComponentAnalysisSupport.resolveComponents(
                     collisionMap,
                     componentIndex.packedPointToComponent,
                     transport.getDestination());
@@ -236,8 +236,14 @@ public class MapComponentAnalysis {
         Map<EdgeKey, EdgeAggregate> edgeAggregates = new LinkedHashMap<>();
         for (Set<Transport> transports : transportsByOrigin.values()) {
             for (Transport transport : transports) {
-                Set<Integer> sourceComponents = resolveComponents(collisionMap, componentIndex.packedPointToComponent, transport.getOrigin());
-                Set<Integer> destinationComponents = resolveComponents(collisionMap, componentIndex.packedPointToComponent, transport.getDestination());
+                Set<Integer> sourceComponents = ComponentAnalysisSupport.resolveComponents(
+                    collisionMap,
+                    componentIndex.packedPointToComponent,
+                    transport.getOrigin());
+                Set<Integer> destinationComponents = ComponentAnalysisSupport.resolveComponents(
+                    collisionMap,
+                    componentIndex.packedPointToComponent,
+                    transport.getDestination());
                 if (sourceComponents.isEmpty() || destinationComponents.isEmpty()) {
                     continue;
                 }
@@ -253,35 +259,6 @@ public class MapComponentAnalysis {
             }
         }
         return edgeAggregates;
-    }
-
-    private static Set<Integer> resolveComponents(CollisionMap collisionMap, Map<Integer, Integer> packedPointToComponent, int packedPoint) {
-        if (packedPoint == Transport.UNDEFINED_ORIGIN || packedPoint == Transport.UNDEFINED_DESTINATION
-            || packedPoint == Transport.LOCATION_PERMUTATION) {
-            return Set.of();
-        }
-
-        Integer direct = packedPointToComponent.get(packedPoint);
-        if (direct != null) {
-            return Set.of(direct);
-        }
-
-        int x = WorldPointUtil.unpackWorldX(packedPoint);
-        int y = WorldPointUtil.unpackWorldY(packedPoint);
-        int plane = WorldPointUtil.unpackWorldPlane(packedPoint);
-        if (!ComponentAnalysisSupport.isAnalysisBlocked(collisionMap, x, y, plane)) {
-            return Set.of();
-        }
-
-        Set<Integer> adjacent = new HashSet<>();
-        for (shortestpath.pathfinder.OrdinalDirection direction : shortestpath.pathfinder.OrdinalDirection.values()) {
-            int neighbor = WorldPointUtil.packWorldPoint(x + ComponentAnalysisSupport.dx(direction), y + ComponentAnalysisSupport.dy(direction), plane);
-            Integer componentId = packedPointToComponent.get(neighbor);
-            if (componentId != null) {
-                adjacent.add(componentId);
-            }
-        }
-        return adjacent;
     }
 
     private static String formatPoint(int packed) {

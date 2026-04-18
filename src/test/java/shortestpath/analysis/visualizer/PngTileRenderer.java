@@ -4,8 +4,6 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 import javax.imageio.ImageIO;
 import shortestpath.WorldPointUtil;
 
@@ -25,16 +23,18 @@ public class PngTileRenderer {
         RenderMode renderMode, ScalingMode scalingMode, Double clipMin, Double clipMax) {
         BufferedImage image = new BufferedImage(region.getWidth(), region.getHeight(), BufferedImage.TYPE_INT_ARGB);
         ValueScaler scaler = new ValueScaler(scalingMode, clipMin, clipMax);
-        List<HeuristicSample> samples = collectSamples(region, query, heuristic);
+        HeuristicSample[] samples = collectSamples(region, query, heuristic);
         ValueScaler.Bounds bounds = scaler.computeBounds(samples);
-        double maxPositiveSlack = maxPositiveSlack(region, query, heuristic);
+        double maxPositiveSlack = renderMode == RenderMode.CONSISTENCY_SLACK
+            ? maxPositiveSlack(region, query, samples)
+            : 0.0d;
 
         for (int x = region.getMinX(); x < region.getMaxXExclusive(); x++) {
             for (int y = region.getMinY(); y < region.getMaxYExclusive(); y++) {
                 int packedPoint = WorldPointUtil.packWorldPoint(x, y, region.getPlane());
                 TileStateQuery.TileState tileState = query.getTileState(x, y, region.getPlane());
-                HeuristicSample sample = heuristic.sample(packedPoint, tileState);
-                int rgb = colorForBaseTile(tileState, sample, renderMode, scaler, bounds, maxPositiveSlack, x, y, region, query, heuristic);
+                HeuristicSample sample = sampleAt(samples, region, x, y);
+                int rgb = colorForBaseTile(tileState, sample, renderMode, scaler, bounds, maxPositiveSlack, x, y, region, query, samples);
                 rgb = applySearchOverlay(rgb, packedPoint, overlay, renderMode);
                 rgb = applyMarkers(rgb, packedPoint, query);
                 image.setRGB(x - region.getMinX(), region.getMaxYExclusive() - y - 1, rgb);
@@ -53,12 +53,12 @@ public class PngTileRenderer {
         ImageIO.write(render(region, query, heuristic, overlay, renderMode, scalingMode, clipMin, clipMax), "png", output.toFile());
     }
 
-    private List<HeuristicSample> collectSamples(TileRegion region, TileStateQuery query, HeuristicField heuristic) {
-        List<HeuristicSample> samples = new ArrayList<>(region.getWidth() * region.getHeight());
+    private HeuristicSample[] collectSamples(TileRegion region, TileStateQuery query, HeuristicField heuristic) {
+        HeuristicSample[] samples = new HeuristicSample[region.getWidth() * region.getHeight()];
         for (int x = region.getMinX(); x < region.getMaxXExclusive(); x++) {
             for (int y = region.getMinY(); y < region.getMaxYExclusive(); y++) {
                 int packed = WorldPointUtil.packWorldPoint(x, y, region.getPlane());
-                samples.add(heuristic.sample(packed, query.getTileState(x, y, region.getPlane())));
+                samples[sampleIndex(region, x, y)] = heuristic.sample(packed, query.getTileState(x, y, region.getPlane()));
             }
         }
         return samples;
@@ -66,7 +66,7 @@ public class PngTileRenderer {
 
     private int colorForBaseTile(TileStateQuery.TileState tileState, HeuristicSample sample, RenderMode renderMode,
         ValueScaler scaler, ValueScaler.Bounds bounds, double maxPositiveSlack, int x, int y, TileRegion region,
-        TileStateQuery query, HeuristicField heuristic) {
+        TileStateQuery query, HeuristicSample[] samples) {
         if (tileState == TileStateQuery.TileState.MISSING) {
             return palette.missingRgb();
         }
@@ -90,7 +90,7 @@ public class PngTileRenderer {
             if (tileState == TileStateQuery.TileState.BLOCKED) {
                 return palette.blockedRgb();
             }
-            double slack = consistencySlackAt(x, y, region.getPlane(), query, heuristic);
+            double slack = consistencySlackAt(x, y, region, query, samples);
             if (slack <= 0.0d || maxPositiveSlack <= 0.0d) {
                 return palette.slackRgb(0.0d);
             }
@@ -148,24 +148,23 @@ public class PngTileRenderer {
         return currentRgb;
     }
 
-    private double maxPositiveSlack(TileRegion region, TileStateQuery query, HeuristicField heuristic) {
+    private double maxPositiveSlack(TileRegion region, TileStateQuery query, HeuristicSample[] samples) {
         double max = 0.0d;
         for (int x = region.getMinX(); x < region.getMaxXExclusive(); x++) {
             for (int y = region.getMinY(); y < region.getMaxYExclusive(); y++) {
-                max = Math.max(max, consistencySlackAt(x, y, region.getPlane(), query, heuristic));
+                max = Math.max(max, consistencySlackAt(x, y, region, query, samples));
             }
         }
         return max;
     }
 
-    private double consistencySlackAt(int x, int y, int plane, TileStateQuery query, HeuristicField heuristic) {
-        TileStateQuery.TileState tileState = query.getTileState(x, y, plane);
+    private double consistencySlackAt(int x, int y, TileRegion region, TileStateQuery query, HeuristicSample[] samples) {
+        TileStateQuery.TileState tileState = query.getTileState(x, y, region.getPlane());
         if (tileState != TileStateQuery.TileState.WALKABLE) {
             return 0.0d;
         }
 
-        int packed = WorldPointUtil.packWorldPoint(x, y, plane);
-        HeuristicSample source = heuristic.sample(packed, tileState);
+        HeuristicSample source = sampleAt(samples, region, x, y);
         if (!source.isDefined()) {
             return 0.0d;
         }
@@ -175,16 +174,27 @@ public class PngTileRenderer {
         for (int[] delta : deltas) {
             int nx = x + delta[0];
             int ny = y + delta[1];
-            TileStateQuery.TileState neighborState = query.getTileState(nx, ny, plane);
+            if (!region.contains(nx, ny, region.getPlane())) {
+                continue;
+            }
+            TileStateQuery.TileState neighborState = query.getTileState(nx, ny, region.getPlane());
             if (neighborState != TileStateQuery.TileState.WALKABLE) {
                 continue;
             }
-            HeuristicSample neighbor = heuristic.sample(WorldPointUtil.packWorldPoint(nx, ny, plane), neighborState);
+            HeuristicSample neighbor = sampleAt(samples, region, nx, ny);
             if (!neighbor.isDefined()) {
                 continue;
             }
             maxSlack = Math.max(maxSlack, source.getValue() - 1.0d - neighbor.getValue());
         }
         return maxSlack;
+    }
+
+    private HeuristicSample sampleAt(HeuristicSample[] samples, TileRegion region, int x, int y) {
+        return samples[sampleIndex(region, x, y)];
+    }
+
+    private int sampleIndex(TileRegion region, int x, int y) {
+        return (x - region.getMinX()) * region.getHeight() + (y - region.getMinY());
     }
 }

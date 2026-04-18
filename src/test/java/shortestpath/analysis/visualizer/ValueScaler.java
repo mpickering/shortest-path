@@ -14,7 +14,7 @@ public class ValueScaler {
         this.explicitMax = explicitMax;
     }
 
-    public Bounds computeBounds(List<HeuristicSample> samples) {
+    public Bounds computeBounds(HeuristicSample[] samples) {
         List<Double> values = new ArrayList<>();
         for (HeuristicSample sample : samples) {
             if (sample != null && sample.isDefined()) {

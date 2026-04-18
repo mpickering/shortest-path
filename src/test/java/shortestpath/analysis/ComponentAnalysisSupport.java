@@ -10,6 +10,7 @@ import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.OrdinalDirection;
 import shortestpath.pathfinder.SplitFlagMap;
+import shortestpath.transport.Transport;
 
 public final class ComponentAnalysisSupport {
     private static final OrdinalDirection[] DIRECTIONS = OrdinalDirection.values();
@@ -88,6 +89,35 @@ public final class ComponentAnalysisSupport {
             default:
                 return false;
         }
+    }
+
+    public static Set<Integer> resolveComponents(CollisionMap collisionMap, Map<Integer, Integer> packedPointToComponent, int packedPoint) {
+        if (packedPoint == Transport.UNDEFINED_ORIGIN || packedPoint == Transport.UNDEFINED_DESTINATION
+            || packedPoint == Transport.LOCATION_PERMUTATION) {
+            return Set.of();
+        }
+
+        Integer direct = packedPointToComponent.get(packedPoint);
+        if (direct != null) {
+            return Set.of(direct);
+        }
+
+        int x = WorldPointUtil.unpackWorldX(packedPoint);
+        int y = WorldPointUtil.unpackWorldY(packedPoint);
+        int plane = WorldPointUtil.unpackWorldPlane(packedPoint);
+        if (!isAnalysisBlocked(collisionMap, x, y, plane)) {
+            return Set.of();
+        }
+
+        Set<Integer> adjacent = new HashSet<>();
+        for (OrdinalDirection direction : DIRECTIONS) {
+            int neighbor = WorldPointUtil.packWorldPoint(x + dx(direction), y + dy(direction), plane);
+            Integer componentId = packedPointToComponent.get(neighbor);
+            if (componentId != null) {
+                adjacent.add(componentId);
+            }
+        }
+        return adjacent;
     }
 
     public static int dx(OrdinalDirection direction) {

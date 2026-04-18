@@ -103,3 +103,15 @@ To render the component-based teleport lower-bound heuristic:
 ```bash
 ./gradlew heuristicVisualizerComponentHeuristic
 ```
+
+To render the abstract-graph transport lower-bound heuristic:
+
+```bash
+./gradlew heuristicVisualizerAbstractGraphHeuristic
+```
+
+To run the fixed search-space render using the abstract-graph heuristic:
+
+```bash
+./gradlew heuristicVisualizerSearchSpaceAbstractGraph
+```
