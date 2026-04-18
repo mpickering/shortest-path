@@ -18,7 +18,6 @@ import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.Pathfinder;
 import shortestpath.pathfinder.PathfinderConfig;
-import shortestpath.pathfinder.PathfinderHeuristic;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.pathfinder.SplitFlagMap;
 import shortestpath.pathfinder.TestPathfinderConfig;
@@ -123,29 +122,18 @@ public class HeuristicVisualizerMain {
                 TransportMarkerIndex.fromResources());
 
             SearchOverlay overlay = SearchOverlay.NONE;
-            HeuristicField heuristicField = createHeuristicField(parsed, componentLabelIndex);
             if (parsed.showVisited || parsed.showPath) {
                 if (parsed.start == null || parsed.goal == null) {
                     throw new IllegalArgumentException("--start and --goal are required when visited/path overlay is enabled");
                 }
-                PathfinderHeuristic searchHeuristic = heuristicField instanceof PathfinderHeuristic
-                    ? (PathfinderHeuristic) heuristicField
-                    : PathfinderHeuristic.ZERO;
-                Pathfinder pathfinder = Pathfinder.withHeuristic(pathfinderConfig, parsed.start, Set.of(parsed.goal), searchHeuristic);
+                Pathfinder pathfinder = new Pathfinder(pathfinderConfig, parsed.start, Set.of(parsed.goal));
                 pathfinder.run();
                 PathfinderResult result = pathfinder.getResult();
                 List<shortestpath.pathfinder.PathStep> pathSteps = parsed.showPath && result != null ? result.getPathSteps() : List.of();
                 VisitedTiles visitedTiles = parsed.showVisited ? pathfinder.getVisitedSnapshot() : null;
                 overlay = new VisitedTilesOverlay(visitedTiles, parsed.region, pathSteps);
-                if (result != null) {
-                    System.out.println("Search stats:");
-                    System.out.println(" - reached: " + result.isReached());
-                    System.out.println(" - nodes checked: " + result.getNodesChecked());
-                    System.out.println(" - transports checked: " + result.getTransportsChecked());
-                    System.out.println(" - elapsed nanos: " + result.getElapsedNanos());
-                    System.out.println(" - termination: " + result.getTerminationReason());
-                }
             }
+            HeuristicField heuristicField = createHeuristicField(parsed, componentLabelIndex);
             return new RepoContext(parsed.region, query, overlay, componentLabelIndex, heuristicField);
         }
 
