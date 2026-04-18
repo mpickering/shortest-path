@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.Node;
+import shortestpath.pathfinder.PathfinderHeuristic;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportLoader;
 
-public class ComponentTeleportHeuristicField implements HeuristicField {
+public class ComponentTeleportHeuristicField implements HeuristicField, PathfinderHeuristic {
     private final ComponentLabelIndex componentLabelIndex;
     private final int goal;
     private final Integer goalComponentId;
@@ -51,6 +53,29 @@ public class ComponentTeleportHeuristicField implements HeuristicField {
         }
 
         return Double.isFinite(best) ? HeuristicSample.defined(best) : HeuristicSample.undefined();
+    }
+
+    @Override
+    public double estimate(Node node) {
+        if (!node.isTile()) {
+            return 0.0d;
+        }
+        Integer pointComponentId = componentLabelIndex.getComponentId(node.packedPosition);
+        if (pointComponentId == null || goalComponentId == null) {
+            return 0.0d;
+        }
+
+        double best = Double.POSITIVE_INFINITY;
+        if (pointComponentId.equals(goalComponentId)) {
+            best = chebyshev(node.packedPosition, goal);
+        }
+
+        double entryLowerBound = nearestDistanceWithinComponent(node.packedPosition, teleportEntriesByComponent.get(pointComponentId));
+        if (Double.isFinite(entryLowerBound) && Double.isFinite(goalExitLowerBound)) {
+            best = Math.min(best, entryLowerBound + goalExitLowerBound);
+        }
+
+        return Double.isFinite(best) ? best : 0.0d;
     }
 
     public int countEntriesInComponent(int componentId) {
