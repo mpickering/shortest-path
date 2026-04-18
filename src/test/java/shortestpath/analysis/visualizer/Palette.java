@@ -18,6 +18,7 @@ public class Palette {
     private final Color path = new Color(255, 255, 255);
     private final Color consistentSlack = new Color(239, 239, 239);
     private final Color inconsistentSlack = new Color(214, 40, 40);
+    private final Color analysisWall = new Color(255, 0, 255);
 
     public int walkableRgb() {
         return walkable.getRGB();
@@ -71,12 +72,21 @@ public class Palette {
         return path.getRGB();
     }
 
+    public int analysisWallRgb() {
+        return analysisWall.getRGB();
+    }
+
     public int baseValueRgb(double scaled) {
         scaled = Math.max(0.0d, Math.min(1.0d, scaled));
         int red = (int) Math.round(255.0d * scaled);
         int green = (int) Math.round(48.0d + 180.0d * (1.0d - Math.abs(0.5d - scaled) * 2.0d));
         int blue = (int) Math.round(255.0d * (1.0d - scaled));
         return new Color(red, green, blue).getRGB();
+    }
+
+    public int componentRgb(int componentId) {
+        float hue = (float) ((componentId * 0.6180339887498949d) % 1.0d);
+        return Color.getHSBColor(hue, 0.65f, 0.95f).getRGB();
     }
 
     public int slackRgb(double normalizedPositiveSlack) {

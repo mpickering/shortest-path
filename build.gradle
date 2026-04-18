@@ -237,6 +237,26 @@ tasks.register('heuristicVisualizerSearchSpace', JavaExec) {
         '--output', 'build/heuristic-visualizer/search-space.png'
 }
 
+tasks.register('heuristicVisualizerComponents', JavaExec) {
+    group = 'verification'
+    description = 'Renders the map component analysis as a component-colored PNG'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    args '--mode', 'COMPONENTS',
+        '--output', 'build/heuristic-visualizer/components.png'
+}
+
+tasks.register('heuristicVisualizerComponentHeuristic', JavaExec) {
+    group = 'verification'
+    description = 'Renders the component-based teleport lower-bound heuristic'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    args '--mode', 'HEURISTIC_VALUE',
+        '--heuristic', 'component-teleport',
+        '--goal', '1503,3553,0',
+        '--output', 'build/heuristic-visualizer/component-heuristic.png'
+}
+
 test {
     jvmArgs = ['-Xms1g', '-Xmx8g']
 }

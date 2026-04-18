@@ -85,3 +85,15 @@ For an IDE-friendly fixed search-space render with no extra arguments:
 ```bash
 ./gradlew heuristicVisualizerSearchSpace
 ```
+
+To render the walkable-map components with a distinct colour per component:
+
+```bash
+./gradlew heuristicVisualizerComponents
+```
+
+To render the component-based teleport lower-bound heuristic:
+
+```bash
+./gradlew heuristicVisualizerComponentHeuristic
+```

@@ -38,9 +38,32 @@ public class HeuristicVisualizerMain {
         }
 
         RepoContext repo = RepoContext.create(parsed);
-        renderer.renderToFile(parsed.output, repo.region, repo.query, new ZeroHeuristicField(), repo.overlay,
+        renderer.setComponentLabelIndex(repo.componentLabelIndex);
+        renderer.renderToFile(parsed.output, repo.region, repo.query, repo.heuristicField, repo.overlay,
             parsed.renderMode, parsed.scalingMode, parsed.clipMin, parsed.clipMax);
         System.out.println("Wrote " + parsed.output.toAbsolutePath());
+        if (repo.componentLabelIndex != null) {
+            System.out.println("Largest components:");
+            for (ComponentLabelIndex.ComponentSize component : repo.componentLabelIndex.largestComponents(5)) {
+                if (repo.heuristicField instanceof ComponentTeleportHeuristicField) {
+                    ComponentTeleportHeuristicField componentHeuristic = (ComponentTeleportHeuristicField) repo.heuristicField;
+                    System.out.println(" - component " + component.getComponentId() + ": " + component.getSize() + " tiles"
+                        + ", entries=" + componentHeuristic.countEntriesInComponent(component.getComponentId())
+                        + ", exits=" + componentHeuristic.countExitsInComponent(component.getComponentId()));
+                } else {
+                    System.out.println(" - component " + component.getComponentId() + ": " + component.getSize() + " tiles");
+                }
+            }
+        }
+        if (parsed.start != null) {
+            HeuristicSample startSample = repo.heuristicField.sample(parsed.start,
+                repo.query.getTileState(
+                    WorldPointUtil.unpackWorldX(parsed.start),
+                    WorldPointUtil.unpackWorldY(parsed.start),
+                    WorldPointUtil.unpackWorldPlane(parsed.start)));
+            String value = startSample.isDefined() ? Double.toString(startSample.getValue()) : "undefined";
+            System.out.println("Heuristic at start " + formatPackedPoint(parsed.start) + ": " + value);
+        }
         if (repo.overlay instanceof VisitedTilesOverlay) {
             VisitedTilesOverlay visited = (VisitedTilesOverlay) repo.overlay;
             System.out.println("Visited tiles (unbanked): " + visited.countVisitedTiles(false));
@@ -52,11 +75,16 @@ public class HeuristicVisualizerMain {
         private final TileRegion region;
         private final CollisionMapTileStateQuery query;
         private final SearchOverlay overlay;
+        private final ComponentLabelIndex componentLabelIndex;
+        private final HeuristicField heuristicField;
 
-        private RepoContext(TileRegion region, CollisionMapTileStateQuery query, SearchOverlay overlay) {
+        private RepoContext(TileRegion region, CollisionMapTileStateQuery query, SearchOverlay overlay,
+            ComponentLabelIndex componentLabelIndex, HeuristicField heuristicField) {
             this.region = region;
             this.query = query;
             this.overlay = overlay;
+            this.componentLabelIndex = componentLabelIndex;
+            this.heuristicField = heuristicField;
         }
 
         static RepoContext create(Arguments parsed) throws Exception {
@@ -76,6 +104,10 @@ public class HeuristicVisualizerMain {
 
             SplitFlagMap splitFlagMap = SplitFlagMap.fromResources();
             CollisionMap collisionMap = new CollisionMap(splitFlagMap);
+            ComponentLabelIndex componentLabelIndex = (parsed.renderMode == RenderMode.COMPONENTS
+                || "component-teleport".equals(parsed.heuristicName))
+                ? ComponentLabelIndex.build(collisionMap, splitFlagMap)
+                : null;
             Set<Integer> starts = parsed.start != null ? Set.of(parsed.start) : Collections.emptySet();
             Set<Integer> goals = parsed.goal != null ? Set.of(parsed.goal) : Collections.emptySet();
             Set<Integer> banks = pathfinderConfig.hasDestination("bank")
@@ -101,7 +133,18 @@ public class HeuristicVisualizerMain {
                 VisitedTiles visitedTiles = parsed.showVisited ? pathfinder.getVisitedSnapshot() : null;
                 overlay = new VisitedTilesOverlay(visitedTiles, parsed.region, pathSteps);
             }
-            return new RepoContext(parsed.region, query, overlay);
+            HeuristicField heuristicField = createHeuristicField(parsed, componentLabelIndex);
+            return new RepoContext(parsed.region, query, overlay, componentLabelIndex, heuristicField);
+        }
+
+        private static HeuristicField createHeuristicField(Arguments parsed, ComponentLabelIndex componentLabelIndex) {
+            if ("component-teleport".equals(parsed.heuristicName)) {
+                if (parsed.goal == null) {
+                    throw new IllegalArgumentException("--goal is required for heuristic=component-teleport");
+                }
+                return new ComponentTeleportHeuristicField(componentLabelIndex, parsed.goal);
+            }
+            return new ZeroHeuristicField();
         }
     }
 
@@ -115,6 +158,7 @@ public class HeuristicVisualizerMain {
         private boolean showVisited;
         private boolean showPath;
         private String demo = "repo";
+        private String heuristicName = "zero";
         private Integer start;
         private Integer goal;
 
@@ -143,6 +187,9 @@ public class HeuristicVisualizerMain {
                         break;
                     case "--demo":
                         parsed.demo = args[++i].trim().toLowerCase(Locale.ROOT);
+                        break;
+                    case "--heuristic":
+                        parsed.heuristicName = args[++i].trim().toLowerCase(Locale.ROOT);
                         break;
                     case "--show-visited":
                         parsed.showVisited = true;
@@ -209,5 +256,11 @@ public class HeuristicVisualizerMain {
                 Integer.parseInt(parts[1].trim()),
                 Integer.parseInt(parts[2].trim()));
         }
+    }
+
+    private static String formatPackedPoint(int packedPoint) {
+        return WorldPointUtil.unpackWorldX(packedPoint)
+            + "," + WorldPointUtil.unpackWorldY(packedPoint)
+            + "," + WorldPointUtil.unpackWorldPlane(packedPoint);
     }
 }

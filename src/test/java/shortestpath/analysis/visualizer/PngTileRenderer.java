@@ -11,9 +11,14 @@ import shortestpath.WorldPointUtil;
 
 public class PngTileRenderer {
     private final Palette palette;
+    private ComponentLabelIndex componentLabelIndex;
 
     public PngTileRenderer(Palette palette) {
         this.palette = palette;
+    }
+
+    public void setComponentLabelIndex(ComponentLabelIndex componentLabelIndex) {
+        this.componentLabelIndex = componentLabelIndex;
     }
 
     public BufferedImage render(TileRegion region, TileStateQuery query, HeuristicField heuristic, SearchOverlay overlay,
@@ -67,6 +72,19 @@ public class PngTileRenderer {
         }
         if (renderMode == RenderMode.BASE_MAP) {
             return tileState == TileStateQuery.TileState.BLOCKED ? palette.blockedRgb() : palette.walkableRgb();
+        }
+        if (renderMode == RenderMode.COMPONENTS) {
+            int packedPoint = WorldPointUtil.packWorldPoint(x, y, region.getPlane());
+            if (componentLabelIndex != null && componentLabelIndex.isAnalysisWall(packedPoint)) {
+                return palette.analysisWallRgb();
+            }
+            if (tileState == TileStateQuery.TileState.BLOCKED) {
+                return palette.blockedRgb();
+            }
+            Integer componentId = componentLabelIndex != null
+                ? componentLabelIndex.getComponentId(packedPoint)
+                : null;
+            return componentId != null ? palette.componentRgb(componentId) : palette.undefinedRgb();
         }
         if (renderMode == RenderMode.CONSISTENCY_SLACK) {
             if (tileState == TileStateQuery.TileState.BLOCKED) {

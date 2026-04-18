@@ -7,7 +7,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.stream.Collectors;
@@ -17,11 +16,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import net.runelite.api.Constants;
 import shortestpath.WorldPointUtil;
 import shortestpath.dashboard.ComponentDashboardAssetWriter;
 import shortestpath.pathfinder.CollisionMap;
-import shortestpath.pathfinder.OrdinalDirection;
 import shortestpath.pathfinder.SplitFlagMap;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportLoader;
@@ -29,10 +26,8 @@ import shortestpath.transport.TransportType;
 
 public class MapComponentAnalysis {
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
-    private static final OrdinalDirection[] DIRECTIONS = OrdinalDirection.values();
     private static final int DEFAULT_MAX_EDGE_EXAMPLES = 3;
     private static final String DEFAULT_REPORT_NAME = "report.json";
-    private static final Set<Integer> ANALYSIS_BLOCKED_TILES = buildAnalysisBlockedTiles();
 
     public static void main(String[] args) throws IOException {
         Arguments parsed = Arguments.parse(args);
@@ -210,39 +205,17 @@ public class MapComponentAnalysis {
     }
 
     private static ComponentIndex computeComponents(CollisionMap collisionMap, SplitFlagMap splitFlagMap, boolean includeTileComponents) {
-        SplitFlagMap.RegionExtent extents = SplitFlagMap.getRegionExtents();
-        byte[] regionPlanes = splitFlagMap.getRegionMapPlaneCounts();
-        int widthInclusive = extents.getWidth() + 1;
-        long walkableTileCount = 0L;
-        int componentId = 0;
-        Map<Integer, Integer> packedPointToComponent = new HashMap<>();
+        ComponentAnalysisSupport.ComponentComputation computation = ComponentAnalysisSupport.computeComponents(collisionMap, splitFlagMap);
+        Map<Integer, Integer> packedPointToComponent = computation.getPackedPointToComponent();
         Map<Integer, ComponentSummary> componentSummaries = new LinkedHashMap<>();
         Map<String, Integer> tileComponents = includeTileComponents ? new LinkedHashMap<>() : null;
-
-        for (int regionY = extents.getMinY(); regionY <= extents.getMaxY(); regionY++) {
-            for (int regionX = extents.getMinX(); regionX <= extents.getMaxX(); regionX++) {
-                int planeCount = regionPlanes[(regionX - extents.getMinX()) + (regionY - extents.getMinY()) * widthInclusive] & 0xFF;
-                if (planeCount == 0) {
-                    continue;
-                }
-
-                int startX = regionX * Constants.REGION_SIZE;
-                int startY = regionY * Constants.REGION_SIZE;
-                for (int plane = 0; plane < planeCount; plane++) {
-                    for (int x = startX; x < startX + Constants.REGION_SIZE; x++) {
-                        for (int y = startY; y < startY + Constants.REGION_SIZE; y++) {
-                            int packed = WorldPointUtil.packWorldPoint(x, y, plane);
-                            if (packedPointToComponent.containsKey(packed) || isAnalysisBlocked(collisionMap, x, y, plane)) {
-                                continue;
-                            }
-
-                            ComponentSummary summary = floodFillComponent(collisionMap, packed, componentId, packedPointToComponent, tileComponents);
-                            componentSummaries.put(componentId, summary);
-                            walkableTileCount += summary.size;
-                            componentId++;
-                        }
-                    }
-                }
+        for (Map.Entry<Integer, Integer> entry : packedPointToComponent.entrySet()) {
+            int packed = entry.getKey();
+            int componentId = entry.getValue();
+            ComponentSummary summary = componentSummaries.computeIfAbsent(componentId, ComponentSummary::new);
+            summary.accept(packed);
+            if (tileComponents != null) {
+                tileComponents.put(formatPointKey(packed), componentId);
             }
         }
 
@@ -250,47 +223,8 @@ public class MapComponentAnalysis {
         index.packedPointToComponent = packedPointToComponent;
         index.componentSummaries = componentSummaries;
         index.tileComponents = tileComponents;
-        index.walkableTileCount = walkableTileCount;
+        index.walkableTileCount = computation.getWalkableTileCount();
         return index;
-    }
-
-    private static ComponentSummary floodFillComponent(
-        CollisionMap collisionMap,
-        int startPacked,
-        int componentId,
-        Map<Integer, Integer> packedPointToComponent,
-        Map<String, Integer> tileComponents
-    ) {
-        ArrayDeque<Integer> queue = new ArrayDeque<>();
-        queue.add(startPacked);
-        packedPointToComponent.put(startPacked, componentId);
-
-        ComponentSummary summary = new ComponentSummary(componentId);
-        while (!queue.isEmpty()) {
-            int packed = queue.removeFirst();
-            summary.accept(packed);
-            if (tileComponents != null) {
-                tileComponents.put(formatPointKey(packed), componentId);
-            }
-
-            int x = WorldPointUtil.unpackWorldX(packed);
-            int y = WorldPointUtil.unpackWorldY(packed);
-            int plane = WorldPointUtil.unpackWorldPlane(packed);
-            for (OrdinalDirection direction : DIRECTIONS) {
-                if (!canWalk(collisionMap, x, y, plane, direction)) {
-                    continue;
-                }
-
-                int neighbor = WorldPointUtil.packWorldPoint(x + dx(direction), y + dy(direction), plane);
-                if (packedPointToComponent.containsKey(neighbor)) {
-                    continue;
-                }
-                packedPointToComponent.put(neighbor, componentId);
-                queue.addLast(neighbor);
-            }
-        }
-
-        return summary;
     }
 
     private static Map<EdgeKey, EdgeAggregate> buildTransportEdges(
@@ -335,13 +269,13 @@ public class MapComponentAnalysis {
         int x = WorldPointUtil.unpackWorldX(packedPoint);
         int y = WorldPointUtil.unpackWorldY(packedPoint);
         int plane = WorldPointUtil.unpackWorldPlane(packedPoint);
-        if (!isAnalysisBlocked(collisionMap, x, y, plane)) {
+        if (!ComponentAnalysisSupport.isAnalysisBlocked(collisionMap, x, y, plane)) {
             return Set.of();
         }
 
         Set<Integer> adjacent = new HashSet<>();
-        for (OrdinalDirection direction : DIRECTIONS) {
-            int neighbor = WorldPointUtil.packWorldPoint(x + dx(direction), y + dy(direction), plane);
+        for (shortestpath.pathfinder.OrdinalDirection direction : shortestpath.pathfinder.OrdinalDirection.values()) {
+            int neighbor = WorldPointUtil.packWorldPoint(x + ComponentAnalysisSupport.dx(direction), y + ComponentAnalysisSupport.dy(direction), plane);
             Integer componentId = packedPointToComponent.get(neighbor);
             if (componentId != null) {
                 adjacent.add(componentId);
@@ -350,72 +284,10 @@ public class MapComponentAnalysis {
         return adjacent;
     }
 
-    private static int dx(OrdinalDirection direction) {
-        switch (direction) {
-            case WEST:
-            case NORTH_WEST:
-            case SOUTH_WEST:
-                return -1;
-            case EAST:
-            case NORTH_EAST:
-            case SOUTH_EAST:
-                return 1;
-            default:
-                return 0;
-        }
-    }
-
-    private static int dy(OrdinalDirection direction) {
-        switch (direction) {
-            case SOUTH:
-            case SOUTH_WEST:
-            case SOUTH_EAST:
-                return -1;
-            case NORTH:
-            case NORTH_WEST:
-            case NORTH_EAST:
-                return 1;
-            default:
-                return 0;
-        }
-    }
-
     private static String formatPoint(int packed) {
         return WorldPointUtil.unpackWorldX(packed) + "," + WorldPointUtil.unpackWorldY(packed) + "," + WorldPointUtil.unpackWorldPlane(packed);
     }
 
-    private static boolean isAnalysisBlocked(CollisionMap map, int x, int y, int plane) {
-        return map.isBlocked(x, y, plane) || ANALYSIS_BLOCKED_TILES.contains(WorldPointUtil.packWorldPoint(x, y, plane));
-    }
-
-    private static Set<Integer> buildAnalysisBlockedTiles() {
-        Set<Integer> blockedTiles = new HashSet<>();
-        addBlockedLine(blockedTiles, 3268, 3230, 0, 3268, 3226, 0); // al kharid gate
-        addBlockedLine(blockedTiles, 3275, 3330, 0, 3287, 3330, 0); // al-kharid north
-        addBlockedLine(blockedTiles, 3069, 3242, 0, 3069, 3526, 0); // asg/mith
-        addBlockedLine(blockedTiles, 2854, 3441, 0, 2857, 3441, 0); // white wolf mountain
-        addBlockedLine(blockedTiles, 2652, 3595, 0, 2655, 3595, 0); // fremmy bridge
-        return blockedTiles;
-    }
-
-    private static void addBlockedLine(Set<Integer> blockedTiles, int startX, int startY, int startPlane, int endX, int endY, int endPlane) {
-        if (startPlane != endPlane) {
-            throw new IllegalArgumentException("Analysis blocked lines must be on a single plane");
-        }
-        if (startX != endX && startY != endY) {
-            throw new IllegalArgumentException("Analysis blocked lines must be horizontal or vertical");
-        }
-
-        int minX = Math.min(startX, endX);
-        int maxX = Math.max(startX, endX);
-        int minY = Math.min(startY, endY);
-        int maxY = Math.max(startY, endY);
-        for (int x = minX; x <= maxX; x++) {
-            for (int y = minY; y <= maxY; y++) {
-                blockedTiles.add(WorldPointUtil.packWorldPoint(x, y, startPlane));
-            }
-        }
-    }
 
     private static String formatPointKey(int packed) {
         return formatPoint(packed);
@@ -762,31 +634,4 @@ public class MapComponentAnalysis {
         private String direction;
     }
 
-    private static boolean canWalk(CollisionMap map, int x, int y, int plane, OrdinalDirection direction) {
-        int targetX = x + dx(direction);
-        int targetY = y + dy(direction);
-        if (isAnalysisBlocked(map, x, y, plane) || isAnalysisBlocked(map, targetX, targetY, plane)) {
-            return false;
-        }
-        switch (direction) {
-            case WEST:
-                return map.w(x, y, plane);
-            case EAST:
-                return map.e(x, y, plane);
-            case SOUTH:
-                return map.s(x, y, plane);
-            case NORTH:
-                return map.n(x, y, plane);
-            case SOUTH_WEST:
-                return map.s(x, y, plane) && map.w(x, y - 1, plane) && map.w(x, y, plane) && map.s(x - 1, y, plane);
-            case SOUTH_EAST:
-                return map.s(x, y, plane) && map.e(x, y - 1, plane) && map.e(x, y, plane) && map.s(x + 1, y, plane);
-            case NORTH_WEST:
-                return map.n(x, y, plane) && map.w(x, y + 1, plane) && map.w(x, y, plane) && map.n(x - 1, y, plane);
-            case NORTH_EAST:
-                return map.n(x, y, plane) && map.e(x, y + 1, plane) && map.e(x, y, plane) && map.n(x + 1, y, plane);
-            default:
-                return false;
-        }
-    }
 }
