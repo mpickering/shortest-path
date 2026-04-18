@@ -1,8 +1,8 @@
 package shortestpath.pathfinder;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
@@ -24,11 +24,10 @@ public class Pathfinder implements Runnable {
     private final CollisionMap map;
     private final boolean targetInWilderness;
     private final Runnable completionCallback;
+    private final PathfinderHeuristic heuristic;
 
-    // Capacities should be enough to store all nodes without requiring the queue to grow
-    // They were found by checking the max queue size
-    private final Deque<Node> boundary = new ArrayDeque<>(4096);
-    private final Queue<Node> pending = new PriorityQueue<>(256);
+    private final Queue<OpenNode> open = new PriorityQueue<>(256, this::compareOpenNodes);
+    private final Map<SearchStateKey, Integer> bestKnownCost = new HashMap<>(4096);
     private final VisitedTiles visited;
     private VisitedTiles visitedSnapshot;
 
@@ -52,19 +51,28 @@ public class Pathfinder implements Runnable {
     private int wildernessLevel;
 
     public Pathfinder(PathfinderConfig config, int start, Set<Integer> targets, Runnable completionCallback) {
+        this(config, start, targets, PathfinderHeuristic.ZERO, completionCallback);
+    }
+
+    public Pathfinder(PathfinderConfig config, int start, Set<Integer> targets, PathfinderHeuristic heuristic, Runnable completionCallback) {
         stats = new PathfinderStats();
         this.config = config;
         this.map = config.getMap();
         this.start = start;
         this.targets = targets;
         this.completionCallback = completionCallback;
+        this.heuristic = heuristic != null ? heuristic : PathfinderHeuristic.ZERO;
         visited = new VisitedTiles(map);
         targetInWilderness = WildernessChecker.isInWilderness(targets);
         wildernessLevel = 31;
     }
 
     public Pathfinder(PathfinderConfig config, int start, Set<Integer> targets) {
-        this(config, start, targets, null);
+        this(config, start, targets, PathfinderHeuristic.ZERO, null);
+    }
+
+    public static Pathfinder withHeuristic(PathfinderConfig config, int start, Set<Integer> targets, PathfinderHeuristic heuristic) {
+        return new Pathfinder(config, start, targets, heuristic, null);
     }
 
     public void cancel() {
@@ -129,12 +137,16 @@ public class Pathfinder implements Runnable {
                 continue;
             }
 
-            visited.set(neighbor);
+            SearchStateKey key = SearchStateKey.of(neighbor);
+            Integer knownCost = bestKnownCost.get(key);
+            if (knownCost != null && knownCost <= neighbor.cost) {
+                continue;
+            }
+            bestKnownCost.put(key, neighbor.cost);
+            open.add(OpenNode.of(neighbor, heuristic));
             if (neighbor instanceof TransportNode) {
-                pending.add(neighbor);
                 ++stats.transportsChecked;
             } else {
-                boundary.addLast(neighbor);
                 ++stats.nodesChecked;
             }
         }
@@ -197,20 +209,29 @@ public class Pathfinder implements Runnable {
     @Override
     public void run() {
         stats.start();
-        boundary.addFirst(new Node(start, null, 0, false));
+        Node startNode = new Node(start, null, 0, false);
+        open.add(OpenNode.of(startNode, heuristic));
+        bestKnownCost.put(SearchStateKey.of(startNode), 0);
 
         long cutoffDurationMillis = config.getCalculationCutoffMillis();
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
 
-        while (!cancelled && (!boundary.isEmpty() || !pending.isEmpty())) {
-            Node node = boundary.peekFirst();
-            Node p = pending.peek();
-
-            if (p != null && (node == null || p.cost < node.cost)) {
-                node = pending.poll();
-            } else {
-                node = boundary.removeFirst();
+        while (!cancelled && !open.isEmpty()) {
+            OpenNode openNode = open.poll();
+            if (openNode == null) {
+                break;
             }
+            Node node = openNode.node;
+
+            SearchStateKey key = SearchStateKey.of(node);
+            Integer knownCost = bestKnownCost.get(key);
+            if (knownCost != null && node.cost > knownCost) {
+                continue;
+            }
+            if (visited.get(node)) {
+                continue;
+            }
+            visited.set(node);
 
             if (node.isTile()) {
                 updateWildernessLevel(node);
@@ -245,14 +266,90 @@ public class Pathfinder implements Runnable {
         done = !cancelled;
         visitedSnapshot = visited.snapshot();
 
-        boundary.clear();
+        open.clear();
+        bestKnownCost.clear();
         visited.clear();
-        pending.clear();
 
         stats.end(); // Include cleanup in stats to get the total cost of pathfinding
 
         if (completionCallback != null) {
             completionCallback.run();
+        }
+    }
+
+    private int compareOpenNodes(OpenNode left, OpenNode right) {
+        int fCompare = Double.compare(left.fScore, right.fScore);
+        if (fCompare != 0) {
+            return fCompare;
+        }
+        int costCompare = Integer.compare(left.node.cost, right.node.cost);
+        if (costCompare != 0) {
+            return costCompare;
+        }
+        return Integer.compare(stateOrdinal(left.node), stateOrdinal(right.node));
+    }
+
+    private int stateOrdinal(Node node) {
+        if (node.isTile()) {
+            return node.packedPosition;
+        }
+        return Integer.MAX_VALUE - node.abstractKind.ordinal();
+    }
+
+    private static final class SearchStateKey {
+        private final int packedPosition;
+        private final boolean bankVisited;
+        private final Node.Type type;
+        private final AbstractNodeKind abstractKind;
+
+        private SearchStateKey(int packedPosition, boolean bankVisited, Node.Type type, AbstractNodeKind abstractKind) {
+            this.packedPosition = packedPosition;
+            this.bankVisited = bankVisited;
+            this.type = type;
+            this.abstractKind = abstractKind;
+        }
+
+        private static SearchStateKey of(Node node) {
+            return new SearchStateKey(node.packedPosition, node.bankVisited, node.type, node.abstractKind);
+        }
+
+        @Override
+        public boolean equals(Object other) {
+            if (this == other) {
+                return true;
+            }
+            if (!(other instanceof SearchStateKey)) {
+                return false;
+            }
+            SearchStateKey that = (SearchStateKey) other;
+            return packedPosition == that.packedPosition
+                && bankVisited == that.bankVisited
+                && type == that.type
+                && abstractKind == that.abstractKind;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = packedPosition;
+            result = 31 * result + Boolean.hashCode(bankVisited);
+            result = 31 * result + type.hashCode();
+            result = 31 * result + (abstractKind != null ? abstractKind.hashCode() : 0);
+            return result;
+        }
+    }
+
+    private static final class OpenNode {
+        private final Node node;
+        private final double fScore;
+
+        private OpenNode(Node node, double fScore) {
+            this.node = node;
+            this.fScore = fScore;
+        }
+
+        private static OpenNode of(Node node, PathfinderHeuristic heuristic) {
+            double heuristicValue = heuristic.estimate(node);
+            return new OpenNode(node, node.cost + heuristicValue);
         }
     }
 
