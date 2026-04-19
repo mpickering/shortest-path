@@ -25,6 +25,8 @@ import shortestpath.pathfinder.PathfinderHeuristic;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.pathfinder.SplitFlagMap;
 import shortestpath.pathfinder.TestPathfinderConfig;
+import shortestpath.pathfinder.TransportAvailability;
+import shortestpath.pathfinder.TransportSnapshotLoader;
 import shortestpath.pathfinder.TransportUsageMask;
 import shortestpath.pathfinder.VisitedTiles;
 import shortestpath.transport.Transport;
@@ -120,7 +122,9 @@ public class HeuristicVisualizerMain {
             TestShortestPathConfig config = new TestShortestPathConfig();
             config.setCalculationCutoffValue(50);
             config.setIncludeBankPathValue(true);
-            PathfinderConfig pathfinderConfig = new TestPathfinderConfig(client, config);
+            PathfinderConfig pathfinderConfig = parsed.transportSnapshot == null
+                ? new TestPathfinderConfig(client, config)
+                : new SnapshotPathfinderConfig(client, config, TransportSnapshotLoader.load(parsed.transportSnapshot));
             pathfinderConfig.refresh();
 
             SplitFlagMap splitFlagMap = SplitFlagMap.fromResources();
@@ -207,6 +211,7 @@ public class HeuristicVisualizerMain {
         private Integer goal;
         private Integer transportMask;
         private boolean renderAllTransportMasks;
+        private Path transportSnapshot;
 
         static Arguments parse(String[] args) {
             Arguments parsed = new Arguments();
@@ -257,6 +262,9 @@ public class HeuristicVisualizerMain {
                         break;
                     case "--transport-mask":
                         parsed.transportMask = parseTransportMask(args[++i]);
+                        break;
+                    case "--transport-snapshot":
+                        parsed.transportSnapshot = Paths.get(args[++i]);
                         break;
                     case "--render-all-transport-masks":
                         parsed.renderAllTransportMasks = true;
@@ -473,6 +481,26 @@ public class HeuristicVisualizerMain {
 
     private static long averageNanos(long totalNanos, long count) {
         return count <= 0L ? 0L : totalNanos / count;
+    }
+
+    private static final class SnapshotPathfinderConfig extends TestPathfinderConfig {
+        private final TransportAvailability withoutBank;
+        private final TransportAvailability withBank;
+
+        private SnapshotPathfinderConfig(
+            Client client,
+            TestShortestPathConfig config,
+            TransportSnapshotLoader.Snapshot snapshot
+        ) {
+            super(client, config);
+            this.withoutBank = snapshot.getWithoutBank();
+            this.withBank = snapshot.getWithBank();
+        }
+
+        @Override
+        public TransportAvailability getTransportAvailability(boolean bankVisited) {
+            return bankVisited ? withBank : withoutBank;
+        }
     }
 
     private static void printPathTransports(List<shortestpath.pathfinder.PathStep> path, PathfinderConfig config) {

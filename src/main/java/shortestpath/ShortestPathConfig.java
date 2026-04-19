@@ -263,6 +263,17 @@ public interface ShortestPathConfig extends Config {
     }
 
     @ConfigItem(
+        keyName = "dumpTransportSnapshot",
+        name = "Dump transport snapshot",
+        description = "Export currently available transports with and without bank, then reset this toggle",
+        position = 12,
+        section = sectionDebug
+    )
+    default boolean dumpTransportSnapshot() {
+        return false;
+    }
+
+    @ConfigItem(
         keyName = "useSeasonalTransports",
         name = "Use seasonal transports",
         description = "Whether to include seasonal transports like League teleports in the path",

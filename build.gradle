@@ -302,6 +302,22 @@ tasks.register('heuristicVisualizerSearchSpaceAbstractGraph', JavaExec) {
         '--output', 'build/heuristic-visualizer/search-space-abstract-graph.png'
 }
 
+tasks.register('heuristicVisualizerSearchSpaceAbstractGraphMattSnapshot', JavaExec) {
+    group = 'verification'
+    description = 'Renders the fixed search-space visualization using the abstract graph heuristic and matt-snapshot-dump.tsv'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.analysis.visualizer.HeuristicVisualizerMain'
+    jvmArgs = ['-Xms1g', '-Xmx8g']
+    args '--heuristic', 'abstract-graph',
+        '--transport-snapshot', 'matt-snapshot-dump.tsv',
+        '--start', '3222,3218,0',
+        '--goal', '1760,3846,0',
+        '--show-visited',
+        '--show-path',
+        '--render-all-transport-masks',
+        '--output', 'build/heuristic-visualizer/search-space-abstract-graph-matt-snapshot.png'
+}
+
 test {
     jvmArgs = ['-Xms1g', '-Xmx8g']
 }

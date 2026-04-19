@@ -9,6 +9,7 @@ import java.awt.Rectangle;
 import java.awt.Shape;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -25,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import lombok.Getter;
 import net.runelite.api.Client;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.GameState;
 import net.runelite.api.KeyCode;
 import net.runelite.api.MenuAction;
@@ -95,6 +97,8 @@ public class ShortestPathPlugin extends Plugin {
     private static final String SET = "Set";
     private static final String FIND_CLOSEST = "Find closest";
     private static final String FLASH_ICONS = "Flash icons";
+    private static final String DUMP = "Dump";
+    private static final String TRANSPORT_SNAPSHOT = ColorUtil.wrapWithColorTag("Transport Snapshot", JagexColors.MENU_TARGET);
     private static final String START = ColorUtil.wrapWithColorTag("Start", JagexColors.MENU_TARGET);
     private static final String TARGET = ColorUtil.wrapWithColorTag("Target", JagexColors.MENU_TARGET);
     private static final BufferedImage MARKER_IMAGE = ImageUtil.loadImageResource(ShortestPathPlugin.class, "/marker.png");
@@ -109,6 +113,9 @@ public class ShortestPathPlugin extends Plugin {
 
     @Inject
     private ShortestPathConfig config;
+
+    @Inject
+    private ConfigManager configManager;
 
     @Inject
     private EventBus eventBus;
@@ -278,6 +285,12 @@ public class ShortestPathPlugin extends Plugin {
             return;
         }
 
+        if ("dumpTransportSnapshot".equals(event.getKey()) && config.dumpTransportSnapshot()) {
+            dumpTransportSnapshot();
+            configManager.setConfiguration(CONFIG_GROUP, "dumpTransportSnapshot", false);
+            return;
+        }
+
         // Transport option changed; rerun pathfinding
         if (TRANSPORT_OPTIONS_REGEX.matcher(event.getKey()).find()) {
             if (pathfinder != null) {
@@ -444,6 +457,7 @@ public class ShortestPathPlugin extends Plugin {
         if (client.isKeyPressed(KeyCode.KC_SHIFT)
             && event.getType() == MenuAction.WALK.getId()) {
             addMenuEntry(event, SET, TARGET, 1);
+            addMenuEntry(event, DUMP, TRANSPORT_SNAPSHOT, 1);
             if (pathfinder != null) {
                 if (pathfinder.getTargets().size() >= 1) {
                     addMenuEntry(event, SET, TARGET + ColorUtil.wrapWithColorTag(" " +
@@ -475,6 +489,7 @@ public class ShortestPathPlugin extends Plugin {
                 client.getMouseCanvasPosition().getX(),
                 client.getMouseCanvasPosition().getY())) {
                 addMenuEntry(event, SET, TARGET, 0);
+                addMenuEntry(event, DUMP, TRANSPORT_SNAPSHOT, 0);
                 if (pathfinder != null) {
                     if (pathfinder.getTargets().size() >= 1) {
                         addMenuEntry(event, SET, TARGET + ColorUtil.wrapWithColorTag(" " +
@@ -507,6 +522,7 @@ public class ShortestPathPlugin extends Plugin {
             || "Close Floating panel".equals(Text.removeTags(event.getOption())))) {
             addMenuEntry(event, CLEAR, PATH, 1);
         }
+
     }
 
     @Subscribe
@@ -961,7 +977,25 @@ public class ShortestPathPlugin extends Plugin {
             setTarget(WorldPointUtil.UNDEFINED);
         } else if (entry.getOption().equals(FIND_CLOSEST)) {
             setTargets(pathfinderConfig.getDestinations(simplify(entry.getTarget())), true);
+        } else if (entry.getOption().equals(DUMP) && entry.getTarget().equals(TRANSPORT_SNAPSHOT)) {
+            dumpTransportSnapshot();
         }
+    }
+
+    private void dumpTransportSnapshot() {
+        clientThread.invokeLater(() -> {
+            pathfinderConfig.refresh();
+            int currentLocation = client.getLocalPlayer() != null
+                ? WorldPointUtil.fromLocalInstance(client, client.getLocalPlayer())
+                : WorldPointUtil.UNDEFINED;
+            try {
+                java.nio.file.Path output = TransportSnapshotWriter.defaultOutputPath();
+                TransportSnapshotWriter.writeSnapshot(output, pathfinderConfig, currentLocation);
+                client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Shortest Path transport snapshot written to " + output, null);
+            } catch (IOException ex) {
+                client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", "Shortest Path transport snapshot failed: " + ex.getMessage(), null);
+            }
+        });
     }
 
     private int getSelectedWorldPoint() {

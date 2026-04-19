@@ -116,6 +116,12 @@ To run the fixed search-space render using the abstract-graph heuristic:
 ./gradlew heuristicVisualizerSearchSpaceAbstractGraph
 ```
 
+To run the same search-space render against the checked-in `matt-snapshot-dump.tsv` transport snapshot:
+
+```bash
+./gradlew heuristicVisualizerSearchSpaceAbstractGraphMattSnapshot
+```
+
 That task now also writes mask-specific heuristic charts alongside the main search-space image:
 
 - `...-all-available.png`
@@ -125,3 +131,9 @@ That task now also writes mask-specific heuristic charts alongside the main sear
 - `...-diff-no-fairy-ring.png`
 - `...-diff-no-spirit-tree.png`
 - `...-diff-no-hub-reuse.png`
+
+To run a visualiser task against an exported live transport snapshot instead of the default test config, pass:
+
+```bash
+-PvisualizerArgs="--transport-snapshot /path/to/transport-snapshot-YYYYMMDD-HHMMSS.tsv ..."
+```
