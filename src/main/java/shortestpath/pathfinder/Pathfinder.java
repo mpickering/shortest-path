@@ -291,26 +291,28 @@ public class Pathfinder implements Runnable {
 
     private int stateOrdinal(Node node) {
         if (node.isTile()) {
-            return node.packedPosition;
+            return 31 * node.packedPosition + node.remainingTransportMask;
         }
-        return Integer.MAX_VALUE - node.abstractKind.ordinal();
+        return Integer.MAX_VALUE - (31 * node.abstractKind.ordinal() + node.remainingTransportMask);
     }
 
     private static final class SearchStateKey {
         private final int packedPosition;
         private final boolean bankVisited;
+        private final int remainingTransportMask;
         private final Node.Type type;
         private final AbstractNodeKind abstractKind;
 
-        private SearchStateKey(int packedPosition, boolean bankVisited, Node.Type type, AbstractNodeKind abstractKind) {
+        private SearchStateKey(int packedPosition, boolean bankVisited, int remainingTransportMask, Node.Type type, AbstractNodeKind abstractKind) {
             this.packedPosition = packedPosition;
             this.bankVisited = bankVisited;
+            this.remainingTransportMask = remainingTransportMask;
             this.type = type;
             this.abstractKind = abstractKind;
         }
 
         private static SearchStateKey of(Node node) {
-            return new SearchStateKey(node.packedPosition, node.bankVisited, node.type, node.abstractKind);
+            return new SearchStateKey(node.packedPosition, node.bankVisited, node.remainingTransportMask, node.type, node.abstractKind);
         }
 
         @Override
@@ -324,6 +326,7 @@ public class Pathfinder implements Runnable {
             SearchStateKey that = (SearchStateKey) other;
             return packedPosition == that.packedPosition
                 && bankVisited == that.bankVisited
+                && remainingTransportMask == that.remainingTransportMask
                 && type == that.type
                 && abstractKind == that.abstractKind;
         }
@@ -332,6 +335,7 @@ public class Pathfinder implements Runnable {
         public int hashCode() {
             int result = packedPosition;
             result = 31 * result + Boolean.hashCode(bankVisited);
+            result = 31 * result + remainingTransportMask;
             result = 31 * result + type.hashCode();
             result = 31 * result + (abstractKind != null ? abstractKind.hashCode() : 0);
             return result;

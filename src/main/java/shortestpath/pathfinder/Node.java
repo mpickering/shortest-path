@@ -28,6 +28,7 @@ public class Node {
     public final Node previous;
     public final int cost;
     public final boolean bankVisited;
+    public final int remainingTransportMask;
     public final Type type;
     // Only set for ABSTRACT nodes. TILE nodes leave this null.
     public final AbstractNodeKind abstractKind;
@@ -37,21 +38,42 @@ public class Node {
     }
 
     public Node(int packedPosition, Node previous, int cost, boolean bankVisited) {
-        this(packedPosition, previous, cost, bankVisited, Type.TILE, null);
+        this(packedPosition, previous, cost, bankVisited,
+            previous != null ? previous.remainingTransportMask : TransportUsageMask.ALL_AVAILABLE);
     }
 
-    private Node(int packedPosition, Node previous, int cost, boolean bankVisited, Type type, AbstractNodeKind abstractKind) {
+    public Node(int packedPosition, Node previous, int cost, boolean bankVisited, int remainingTransportMask) {
+        this(packedPosition, previous, cost, bankVisited, remainingTransportMask, Type.TILE, null);
+    }
+
+    private Node(
+        int packedPosition,
+        Node previous,
+        int cost,
+        boolean bankVisited,
+        int remainingTransportMask,
+        Type type,
+        AbstractNodeKind abstractKind
+    ) {
         this.packedPosition = packedPosition;
         this.previous = previous;
         this.cost = cost;
         this.bankVisited = bankVisited;
+        this.remainingTransportMask = remainingTransportMask;
         this.type = type;
         this.abstractKind = abstractKind;
     }
 
     public static Node abstractNode(AbstractNodeKind abstractKind, Node previous, boolean bankVisited) {
         // Abstract nodes model global search states, not physical positions, so they carry no packed world point.
-        return new Node(WorldPointUtil.UNDEFINED, previous, previous != null ? previous.cost : 0, bankVisited, Type.ABSTRACT, abstractKind);
+        return new Node(
+            WorldPointUtil.UNDEFINED,
+            previous,
+            previous != null ? previous.cost : 0,
+            bankVisited,
+            previous != null ? previous.remainingTransportMask : TransportUsageMask.ALL_AVAILABLE,
+            Type.ABSTRACT,
+            abstractKind);
     }
 
     public List<PathStep> getPathSteps() {

@@ -7,20 +7,20 @@ public class VisitedTiles {
     private final SplitFlagMap.RegionExtent regionExtents;
     private final int widthInclusive;
 
-    private final VisitedRegion[] visitedRegionsWithoutBank;
-    private final VisitedRegion[] visitedRegionsWithBank;
+    private final VisitedRegion[][] visitedRegionsWithoutBank;
+    private final VisitedRegion[][] visitedRegionsWithBank;
     private final byte[] visitedRegionPlanes;
     // Abstract nodes are visited separately from tile nodes because they represent global search states, not map positions.
-    private final boolean[] abstractVisitedWithoutBank = new boolean[AbstractNodeKind.values().length];
-    private final boolean[] abstractVisitedWithBank = new boolean[AbstractNodeKind.values().length];
+    private final boolean[][] abstractVisitedWithoutBank = new boolean[TransportUsageMask.MASK_VARIANTS][AbstractNodeKind.values().length];
+    private final boolean[][] abstractVisitedWithBank = new boolean[TransportUsageMask.MASK_VARIANTS][AbstractNodeKind.values().length];
 
     public VisitedTiles(CollisionMap map) {
         regionExtents = SplitFlagMap.getRegionExtents();
         widthInclusive = regionExtents.getWidth() + 1;
         final int heightInclusive = regionExtents.getHeight() + 1;
 
-        visitedRegionsWithoutBank = new VisitedRegion[widthInclusive * heightInclusive];
-        visitedRegionsWithBank = new VisitedRegion[widthInclusive * heightInclusive];
+        visitedRegionsWithoutBank = new VisitedRegion[TransportUsageMask.MASK_VARIANTS][widthInclusive * heightInclusive];
+        visitedRegionsWithBank = new VisitedRegion[TransportUsageMask.MASK_VARIANTS][widthInclusive * heightInclusive];
         visitedRegionPlanes = map.getPlanes();
     }
 
@@ -31,8 +31,26 @@ public class VisitedTiles {
         return get(x, y, plane, bankVisited);
     }
 
+    public boolean get(int packedPoint, boolean bankVisited, int remainingTransportMask) {
+        final int x = WorldPointUtil.unpackWorldX(packedPoint);
+        final int y = WorldPointUtil.unpackWorldY(packedPoint);
+        final int plane = WorldPointUtil.unpackWorldPlane(packedPoint);
+        return get(x, y, plane, bankVisited, remainingTransportMask);
+    }
+
     public boolean get(int x, int y, int plane, boolean bankVisited) {
-        VisitedRegion[] visitedRegions = bankVisited ? visitedRegionsWithBank : visitedRegionsWithoutBank;
+        for (int remainingTransportMask = 0; remainingTransportMask < TransportUsageMask.MASK_VARIANTS; remainingTransportMask++) {
+            if (get(x, y, plane, bankVisited, remainingTransportMask)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean get(int x, int y, int plane, boolean bankVisited, int remainingTransportMask) {
+        VisitedRegion[] visitedRegions = bankVisited
+            ? visitedRegionsWithBank[remainingTransportMask]
+            : visitedRegionsWithoutBank[remainingTransportMask];
         final int regionIndex = getRegionIndex(x / REGION_SIZE, y / REGION_SIZE);
         if (regionIndex < 0 || regionIndex >= visitedRegions.length) {
             return true; // Region is out of bounds; report that it's been visited to avoid exploring it further
@@ -47,51 +65,59 @@ public class VisitedTiles {
     }
 
     public boolean set(int packedPoint, boolean bankVisited) {
+        return set(packedPoint, bankVisited, TransportUsageMask.ALL_AVAILABLE);
+    }
+
+    public boolean set(int packedPoint, boolean bankVisited, int remainingTransportMask) {
         final int x = WorldPointUtil.unpackWorldX(packedPoint);
         final int y = WorldPointUtil.unpackWorldY(packedPoint);
         final int plane = WorldPointUtil.unpackWorldPlane(packedPoint);
-        return set(x, y, plane, bankVisited);
+        return set(x, y, plane, bankVisited, remainingTransportMask);
     }
 
     public boolean get(Node node) {
         if (node.isTile()) {
-            return get(node.packedPosition, node.bankVisited);
+            return get(node.packedPosition, node.bankVisited, node.remainingTransportMask);
         }
         return node.bankVisited
-            ? abstractVisitedWithBank[node.abstractKind.ordinal()]
-            : abstractVisitedWithoutBank[node.abstractKind.ordinal()];
+            ? abstractVisitedWithBank[node.remainingTransportMask][node.abstractKind.ordinal()]
+            : abstractVisitedWithoutBank[node.remainingTransportMask][node.abstractKind.ordinal()];
     }
 
     public boolean set(Node node) {
         if (node.isTile()) {
-            return set(node.packedPosition, node.bankVisited);
+            return set(node.packedPosition, node.bankVisited, node.remainingTransportMask);
         }
 
         boolean visited = get(node);
         if (node.bankVisited) {
-            abstractVisitedWithBank[node.abstractKind.ordinal()] = true;
+            abstractVisitedWithBank[node.remainingTransportMask][node.abstractKind.ordinal()] = true;
             // A banked abstract state dominates the equivalent unbanked state.
-            abstractVisitedWithoutBank[node.abstractKind.ordinal()] = true;
+            abstractVisitedWithoutBank[node.remainingTransportMask][node.abstractKind.ordinal()] = true;
         } else {
-            abstractVisitedWithoutBank[node.abstractKind.ordinal()] = true;
+            abstractVisitedWithoutBank[node.remainingTransportMask][node.abstractKind.ordinal()] = true;
         }
         return !visited;
     }
 
     public boolean set(int x, int y, int plane, boolean bankVisited) {
+        return set(x, y, plane, bankVisited, TransportUsageMask.ALL_AVAILABLE);
+    }
+
+    public boolean set(int x, int y, int plane, boolean bankVisited, int remainingTransportMask) {
         final int regionIndex = getRegionIndex(x / REGION_SIZE, y / REGION_SIZE);
-        if (regionIndex < 0 || regionIndex >= visitedRegionsWithoutBank.length) {
-            return false; // Region is out of bounds; report that it's been visited to avoid exploring it further
+        if (regionIndex < 0 || regionIndex >= visitedRegionsWithoutBank[0].length) {
+            return false; // Region is out of bounds; report that it has been visited to avoid further exploration
         }
 
         if (bankVisited) {
-            boolean unique = setInRegion(visitedRegionsWithBank, regionIndex, x, y, plane);
-            // A banked tile dominates the equivalent unbanked tile, so populate both buckets.
-            setInRegion(visitedRegionsWithoutBank, regionIndex, x, y, plane);
+            boolean unique = setInRegion(visitedRegionsWithBank[remainingTransportMask], regionIndex, x, y, plane);
+            // A banked tile dominates the equivalent unbanked tile, so populate both buckets for the same resource state.
+            setInRegion(visitedRegionsWithoutBank[remainingTransportMask], regionIndex, x, y, plane);
             return unique;
         }
 
-        return setInRegion(visitedRegionsWithoutBank, regionIndex, x, y, plane);
+        return setInRegion(visitedRegionsWithoutBank[remainingTransportMask], regionIndex, x, y, plane);
     }
 
     private boolean setInRegion(VisitedRegion[] visitedRegions, int regionIndex, int x, int y, int plane) {
@@ -104,28 +130,32 @@ public class VisitedTiles {
     }
 
     public void clear() {
-        for (int i = 0; i < visitedRegionsWithoutBank.length; ++i) {
-            visitedRegionsWithoutBank[i] = null;
-            visitedRegionsWithBank[i] = null;
-        }
-        for (int i = 0; i < abstractVisitedWithoutBank.length; i++) {
-            abstractVisitedWithoutBank[i] = false;
-            abstractVisitedWithBank[i] = false;
+        for (int mask = 0; mask < TransportUsageMask.MASK_VARIANTS; mask++) {
+            for (int i = 0; i < visitedRegionsWithoutBank[mask].length; ++i) {
+                visitedRegionsWithoutBank[mask][i] = null;
+                visitedRegionsWithBank[mask][i] = null;
+            }
+            for (int i = 0; i < abstractVisitedWithoutBank[mask].length; i++) {
+                abstractVisitedWithoutBank[mask][i] = false;
+                abstractVisitedWithBank[mask][i] = false;
+            }
         }
     }
 
     public VisitedTiles snapshot() {
         VisitedTiles copy = new VisitedTiles(regionExtents, widthInclusive, visitedRegionPlanes.clone());
-        for (int i = 0; i < visitedRegionsWithoutBank.length; ++i) {
-            if (visitedRegionsWithoutBank[i] != null) {
-                copy.visitedRegionsWithoutBank[i] = visitedRegionsWithoutBank[i].copy();
+        for (int mask = 0; mask < TransportUsageMask.MASK_VARIANTS; mask++) {
+            for (int i = 0; i < visitedRegionsWithoutBank[mask].length; ++i) {
+                if (visitedRegionsWithoutBank[mask][i] != null) {
+                    copy.visitedRegionsWithoutBank[mask][i] = visitedRegionsWithoutBank[mask][i].copy();
+                }
+                if (visitedRegionsWithBank[mask][i] != null) {
+                    copy.visitedRegionsWithBank[mask][i] = visitedRegionsWithBank[mask][i].copy();
+                }
             }
-            if (visitedRegionsWithBank[i] != null) {
-                copy.visitedRegionsWithBank[i] = visitedRegionsWithBank[i].copy();
-            }
+            System.arraycopy(abstractVisitedWithoutBank[mask], 0, copy.abstractVisitedWithoutBank[mask], 0, abstractVisitedWithoutBank[mask].length);
+            System.arraycopy(abstractVisitedWithBank[mask], 0, copy.abstractVisitedWithBank[mask], 0, abstractVisitedWithBank[mask].length);
         }
-        System.arraycopy(abstractVisitedWithoutBank, 0, copy.abstractVisitedWithoutBank, 0, abstractVisitedWithoutBank.length);
-        System.arraycopy(abstractVisitedWithBank, 0, copy.abstractVisitedWithBank, 0, abstractVisitedWithBank.length);
         return copy;
     }
 
@@ -185,7 +215,7 @@ public class VisitedTiles {
         this.widthInclusive = widthInclusive;
         this.visitedRegionPlanes = visitedRegionPlanes;
         int heightInclusive = regionExtents.getHeight() + 1;
-        this.visitedRegionsWithoutBank = new VisitedRegion[widthInclusive * heightInclusive];
-        this.visitedRegionsWithBank = new VisitedRegion[widthInclusive * heightInclusive];
+        this.visitedRegionsWithoutBank = new VisitedRegion[TransportUsageMask.MASK_VARIANTS][widthInclusive * heightInclusive];
+        this.visitedRegionsWithBank = new VisitedRegion[TransportUsageMask.MASK_VARIANTS][widthInclusive * heightInclusive];
     }
 }

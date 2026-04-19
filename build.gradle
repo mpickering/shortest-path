@@ -295,9 +295,10 @@ tasks.register('heuristicVisualizerSearchSpaceAbstractGraph', JavaExec) {
     jvmArgs = ['-Xms1g', '-Xmx8g']
     args '--heuristic', 'abstract-graph',
         '--start', '3222,3218,0',
-        '--goal', '1503,3553,0',
+        '--goal', '1760,3846,0',
         '--show-visited',
         '--show-path',
+        '--render-all-transport-masks',
         '--output', 'build/heuristic-visualizer/search-space-abstract-graph.png'
 }
 

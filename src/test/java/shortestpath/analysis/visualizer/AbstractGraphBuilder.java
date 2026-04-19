@@ -43,6 +43,7 @@ public final class AbstractGraphBuilder {
     ) {
         long startNanos = System.nanoTime();
         BuilderState state = new BuilderState(componentLabelIndex);
+        HubNetworkIndex hubNetworkIndex = HubNetworkIndex.build(transportsByOrigin);
 
         for (Set<Transport> transports : transportsByOrigin.values()) {
             for (Transport transport : transports) {
@@ -69,15 +70,16 @@ public final class AbstractGraphBuilder {
 
                 int originNodeId = state.getOrCreateAttachmentNode(transport.getOrigin(), originComponents);
                 if (COMPRESSED_HUB_TYPES.contains(type)) {
-                    int hubNodeId = state.getOrCreateHubNode(type);
-                    state.recordHubEndpoint(type, originNodeId, destinationNodeId);
+                    HubKey hubKey = hubNetworkIndex.hubKeyFor(transport);
+                    int hubNodeId = state.getOrCreateHubNode(hubKey);
+                    state.recordHubEndpoint(type, hubKey, originNodeId, destinationNodeId);
                     state.addEdge(originNodeId, hubNodeId, 0,
-                        AbstractTransportGraph.EdgeKind.HUB_ENTRY, type);
+                        AbstractTransportGraph.EdgeKind.HUB_ENTRY, type, transportLabel(transport));
                     state.addEdge(hubNodeId, destinationNodeId, transport.getDuration(),
-                        AbstractTransportGraph.EdgeKind.HUB_EXIT, type);
+                        AbstractTransportGraph.EdgeKind.HUB_EXIT, type, transportLabel(transport));
                 } else {
                     state.addEdge(originNodeId, destinationNodeId, transport.getDuration(),
-                        AbstractTransportGraph.EdgeKind.DIRECT_TRANSPORT, type);
+                        AbstractTransportGraph.EdgeKind.DIRECT_TRANSPORT, type, transportLabel(transport));
                 }
             }
         }
@@ -93,10 +95,20 @@ public final class AbstractGraphBuilder {
         return ComponentAnalysisSupport.resolveComponents(collisionMap, componentLabelIndex.getTileToComponent(), packedPoint);
     }
 
+    private static String transportLabel(Transport transport) {
+        if (transport.getDisplayInfo() != null && !transport.getDisplayInfo().isBlank()) {
+            return transport.getDisplayInfo();
+        }
+        if (transport.getObjectInfo() != null && !transport.getObjectInfo().isBlank()) {
+            return transport.getObjectInfo();
+        }
+        return null;
+    }
+
     private static final class BuilderState {
         private final ComponentLabelIndex componentLabelIndex;
         private final Map<Integer, AttachmentNodeBuilder> attachmentNodesByPackedPoint = new LinkedHashMap<>();
-        private final EnumMap<TransportType, HubNodeBuilder> hubNodesByType = new EnumMap<>(TransportType.class);
+        private final Map<HubKey, HubNodeBuilder> hubNodesByKey = new LinkedHashMap<>();
         private final EnumMap<TransportType, HubCompressionBuilder> hubCompressionByType = new EnumMap<>(TransportType.class);
         private final Map<EdgeKey, EdgeBuilder> edges = new LinkedHashMap<>();
         private int nextNodeId = 0;
@@ -112,22 +124,21 @@ public final class AbstractGraphBuilder {
             return node.id;
         }
 
-        private int getOrCreateHubNode(TransportType type) {
-            HubNodeBuilder node = hubNodesByType.computeIfAbsent(type, ignored -> new HubNodeBuilder(nextNodeId++, type));
+        private int getOrCreateHubNode(HubKey hubKey) {
+            HubNodeBuilder node = hubNodesByKey.computeIfAbsent(hubKey, ignored -> new HubNodeBuilder(nextNodeId++, hubKey.transportType));
             return node.id;
         }
 
-        private void recordHubEndpoint(TransportType type, int entryNodeId, int exitNodeId) {
+        private void recordHubEndpoint(TransportType type, HubKey hubKey, int entryNodeId, int exitNodeId) {
             HubCompressionBuilder builder = hubCompressionByType.computeIfAbsent(type, ignored -> new HubCompressionBuilder());
-            builder.entryNodeIds.add(entryNodeId);
-            builder.exitNodeIds.add(exitNodeId);
+            builder.record(hubKey, entryNodeId, exitNodeId);
         }
 
-        private void addEdge(int fromNodeId, int toNodeId, int cost, AbstractTransportGraph.EdgeKind kind, TransportType transportType) {
+        private void addEdge(int fromNodeId, int toNodeId, int cost, AbstractTransportGraph.EdgeKind kind, TransportType transportType, String label) {
             EdgeKey key = new EdgeKey(fromNodeId, toNodeId, kind);
             EdgeBuilder existing = edges.get(key);
             if (existing == null || cost < existing.cost) {
-                edges.put(key, new EdgeBuilder(fromNodeId, toNodeId, cost, kind, transportType));
+                edges.put(key, new EdgeBuilder(fromNodeId, toNodeId, cost, kind, transportType, label));
             }
         }
 
@@ -150,7 +161,7 @@ public final class AbstractGraphBuilder {
                 }
             }
 
-            for (HubNodeBuilder nodeBuilder : hubNodesByType.values()) {
+            for (HubNodeBuilder nodeBuilder : hubNodesByKey.values()) {
                 nodes.set(nodeBuilder.id, new AbstractTransportGraph.AbstractNode(
                     nodeBuilder.id,
                     AbstractTransportGraph.NodeKind.HUB,
@@ -176,7 +187,8 @@ public final class AbstractGraphBuilder {
                     edgeBuilder.toNodeId,
                     edgeBuilder.cost,
                     edgeBuilder.kind,
-                    edgeBuilder.transportType);
+                    edgeBuilder.transportType,
+                    edgeBuilder.label);
                 incomingEdges.get(edge.getToNodeId()).add(edge);
                 storedEdgeCountsByKind.merge(edge.getKind(), 1, Integer::sum);
             }
@@ -201,18 +213,24 @@ public final class AbstractGraphBuilder {
             EnumMap<TransportType, AbstractTransportGraph.HubCompressionStats> hubCompressionStats =
                 new EnumMap<>(TransportType.class);
             for (Map.Entry<TransportType, HubCompressionBuilder> entry : hubCompressionByType.entrySet()) {
-                int entryCount = entry.getValue().entryNodeIds.size();
-                int exitCount = entry.getValue().exitNodeIds.size();
+                int naiveEdgeCount = 0;
+                int compressedEdgeCount = 0;
+                for (Map.Entry<HubKey, Set<Integer>> hubEntry : entry.getValue().entryNodeIdsByHub.entrySet()) {
+                    int entryCount = hubEntry.getValue().size();
+                    int exitCount = entry.getValue().exitNodeIdsByHub.getOrDefault(hubEntry.getKey(), Set.of()).size();
+                    naiveEdgeCount += entryCount * exitCount;
+                    compressedEdgeCount += entryCount + exitCount;
+                }
                 hubCompressionStats.put(entry.getKey(), new AbstractTransportGraph.HubCompressionStats(
-                    entryCount * exitCount,
-                    entryCount + exitCount));
+                    naiveEdgeCount,
+                    compressedEdgeCount));
             }
 
             AbstractTransportGraph.BuildStats buildStats = new AbstractTransportGraph.BuildStats(
                 componentLabelIndex.getComponentCount(),
                 componentLabelIndex.getWalkableTileCount(),
                 attachmentNodesByPackedPoint.size(),
-                hubNodesByType.size(),
+                hubNodesByKey.size(),
                 0,
                 edges.size(),
                 storedEdgeCountsByKind,
@@ -240,6 +258,7 @@ public final class AbstractGraphBuilder {
             index = Math.max(0, Math.min(values.size() - 1, index));
             return values.get(index);
         }
+
     }
 
     private static final class AttachmentNodeBuilder {
@@ -264,8 +283,13 @@ public final class AbstractGraphBuilder {
     }
 
     private static final class HubCompressionBuilder {
-        private final Set<Integer> entryNodeIds = new HashSet<>();
-        private final Set<Integer> exitNodeIds = new HashSet<>();
+        private final Map<HubKey, Set<Integer>> entryNodeIdsByHub = new HashMap<>();
+        private final Map<HubKey, Set<Integer>> exitNodeIdsByHub = new HashMap<>();
+
+        private void record(HubKey hubKey, int entryNodeId, int exitNodeId) {
+            entryNodeIdsByHub.computeIfAbsent(hubKey, ignored -> new HashSet<>()).add(entryNodeId);
+            exitNodeIdsByHub.computeIfAbsent(hubKey, ignored -> new HashSet<>()).add(exitNodeId);
+        }
     }
 
     private static final class EdgeBuilder {
@@ -274,13 +298,15 @@ public final class AbstractGraphBuilder {
         private final int cost;
         private final AbstractTransportGraph.EdgeKind kind;
         private final TransportType transportType;
+        private final String label;
 
-        private EdgeBuilder(int fromNodeId, int toNodeId, int cost, AbstractTransportGraph.EdgeKind kind, TransportType transportType) {
+        private EdgeBuilder(int fromNodeId, int toNodeId, int cost, AbstractTransportGraph.EdgeKind kind, TransportType transportType, String label) {
             this.fromNodeId = fromNodeId;
             this.toNodeId = toNodeId;
             this.cost = cost;
             this.kind = kind;
             this.transportType = transportType;
+            this.label = label;
         }
     }
 
@@ -312,6 +338,88 @@ public final class AbstractGraphBuilder {
         @Override
         public int hashCode() {
             return Arrays.hashCode(new Object[]{fromNodeId, toNodeId, kind});
+        }
+    }
+
+    private static final class HubKey {
+        private final TransportType transportType;
+        private final int networkId;
+
+        private HubKey(TransportType transportType, int networkId) {
+            this.transportType = transportType;
+            this.networkId = networkId;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (!(obj instanceof HubKey)) {
+                return false;
+            }
+            HubKey other = (HubKey) obj;
+            return transportType == other.transportType && networkId == other.networkId;
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * transportType.hashCode() + networkId;
+        }
+    }
+
+    private static final class HubNetworkIndex {
+        private final Map<TransportType, DisjointSet> disjointSetsByType;
+
+        private HubNetworkIndex(Map<TransportType, DisjointSet> disjointSetsByType) {
+            this.disjointSetsByType = disjointSetsByType;
+        }
+
+        private static HubNetworkIndex build(Map<Integer, Set<Transport>> transportsByOrigin) {
+            EnumMap<TransportType, DisjointSet> disjointSetsByType = new EnumMap<>(TransportType.class);
+            for (Set<Transport> transports : transportsByOrigin.values()) {
+                for (Transport transport : transports) {
+                    TransportType type = transport.getType();
+                    if (type == null || !COMPRESSED_HUB_TYPES.contains(type) || transport.getOrigin() == Transport.UNDEFINED_ORIGIN) {
+                        continue;
+                    }
+                    DisjointSet dsu = disjointSetsByType.computeIfAbsent(type, ignored -> new DisjointSet());
+                    dsu.union(transport.getOrigin(), transport.getDestination());
+                }
+            }
+            return new HubNetworkIndex(disjointSetsByType);
+        }
+
+        private HubKey hubKeyFor(Transport transport) {
+            DisjointSet dsu = disjointSetsByType.get(transport.getType());
+            int representative = dsu != null ? dsu.find(transport.getOrigin()) : transport.getOrigin();
+            return new HubKey(transport.getType(), representative);
+        }
+    }
+
+    private static final class DisjointSet {
+        private final Map<Integer, Integer> parent = new HashMap<>();
+
+        private void union(int left, int right) {
+            int leftRoot = find(left);
+            int rightRoot = find(right);
+            if (leftRoot != rightRoot) {
+                parent.put(rightRoot, leftRoot);
+            }
+        }
+
+        private int find(int value) {
+            Integer existingParent = parent.get(value);
+            if (existingParent == null) {
+                parent.put(value, value);
+                return value;
+            }
+            if (existingParent == value) {
+                return value;
+            }
+            int root = find(existingParent);
+            parent.put(value, root);
+            return root;
         }
     }
 }

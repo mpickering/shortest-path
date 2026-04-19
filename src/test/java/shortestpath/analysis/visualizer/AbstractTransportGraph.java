@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.TransportUsageMask;
 import shortestpath.transport.TransportType;
 
 public final class AbstractTransportGraph {
@@ -53,10 +54,24 @@ public final class AbstractTransportGraph {
         return buildStats;
     }
 
+    public List<AbstractEdge> getOutgoingEdges(int nodeId) {
+        java.util.ArrayList<AbstractEdge> outgoing = new java.util.ArrayList<>();
+        for (List<AbstractEdge> edges : incomingEdges) {
+            for (AbstractEdge edge : edges) {
+                if (edge.getFromNodeId() == nodeId) {
+                    outgoing.add(edge);
+                }
+            }
+        }
+        return outgoing;
+    }
+
     public ReverseSearchResult reverseDistances(int goalPackedPoint, Integer goalComponentId) {
         long startNanos = System.nanoTime();
-        int[] distances = new int[nodes.size()];
-        Arrays.fill(distances, Integer.MAX_VALUE);
+        int[][] distances = new int[TransportUsageMask.MASK_VARIANTS][nodes.size()];
+        for (int mask = 0; mask < distances.length; mask++) {
+            Arrays.fill(distances[mask], Integer.MAX_VALUE);
+        }
 
         PriorityQueue<QueueEntry> queue = new PriorityQueue<>(Comparator.comparingInt(QueueEntry::distance));
         int seededNodeCount = 0;
@@ -64,10 +79,12 @@ public final class AbstractTransportGraph {
             for (int nodeId : getAttachmentNodeIds(goalComponentId)) {
                 AbstractNode node = nodes.get(nodeId);
                 int seedDistance = chebyshev(node.getPackedPoint(), goalPackedPoint);
-                if (seedDistance < distances[nodeId]) {
-                    distances[nodeId] = seedDistance;
-                    queue.add(new QueueEntry(nodeId, seedDistance));
-                    seededNodeCount++;
+                for (int remainingMask = 0; remainingMask < TransportUsageMask.MASK_VARIANTS; remainingMask++) {
+                    if (seedDistance < distances[remainingMask][nodeId]) {
+                        distances[remainingMask][nodeId] = seedDistance;
+                        queue.add(new QueueEntry(nodeId, remainingMask, seedDistance));
+                        seededNodeCount++;
+                    }
                 }
             }
         }
@@ -78,7 +95,7 @@ public final class AbstractTransportGraph {
 
         while (!queue.isEmpty()) {
             QueueEntry current = queue.poll();
-            if (current.distance != distances[current.nodeId]) {
+            if (current.distance != distances[current.remainingTransportMask][current.nodeId]) {
                 continue;
             }
             popCount++;
@@ -94,9 +111,9 @@ public final class AbstractTransportGraph {
                         int candidate = current.distance + chebyshev(
                             node.getPackedPoint(),
                             nodes.get(attachmentNodeId).getPackedPoint());
-                        if (candidate < distances[attachmentNodeId]) {
-                            distances[attachmentNodeId] = candidate;
-                            queue.add(new QueueEntry(attachmentNodeId, candidate));
+                        if (candidate < distances[current.remainingTransportMask][attachmentNodeId]) {
+                            distances[current.remainingTransportMask][attachmentNodeId] = candidate;
+                            queue.add(new QueueEntry(attachmentNodeId, current.remainingTransportMask, candidate));
                         }
                     }
                 }
@@ -104,18 +121,24 @@ public final class AbstractTransportGraph {
 
             for (AbstractEdge edge : incomingEdges.get(current.nodeId)) {
                 storedEdgeRelaxCount++;
+                int predecessorMask = predecessorMask(current.remainingTransportMask, edge);
+                if (predecessorMask < 0) {
+                    continue;
+                }
                 int candidate = current.distance + edge.getCost();
-                if (candidate < distances[edge.getFromNodeId()]) {
-                    distances[edge.getFromNodeId()] = candidate;
-                    queue.add(new QueueEntry(edge.getFromNodeId(), candidate));
+                if (candidate < distances[predecessorMask][edge.getFromNodeId()]) {
+                    distances[predecessorMask][edge.getFromNodeId()] = candidate;
+                    queue.add(new QueueEntry(edge.getFromNodeId(), predecessorMask, candidate));
                 }
             }
         }
 
         int reachableNodeCount = 0;
-        for (int distance : distances) {
-            if (distance != Integer.MAX_VALUE) {
-                reachableNodeCount++;
+        for (int mask = 0; mask < TransportUsageMask.MASK_VARIANTS; mask++) {
+            for (int distance : distances[mask]) {
+                if (distance != Integer.MAX_VALUE) {
+                    reachableNodeCount++;
+                }
             }
         }
 
@@ -131,6 +154,29 @@ public final class AbstractTransportGraph {
 
     private static int chebyshev(int a, int b) {
         return WorldPointUtil.distanceBetween(a, b, WorldPointUtil.CHEBYSHEV_DISTANCE_METRIC);
+    }
+
+    private static int predecessorMask(int currentMask, AbstractEdge edge) {
+        int consumedMaskBit = consumedMaskBit(edge);
+        if (consumedMaskBit == 0) {
+            return currentMask;
+        }
+        if ((currentMask & consumedMaskBit) != 0) {
+            return -1;
+        }
+        return currentMask | consumedMaskBit;
+    }
+
+    private static int consumedMaskBit(AbstractEdge edge) {
+        if (edge.getKind() == EdgeKind.HUB_ENTRY || edge.getKind() == EdgeKind.DIRECT_TRANSPORT) {
+            if (TransportType.FAIRY_RING.equals(edge.getTransportType())) {
+                return TransportUsageMask.FAIRY_RING;
+            }
+            if (TransportType.SPIRIT_TREE.equals(edge.getTransportType())) {
+                return TransportUsageMask.SPIRIT_TREE;
+            }
+        }
+        return 0;
     }
 
     public enum NodeKind {
@@ -192,13 +238,15 @@ public final class AbstractTransportGraph {
         private final int cost;
         private final EdgeKind kind;
         private final TransportType transportType;
+        private final String label;
 
-        AbstractEdge(int fromNodeId, int toNodeId, int cost, EdgeKind kind, TransportType transportType) {
+        AbstractEdge(int fromNodeId, int toNodeId, int cost, EdgeKind kind, TransportType transportType, String label) {
             this.fromNodeId = fromNodeId;
             this.toNodeId = toNodeId;
             this.cost = cost;
             this.kind = kind;
             this.transportType = transportType;
+            this.label = label;
         }
 
         public int getFromNodeId() {
@@ -219,6 +267,10 @@ public final class AbstractTransportGraph {
 
         public TransportType getTransportType() {
             return transportType;
+        }
+
+        public String getLabel() {
+            return label;
         }
     }
 
@@ -346,7 +398,7 @@ public final class AbstractTransportGraph {
     }
 
     public static final class ReverseSearchResult {
-        private final int[] distances;
+        private final int[][] distances;
         private final int seededNodeCount;
         private final long popCount;
         private final long storedEdgeRelaxCount;
@@ -355,7 +407,7 @@ public final class AbstractTransportGraph {
         private final long elapsedNanos;
 
         ReverseSearchResult(
-            int[] distances,
+            int[][] distances,
             int seededNodeCount,
             long popCount,
             long storedEdgeRelaxCount,
@@ -373,10 +425,14 @@ public final class AbstractTransportGraph {
         }
 
         public int distanceToNode(int nodeId) {
-            return distances[nodeId];
+            return distanceToNode(nodeId, TransportUsageMask.ALL_AVAILABLE);
         }
 
-        public int[] getDistances() {
+        public int distanceToNode(int nodeId, int remainingTransportMask) {
+            return distances[remainingTransportMask][nodeId];
+        }
+
+        public int[][] getDistances() {
             return distances;
         }
 
@@ -407,10 +463,12 @@ public final class AbstractTransportGraph {
 
     private static final class QueueEntry {
         private final int nodeId;
+        private final int remainingTransportMask;
         private final int distance;
 
-        private QueueEntry(int nodeId, int distance) {
+        private QueueEntry(int nodeId, int remainingTransportMask, int distance) {
             this.nodeId = nodeId;
+            this.remainingTransportMask = remainingTransportMask;
             this.distance = distance;
         }
 

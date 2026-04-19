@@ -100,8 +100,12 @@ public class CollisionMap {
         // Firstly check if there are any transports or teleports which are applicable from the current tile.
         Set<Transport> transports = config.getTransportsPacked(pathBankVisited).getOrDefault(node.packedPosition, Set.of());
         for (Transport transport : transports) {
+            if (!TransportUsageMask.canUse(node.remainingTransportMask, transport.getType())) {
+                continue;
+            }
+            int nextTransportMask = TransportUsageMask.consume(node.remainingTransportMask, transport.getType());
             // Do not consider a transport if we have already visited its target tile.
-            if (visited.get(transport.getDestination(), pathBankVisited)) {
+            if (visited.get(transport.getDestination(), pathBankVisited, nextTransportMask)) {
                 continue;
             }
             // NB: Do not need to check for wilderness level for transports, since transports have specific origin tile.
@@ -110,7 +114,8 @@ public class CollisionMap {
                 node,
                 transport.getDuration(),
                 config.getAdditionalTransportCost(transport),
-                pathBankVisited));
+                pathBankVisited,
+                nextTransportMask));
         }
 
         // Global teleports are only considered from an abstract node, so each wilderness/bank state expands them once.
@@ -151,10 +156,15 @@ public class CollisionMap {
         for (int i = 0; i < traversable.length; i++) {
             OrdinalDirection d = ORDINAL_VALUES[i];
             int neighborPacked = packedPointFromOrdinal(node.packedPosition, d);
-            if (visited.get(neighborPacked, pathBankVisited)) continue;
+            if (visited.get(neighborPacked, pathBankVisited, node.remainingTransportMask)) continue;
 
             if (traversable[i]) {
-                neighbors.add(new Node(neighborPacked, node, Node.cost(neighborPacked, node), pathBankVisited));
+                neighbors.add(new Node(
+                    neighborPacked,
+                    node,
+                    Node.cost(neighborPacked, node),
+                    pathBankVisited,
+                    node.remainingTransportMask));
             } else if (Math.abs(d.x + d.y) == 1 && isBlocked(x + d.x, y + d.y, z)) {
                 // The transport starts from a blocked adjacent tile, e.g. fairy ring
                 // Only checks non-teleport transports (includes portals and levers, but not items and spells)
@@ -162,10 +172,15 @@ public class CollisionMap {
                 for (Transport transport : neighborTransports) {
                     if (transport.getOrigin() == Transport.UNDEFINED_ORIGIN
                         || !(transport.isUsableAtWildernessLevel(wildernessLevel))
-                        || visited.get(transport.getOrigin(), pathBankVisited)) {
+                        || visited.get(transport.getOrigin(), pathBankVisited, node.remainingTransportMask)) {
                         continue;
                     }
-                    neighbors.add(new Node(transport.getOrigin(), node, Node.cost(transport.getOrigin(), node), pathBankVisited));
+                    neighbors.add(new Node(
+                        transport.getOrigin(),
+                        node,
+                        Node.cost(transport.getOrigin(), node),
+                        pathBankVisited,
+                        node.remainingTransportMask));
                 }
             }
         }
@@ -179,7 +194,7 @@ public class CollisionMap {
         neighbors.clear();
         int sourceTile = node.getClosestTilePosition();
         for (Transport transport : config.getUsableTeleports(node.bankVisited)) {
-            if (visited.get(transport.getDestination(), node.bankVisited)) {
+            if (visited.get(transport.getDestination(), node.bankVisited, node.remainingTransportMask)) {
                 continue;
             }
             if (!transport.isUsableAtWildernessLevel(node.abstractKind.maxWildernessLevel())) {
@@ -193,7 +208,8 @@ public class CollisionMap {
                 node,
                 transport.getDuration(),
                 config.getAdditionalTransportCost(transport),
-                node.bankVisited));
+                node.bankVisited,
+                node.remainingTransportMask));
         }
         return neighbors;
     }

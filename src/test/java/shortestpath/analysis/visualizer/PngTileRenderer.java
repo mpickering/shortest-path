@@ -21,9 +21,14 @@ public class PngTileRenderer {
 
     public BufferedImage render(TileRegion region, TileStateQuery query, HeuristicField heuristic, SearchOverlay overlay,
         RenderMode renderMode, ScalingMode scalingMode, Double clipMin, Double clipMax) {
+        return render(region, query, heuristic, overlay, renderMode, scalingMode, clipMin, clipMax, null);
+    }
+
+    public BufferedImage render(TileRegion region, TileStateQuery query, HeuristicField heuristic, SearchOverlay overlay,
+        RenderMode renderMode, ScalingMode scalingMode, Double clipMin, Double clipMax, Integer remainingTransportMask) {
         BufferedImage image = new BufferedImage(region.getWidth(), region.getHeight(), BufferedImage.TYPE_INT_ARGB);
         ValueScaler scaler = new ValueScaler(scalingMode, clipMin, clipMax);
-        HeuristicSample[] samples = collectSamples(region, query, heuristic);
+        HeuristicSample[] samples = collectSamples(region, query, heuristic, remainingTransportMask);
         ValueScaler.Bounds bounds = scaler.computeBounds(samples);
         double maxPositiveSlack = renderMode == RenderMode.CONSISTENCY_SLACK
             ? maxPositiveSlack(region, query, samples)
@@ -46,19 +51,73 @@ public class PngTileRenderer {
 
     public void renderToFile(Path output, TileRegion region, TileStateQuery query, HeuristicField heuristic, SearchOverlay overlay,
         RenderMode renderMode, ScalingMode scalingMode, Double clipMin, Double clipMax) throws IOException {
+        renderToFile(output, region, query, heuristic, overlay, renderMode, scalingMode, clipMin, clipMax, null);
+    }
+
+    public void renderToFile(Path output, TileRegion region, TileStateQuery query, HeuristicField heuristic, SearchOverlay overlay,
+        RenderMode renderMode, ScalingMode scalingMode, Double clipMin, Double clipMax, Integer remainingTransportMask) throws IOException {
         Path parent = output.getParent();
         if (parent != null) {
             Files.createDirectories(parent);
         }
-        ImageIO.write(render(region, query, heuristic, overlay, renderMode, scalingMode, clipMin, clipMax), "png", output.toFile());
+        ImageIO.write(render(region, query, heuristic, overlay, renderMode, scalingMode, clipMin, clipMax, remainingTransportMask), "png", output.toFile());
     }
 
-    private HeuristicSample[] collectSamples(TileRegion region, TileStateQuery query, HeuristicField heuristic) {
+    public void renderDifferenceToFile(
+        Path output,
+        TileRegion region,
+        TileStateQuery query,
+        HeuristicField heuristic,
+        int baselineTransportMask,
+        int comparisonTransportMask
+    ) throws IOException {
+        Path parent = output.getParent();
+        if (parent != null) {
+            Files.createDirectories(parent);
+        }
+        ImageIO.write(renderDifference(region, query, heuristic, baselineTransportMask, comparisonTransportMask), "png", output.toFile());
+    }
+
+    public BufferedImage renderDifference(
+        TileRegion region,
+        TileStateQuery query,
+        HeuristicField heuristic,
+        int baselineTransportMask,
+        int comparisonTransportMask
+    ) {
+        BufferedImage image = new BufferedImage(region.getWidth(), region.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        HeuristicSample[] baselineSamples = collectSamples(region, query, heuristic, baselineTransportMask);
+        HeuristicSample[] comparisonSamples = collectSamples(region, query, heuristic, comparisonTransportMask);
+        double maxDifference = maxDifference(baselineSamples, comparisonSamples);
+
+        for (int x = region.getMinX(); x < region.getMaxXExclusive(); x++) {
+            for (int y = region.getMinY(); y < region.getMaxYExclusive(); y++) {
+                TileStateQuery.TileState tileState = query.getTileState(x, y, region.getPlane());
+                int rgb;
+                if (tileState == TileStateQuery.TileState.MISSING) {
+                    rgb = palette.missingRgb();
+                } else if (tileState == TileStateQuery.TileState.BLOCKED) {
+                    rgb = palette.blockedRgb();
+                } else {
+                    HeuristicSample baseline = sampleAt(baselineSamples, region, x, y);
+                    HeuristicSample comparison = sampleAt(comparisonSamples, region, x, y);
+                    rgb = differenceRgb(baseline, comparison, maxDifference);
+                }
+                image.setRGB(x - region.getMinX(), region.getMaxYExclusive() - y - 1, rgb);
+            }
+        }
+
+        return image;
+    }
+
+    private HeuristicSample[] collectSamples(TileRegion region, TileStateQuery query, HeuristicField heuristic, Integer remainingTransportMask) {
         HeuristicSample[] samples = new HeuristicSample[region.getWidth() * region.getHeight()];
         for (int x = region.getMinX(); x < region.getMaxXExclusive(); x++) {
             for (int y = region.getMinY(); y < region.getMaxYExclusive(); y++) {
                 int packed = WorldPointUtil.packWorldPoint(x, y, region.getPlane());
-                samples[sampleIndex(region, x, y)] = heuristic.sample(packed, query.getTileState(x, y, region.getPlane()));
+                samples[sampleIndex(region, x, y)] = remainingTransportMask == null
+                    ? heuristic.sample(packed, query.getTileState(x, y, region.getPlane()))
+                    : heuristic.sample(packed, query.getTileState(x, y, region.getPlane()), remainingTransportMask);
             }
         }
         return samples;
@@ -192,6 +251,42 @@ public class PngTileRenderer {
 
     private HeuristicSample sampleAt(HeuristicSample[] samples, TileRegion region, int x, int y) {
         return samples[sampleIndex(region, x, y)];
+    }
+
+    private double maxDifference(HeuristicSample[] baselineSamples, HeuristicSample[] comparisonSamples) {
+        double max = 0.0d;
+        for (int i = 0; i < baselineSamples.length; i++) {
+            HeuristicSample baseline = baselineSamples[i];
+            HeuristicSample comparison = comparisonSamples[i];
+            if (!baseline.isDefined() || !comparison.isDefined()) {
+                continue;
+            }
+            max = Math.max(max, Math.abs(comparison.getValue() - baseline.getValue()));
+        }
+        return max;
+    }
+
+    private int differenceRgb(HeuristicSample baseline, HeuristicSample comparison, double maxDifference) {
+        if (!baseline.isDefined() && !comparison.isDefined()) {
+            return palette.undefinedRgb();
+        }
+        if (!baseline.isDefined() || !comparison.isDefined()) {
+            return palette.goalRgb();
+        }
+        if (maxDifference <= 0.0d) {
+            return palette.walkableRgb();
+        }
+
+        double delta = comparison.getValue() - baseline.getValue();
+        if (delta == 0.0d) {
+            return palette.walkableRgb();
+        }
+
+        double normalized = Math.min(1.0d, Math.abs(delta) / maxDifference);
+        int red = delta > 0.0d ? 255 : (int) Math.round(255.0d * (1.0d - normalized));
+        int green = (int) Math.round(255.0d * (1.0d - normalized));
+        int blue = delta < 0.0d ? 255 : (int) Math.round(255.0d * (1.0d - normalized));
+        return new java.awt.Color(red, green, blue).getRGB();
     }
 
     private int sampleIndex(TileRegion region, int x, int y) {

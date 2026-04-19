@@ -115,3 +115,13 @@ To run the fixed search-space render using the abstract-graph heuristic:
 ```bash
 ./gradlew heuristicVisualizerSearchSpaceAbstractGraph
 ```
+
+That task now also writes mask-specific heuristic charts alongside the main search-space image:
+
+- `...-all-available.png`
+- `...-no-fairy-ring.png`
+- `...-no-spirit-tree.png`
+- `...-no-hub-reuse.png`
+- `...-diff-no-fairy-ring.png`
+- `...-diff-no-spirit-tree.png`
+- `...-diff-no-hub-reuse.png`

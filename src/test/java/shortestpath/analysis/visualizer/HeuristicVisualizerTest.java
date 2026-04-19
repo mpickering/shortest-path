@@ -11,6 +11,7 @@ import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.PathStep;
 import shortestpath.pathfinder.SplitFlagMap;
+import shortestpath.pathfinder.TransportUsageMask;
 import shortestpath.pathfinder.VisitedTiles;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportLoader;
@@ -185,6 +186,105 @@ public class HeuristicVisualizerTest {
             .getOrDefault(AbstractTransportGraph.EdgeKind.GLOBAL_TELEPORT, 0).intValue());
         Assert.assertEquals(0, graph.getBuildStats().getAttachmentNodeCount());
         Assert.assertEquals(0, graph.getBuildStats().getStoredEdgeCount());
+    }
+
+    @Test
+    public void abstractGraphTracksConsumedFairyRingState() {
+        int start = WorldPointUtil.packWorldPoint(500, 500, 0);
+        int wrongExit = WorldPointUtil.packWorldPoint(510, 500, 0);
+        int goal = WorldPointUtil.packWorldPoint(520, 500, 0);
+
+        ComponentLabelIndex componentLabelIndex = ComponentLabelIndex.fromPackedPointToComponent(Map.of(
+            start, 1,
+            wrongExit, 2,
+            goal, 3));
+
+        Map<Integer, Set<Transport>> transports = new HashMap<>();
+        TransportLoader.addTransportsFromContents(transports, ""
+            + "# Origin\tDestination\tDuration\n"
+            + "500 500 0\t510 500 0\t5\n"
+            + "500 500 0\t520 500 0\t5\n"
+            + "510 500 0\t520 500 0\t5\n",
+            TransportType.FAIRY_RING,
+            0);
+
+        AbstractTransportGraph graph = AbstractGraphBuilder.build(repoCollisionMap(), componentLabelIndex, transports);
+        AbstractTransportGraph.ReverseSearchResult reverseSearch =
+            graph.reverseDistances(goal, componentLabelIndex.getComponentId(goal));
+
+        int wrongExitNodeId = nodeIdForPackedPoint(graph, wrongExit);
+        int noFairyRingMask = TransportUsageMask.ALL_AVAILABLE & ~TransportUsageMask.FAIRY_RING;
+
+        Assert.assertEquals(5, reverseSearch.distanceToNode(wrongExitNodeId, TransportUsageMask.ALL_AVAILABLE));
+        Assert.assertEquals(Integer.MAX_VALUE, reverseSearch.distanceToNode(wrongExitNodeId, noFairyRingMask));
+    }
+
+    @Test
+    public void abstractGraphSampleNearFairyRingIsLowerWhenFairyRingIsAvailable() {
+        int source = WorldPointUtil.packWorldPoint(600, 500, 0);
+        int entry = WorldPointUtil.packWorldPoint(601, 500, 0);
+        int wrongExit = WorldPointUtil.packWorldPoint(610, 500, 0);
+        int rightExit = WorldPointUtil.packWorldPoint(620, 500, 0);
+        int goal = WorldPointUtil.packWorldPoint(621, 500, 0);
+
+        ComponentLabelIndex componentLabelIndex = ComponentLabelIndex.fromPackedPointToComponent(Map.of(
+            source, 1,
+            entry, 1,
+            wrongExit, 2,
+            rightExit, 3,
+            goal, 3));
+
+        Map<Integer, Set<Transport>> transports = new HashMap<>();
+        TransportLoader.addTransportsFromContents(transports, ""
+            + "# Origin\tDestination\tDuration\n"
+            + "601 500 0\t610 500 0\t5\n"
+            + "601 500 0\t620 500 0\t5\n",
+            TransportType.FAIRY_RING,
+            0);
+
+        AbstractGraphHeuristicField heuristic = new AbstractGraphHeuristicField(
+            componentLabelIndex,
+            goal,
+            AbstractGraphBuilder.build(repoCollisionMap(), componentLabelIndex, transports));
+
+        int noFairyRingMask = TransportUsageMask.ALL_AVAILABLE & ~TransportUsageMask.FAIRY_RING;
+        HeuristicSample withFairyRing = heuristic.sample(source, TileStateQuery.TileState.WALKABLE, TransportUsageMask.ALL_AVAILABLE);
+        HeuristicSample withoutFairyRing = heuristic.sample(source, TileStateQuery.TileState.WALKABLE, noFairyRingMask);
+
+        Assert.assertTrue(withFairyRing.isDefined());
+        Assert.assertFalse(withoutFairyRing.isDefined());
+        Assert.assertTrue(withFairyRing.getValue() < Double.POSITIVE_INFINITY);
+    }
+
+    @Test
+    public void abstractGraphSplitsDisconnectedMinecartNetworks() {
+        int networkAEntry = WorldPointUtil.packWorldPoint(700, 500, 0);
+        int networkAExit = WorldPointUtil.packWorldPoint(710, 500, 0);
+        int networkBEntry = WorldPointUtil.packWorldPoint(800, 500, 0);
+        int networkBExit = WorldPointUtil.packWorldPoint(810, 500, 0);
+
+        ComponentLabelIndex componentLabelIndex = ComponentLabelIndex.fromPackedPointToComponent(Map.of(
+            networkAEntry, 1,
+            networkAExit, 2,
+            networkBEntry, 3,
+            networkBExit, 4));
+
+        Map<Integer, Set<Transport>> transports = new HashMap<>();
+        TransportLoader.addTransportsFromContents(transports, ""
+            + "# Origin\tDestination\tDuration\n"
+            + "700 500 0\t710 500 0\t5\n"
+            + "800 500 0\t810 500 0\t5\n",
+            TransportType.MINECART,
+            0);
+
+        AbstractTransportGraph graph = AbstractGraphBuilder.build(repoCollisionMap(), componentLabelIndex, transports);
+        AbstractTransportGraph.HubCompressionStats compression =
+            graph.getBuildStats().getHubCompressionByType().get(TransportType.MINECART);
+
+        Assert.assertNotNull(compression);
+        Assert.assertEquals(2, graph.getBuildStats().getHubNodeCount());
+        Assert.assertEquals(2, compression.getNaiveEdgeCount());
+        Assert.assertEquals(4, compression.getCompressedEdgeCount());
     }
 
     private int samplePixel(BufferedImage image, TileRegion region, int packedPoint) {
