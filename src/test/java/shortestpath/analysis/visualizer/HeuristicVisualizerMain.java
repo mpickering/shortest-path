@@ -23,6 +23,7 @@ import shortestpath.pathfinder.Pathfinder;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderHeuristic;
 import shortestpath.pathfinder.PathfinderResult;
+import shortestpath.pathfinder.Pathfinder.PathfinderStats;
 import shortestpath.pathfinder.SplitFlagMap;
 import shortestpath.pathfinder.TestPathfinderConfig;
 import shortestpath.pathfinder.TransportAvailability;
@@ -41,9 +42,11 @@ public class HeuristicVisualizerMain {
 
         if ("synthetic".equals(parsed.demo)) {
             SyntheticDemoData.DemoContext demo = SyntheticDemoData.create();
-            renderer.renderToFile(parsed.output, demo.region, demo.query, new ZeroHeuristicField(), demo.overlay,
-                parsed.renderMode, parsed.scalingMode, parsed.clipMin, parsed.clipMax);
-            System.out.println("Wrote " + parsed.output.toAbsolutePath());
+            if (!parsed.searchOnly) {
+                renderer.renderToFile(parsed.output, demo.region, demo.query, new ZeroHeuristicField(), demo.overlay,
+                    parsed.renderMode, parsed.scalingMode, parsed.clipMin, parsed.clipMax);
+                System.out.println("Wrote " + parsed.output.toAbsolutePath());
+            }
             return;
         }
 
@@ -52,11 +55,13 @@ public class HeuristicVisualizerMain {
         if (parsed.renderAllTransportMasks && repo.heuristicField instanceof AbstractGraphHeuristicField) {
             printTransportMaskProbes((AbstractGraphHeuristicField) repo.heuristicField);
         }
-        renderer.renderToFile(parsed.output, repo.region, repo.query, repo.heuristicField, repo.overlay,
-            parsed.renderMode, parsed.scalingMode, parsed.clipMin, parsed.clipMax, parsed.transportMask);
-        System.out.println("Wrote " + parsed.output.toAbsolutePath());
-        if (parsed.transportMask != null) {
-            System.out.println("Render transport mask: " + formatTransportMask(parsed.transportMask));
+        if (!parsed.searchOnly) {
+            renderer.renderToFile(parsed.output, repo.region, repo.query, repo.heuristicField, repo.overlay,
+                parsed.renderMode, parsed.scalingMode, parsed.clipMin, parsed.clipMax, parsed.transportMask);
+            System.out.println("Wrote " + parsed.output.toAbsolutePath());
+            if (parsed.transportMask != null) {
+                System.out.println("Render transport mask: " + formatTransportMask(parsed.transportMask));
+            }
         }
         if (repo.componentLabelIndex != null) {
             System.out.println("Largest components:");
@@ -89,7 +94,7 @@ public class HeuristicVisualizerMain {
         if (repo.heuristicField instanceof AbstractGraphHeuristicField) {
             printAbstractGraphDiagnostics((AbstractGraphHeuristicField) repo.heuristicField);
         }
-        if (parsed.renderAllTransportMasks && repo.heuristicField instanceof AbstractGraphHeuristicField) {
+        if (!parsed.searchOnly && parsed.renderAllTransportMasks && repo.heuristicField instanceof AbstractGraphHeuristicField) {
             renderAllTransportMaskCharts(renderer, parsed, repo);
         }
     }
@@ -163,12 +168,33 @@ public class HeuristicVisualizerMain {
                 VisitedTiles visitedTiles = parsed.showVisited ? pathfinder.getVisitedSnapshot() : null;
                 overlay = new VisitedTilesOverlay(visitedTiles, parsed.region, pathSteps);
                 if (result != null) {
+                    PathfinderStats stats = pathfinder.getStats();
                     System.out.println("Search stats:");
                     System.out.println(" - reached: " + result.isReached());
                     System.out.println(" - nodes checked: " + result.getNodesChecked());
                     System.out.println(" - transports checked: " + result.getTransportsChecked());
                     System.out.println(" - elapsed nanos: " + result.getElapsedNanos());
                     System.out.println(" - termination: " + result.getTerminationReason());
+                    if (stats != null) {
+                        System.out.println("Search internals:");
+                        System.out.println(" - heuristic estimate nanos: " + stats.getHeuristicEstimateNanos());
+                        System.out.println(" - neighbor generation count: " + stats.getNeighborGenerationCount());
+                        System.out.println(" - neighbor generation nanos: " + stats.getNeighborGenerationNanos());
+                        System.out.println(" - open add count: " + stats.getOpenAddCount());
+                        System.out.println(" - open add nanos: " + stats.getOpenAddNanos());
+                        System.out.println(" - open poll count: " + stats.getOpenPollCount());
+                        System.out.println(" - open poll nanos: " + stats.getOpenPollNanos());
+                        System.out.println(" - best-known lookups: " + stats.getBestKnownLookupCount());
+                        System.out.println(" - best-known updates: " + stats.getBestKnownUpdateCount());
+                        System.out.println(" - best-known rejected: " + stats.getBestKnownRejectedCount());
+                        System.out.println(" - search-state key builds: " + stats.getSearchStateKeyBuildCount());
+                        System.out.println(" - stale open skips: " + stats.getStaleOpenSkipCount());
+                        System.out.println(" - closed lookups: " + stats.getClosedLookupCount());
+                        System.out.println(" - closed skips: " + stats.getClosedSkipCount());
+                        System.out.println(" - closed sets: " + stats.getClosedSetCount());
+                        System.out.println(" - closed set nanos: " + stats.getClosedSetNanos());
+                        System.out.println(" - wilderness-avoid skips: " + stats.getWildernessAvoidSkipCount());
+                    }
                     printPathTransports(result.getPathSteps(), pathfinderConfig);
                 }
             }
@@ -212,6 +238,7 @@ public class HeuristicVisualizerMain {
         private Integer transportMask;
         private boolean renderAllTransportMasks;
         private Path transportSnapshot;
+        private boolean searchOnly;
 
         static Arguments parse(String[] args) {
             Arguments parsed = new Arguments();
@@ -268,6 +295,9 @@ public class HeuristicVisualizerMain {
                         break;
                     case "--render-all-transport-masks":
                         parsed.renderAllTransportMasks = true;
+                        break;
+                    case "--search-only":
+                        parsed.searchOnly = true;
                         break;
                     default:
                         throw new IllegalArgumentException("Unknown argument: " + arg);
@@ -477,6 +507,22 @@ public class HeuristicVisualizerMain {
         System.out.println(" - count: " + heuristicField.getEvaluationCount());
         System.out.println(" - total nanos: " + heuristicField.getTotalEvaluationNanos());
         System.out.println(" - average nanos: " + averageNanos(heuristicField.getTotalEvaluationNanos(), heuristicField.getEvaluationCount()));
+        System.out.println(" - sample count: " + heuristicField.getSampleCount());
+        System.out.println(" - sample nanos: " + heuristicField.getSampleNanos());
+        System.out.println(" - sample average nanos: " + averageNanos(heuristicField.getSampleNanos(), heuristicField.getSampleCount()));
+        System.out.println(" - estimate count: " + heuristicField.getEstimateCount());
+        System.out.println(" - estimate nanos: " + heuristicField.getEstimateNanos());
+        System.out.println(" - estimate average nanos: " + averageNanos(heuristicField.getEstimateNanos(), heuristicField.getEstimateCount()));
+        System.out.println("Attachment scans:");
+        System.out.println(" - count: " + heuristicField.getAttachmentScanCount());
+        System.out.println(" - total nanos: " + heuristicField.getAttachmentScanNanos());
+        System.out.println(" - average nanos: " + averageNanos(heuristicField.getAttachmentScanNanos(), heuristicField.getAttachmentScanCount()));
+        System.out.println(" - candidates examined: " + heuristicField.getAttachmentCandidatesExamined());
+        System.out.println(" - reachable candidates examined: " + heuristicField.getReachableAttachmentCandidatesExamined());
+        System.out.println(" - average candidates per scan: "
+            + averageNanos(heuristicField.getAttachmentCandidatesExamined(), heuristicField.getAttachmentScanCount()));
+        System.out.println(" - average reachable candidates per scan: "
+            + averageNanos(heuristicField.getReachableAttachmentCandidatesExamined(), heuristicField.getAttachmentScanCount()));
     }
 
     private static long averageNanos(long totalNanos, long count) {

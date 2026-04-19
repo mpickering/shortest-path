@@ -130,20 +130,34 @@ public class Pathfinder implements Runnable {
     }
 
     private void addNeighbors(Node node) {
+        long neighborStartNanos = System.nanoTime();
         List<Node> nodes = map.getNeighbors(node, visited, config, wildernessLevel, targetInWilderness);
+        stats.neighborGenerationCount++;
+        stats.neighborGenerationNanos += System.nanoTime() - neighborStartNanos;
         for (Node neighbor : nodes) {
             if (node.isTile() && neighbor.isTile()
                 && config.avoidWilderness(node.packedPosition, neighbor.packedPosition, targetInWilderness)) {
+                stats.wildernessAvoidSkipCount++;
                 continue;
             }
 
+            stats.searchStateKeyBuildCount++;
             SearchStateKey key = SearchStateKey.of(neighbor);
+            stats.bestKnownLookupCount++;
             Integer knownCost = bestKnownCost.get(key);
             if (knownCost != null && knownCost <= neighbor.cost) {
+                stats.bestKnownRejectedCount++;
                 continue;
             }
+            stats.bestKnownUpdateCount++;
             bestKnownCost.put(key, neighbor.cost);
-            open.add(OpenNode.of(neighbor, heuristic));
+            long heuristicStartNanos = System.nanoTime();
+            double heuristicValue = heuristic.estimate(neighbor);
+            stats.heuristicEstimateNanos += System.nanoTime() - heuristicStartNanos;
+            long queueAddStartNanos = System.nanoTime();
+            open.add(OpenNode.of(neighbor, heuristicValue));
+            stats.openAddCount++;
+            stats.openAddNanos += System.nanoTime() - queueAddStartNanos;
             if (neighbor instanceof TransportNode) {
                 ++stats.transportsChecked;
             } else {
@@ -210,28 +224,47 @@ public class Pathfinder implements Runnable {
     public void run() {
         stats.start();
         Node startNode = new Node(start, null, 0, false);
-        open.add(OpenNode.of(startNode, heuristic));
+        long initialHeuristicStartNanos = System.nanoTime();
+        double initialHeuristicValue = heuristic.estimate(startNode);
+        stats.heuristicEstimateNanos += System.nanoTime() - initialHeuristicStartNanos;
+        long initialQueueAddStartNanos = System.nanoTime();
+        open.add(OpenNode.of(startNode, initialHeuristicValue));
+        stats.openAddCount++;
+        stats.openAddNanos += System.nanoTime() - initialQueueAddStartNanos;
+        stats.searchStateKeyBuildCount++;
         bestKnownCost.put(SearchStateKey.of(startNode), 0);
+        stats.bestKnownUpdateCount++;
 
         long cutoffDurationMillis = config.getCalculationCutoffMillis();
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
 
         while (!cancelled && !open.isEmpty()) {
+            long queuePollStartNanos = System.nanoTime();
             OpenNode openNode = open.poll();
+            stats.openPollCount++;
+            stats.openPollNanos += System.nanoTime() - queuePollStartNanos;
             if (openNode == null) {
                 break;
             }
             Node node = openNode.node;
 
+            stats.searchStateKeyBuildCount++;
             SearchStateKey key = SearchStateKey.of(node);
+            stats.bestKnownLookupCount++;
             Integer knownCost = bestKnownCost.get(key);
             if (knownCost != null && node.cost > knownCost) {
+                stats.staleOpenSkipCount++;
                 continue;
             }
+            stats.closedLookupCount++;
             if (visited.get(node)) {
+                stats.closedSkipCount++;
                 continue;
             }
+            long closedSetStartNanos = System.nanoTime();
             visited.set(node);
+            stats.closedSetCount++;
+            stats.closedSetNanos += System.nanoTime() - closedSetStartNanos;
 
             if (node.isTile()) {
                 updateWildernessLevel(node);
@@ -351,8 +384,7 @@ public class Pathfinder implements Runnable {
             this.fScore = fScore;
         }
 
-        private static OpenNode of(Node node, PathfinderHeuristic heuristic) {
-            double heuristicValue = heuristic.estimate(node);
+        private static OpenNode of(Node node, double heuristicValue) {
             return new OpenNode(node, node.cost + heuristicValue);
         }
     }
@@ -360,6 +392,22 @@ public class Pathfinder implements Runnable {
     public static class PathfinderStats {
         @Getter
         private int nodesChecked = 0, transportsChecked = 0;
+        @Getter
+        private long openAddCount = 0, openPollCount = 0;
+        @Getter
+        private long bestKnownLookupCount = 0, bestKnownUpdateCount = 0, bestKnownRejectedCount = 0;
+        @Getter
+        private long searchStateKeyBuildCount = 0;
+        @Getter
+        private long staleOpenSkipCount = 0, closedLookupCount = 0, closedSkipCount = 0, closedSetCount = 0;
+        @Getter
+        private long neighborGenerationCount = 0, wildernessAvoidSkipCount = 0;
+        @Getter
+        private long openAddNanos = 0, openPollNanos = 0;
+        @Getter
+        private long heuristicEstimateNanos = 0;
+        @Getter
+        private long neighborGenerationNanos = 0, closedSetNanos = 0;
         private long startNanos, endNanos;
         private volatile boolean started = false, ended = false;
 
@@ -375,6 +423,23 @@ public class Pathfinder implements Runnable {
             started = true;
             nodesChecked = 0;
             transportsChecked = 0;
+            openAddCount = 0;
+            openPollCount = 0;
+            bestKnownLookupCount = 0;
+            bestKnownUpdateCount = 0;
+            bestKnownRejectedCount = 0;
+            searchStateKeyBuildCount = 0;
+            staleOpenSkipCount = 0;
+            closedLookupCount = 0;
+            closedSkipCount = 0;
+            closedSetCount = 0;
+            neighborGenerationCount = 0;
+            wildernessAvoidSkipCount = 0;
+            openAddNanos = 0;
+            openPollNanos = 0;
+            heuristicEstimateNanos = 0;
+            neighborGenerationNanos = 0;
+            closedSetNanos = 0;
             startNanos = System.nanoTime();
         }
 

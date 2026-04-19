@@ -17,6 +17,14 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
     private final AbstractTransportGraph.ReverseSearchResult reverseSearchResult;
     private long evaluationCount;
     private long totalEvaluationNanos;
+    private long sampleCount;
+    private long sampleNanos;
+    private long estimateCount;
+    private long estimateNanos;
+    private long attachmentScanCount;
+    private long attachmentScanNanos;
+    private long attachmentCandidatesExamined;
+    private long reachableAttachmentCandidatesExamined;
 
     public AbstractGraphHeuristicField(CollisionMap collisionMap, ComponentLabelIndex componentLabelIndex, int goal) {
         this(componentLabelIndex, goal, AbstractGraphBuilder.build(collisionMap, componentLabelIndex));
@@ -39,8 +47,11 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
     public HeuristicSample sample(int packedPoint, TileStateQuery.TileState tileState, int remainingTransportMask) {
         long startNanos = System.nanoTime();
         HeuristicSample sample = sampleInternal(packedPoint, tileState, remainingTransportMask);
-        totalEvaluationNanos += System.nanoTime() - startNanos;
+        long elapsedNanos = System.nanoTime() - startNanos;
+        totalEvaluationNanos += elapsedNanos;
         evaluationCount++;
+        sampleCount++;
+        sampleNanos += elapsedNanos;
         return sample;
     }
 
@@ -51,8 +62,11 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
         }
         long startNanos = System.nanoTime();
         HeuristicSample sample = sampleInternal(node.packedPosition, TileStateQuery.TileState.WALKABLE, node.remainingTransportMask);
-        totalEvaluationNanos += System.nanoTime() - startNanos;
+        long elapsedNanos = System.nanoTime() - startNanos;
+        totalEvaluationNanos += elapsedNanos;
         evaluationCount++;
+        estimateCount++;
+        estimateNanos += elapsedNanos;
         return sample.isDefined() ? sample.getValue() : 0.0d;
     }
 
@@ -70,6 +84,38 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
 
     public long getTotalEvaluationNanos() {
         return totalEvaluationNanos;
+    }
+
+    public long getSampleCount() {
+        return sampleCount;
+    }
+
+    public long getSampleNanos() {
+        return sampleNanos;
+    }
+
+    public long getEstimateCount() {
+        return estimateCount;
+    }
+
+    public long getEstimateNanos() {
+        return estimateNanos;
+    }
+
+    public long getAttachmentScanCount() {
+        return attachmentScanCount;
+    }
+
+    public long getAttachmentScanNanos() {
+        return attachmentScanNanos;
+    }
+
+    public long getAttachmentCandidatesExamined() {
+        return attachmentCandidatesExamined;
+    }
+
+    public long getReachableAttachmentCandidatesExamined() {
+        return reachableAttachmentCandidatesExamined;
     }
 
     public AttachmentChoice bestAttachment(int packedPoint, int remainingTransportMask) {
@@ -119,17 +165,25 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
         }
 
         if (pointComponentId != null) {
+            long scanStartNanos = System.nanoTime();
+            attachmentScanCount++;
             for (int attachmentNodeId : graph.getAttachmentNodeIds(pointComponentId)) {
+                attachmentCandidatesExamined++;
                 int reverseDistance = reverseSearchResult.distanceToNode(attachmentNodeId, remainingTransportMask);
                 if (reverseDistance == Integer.MAX_VALUE) {
                     continue;
                 }
+                reachableAttachmentCandidatesExamined++;
                 int attachmentPoint = graph.getNode(attachmentNodeId).getPackedPoint();
                 best = Math.min(best, chebyshev(packedPoint, attachmentPoint) + reverseDistance);
             }
+            attachmentScanNanos += System.nanoTime() - scanStartNanos;
         }
 
-        return Double.isFinite(best) ? HeuristicSample.defined(best) : HeuristicSample.undefined();
+        if (Double.isFinite(best)) {
+            return HeuristicSample.defined(best);
+        }
+        return HeuristicSample.undefined();
     }
 
     private static int chebyshev(int a, int b) {
@@ -322,4 +376,5 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
             + "," + WorldPointUtil.unpackWorldY(packedPoint)
             + "," + WorldPointUtil.unpackWorldPlane(packedPoint);
     }
+
 }
