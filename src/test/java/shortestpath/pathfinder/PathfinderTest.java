@@ -1512,77 +1512,6 @@ public class PathfinderTest {
         }
     }
 
-    /**
-     * Tests a single transport of the given type for efficiency.
-     * Unlike testTransportLength which tests all transports of a type,
-     * this only tests the first matching transport found.
-     */
-    private void testSingleTransport(int expectedLength, TransportType transportType) {
-        setupConfig(QuestState.FINISHED, 99, TeleportationItem.NONE);
-
-        for (int origin : transports.keySet()) {
-            for (Transport transport : transports.get(origin)) {
-                if (transportType.equals(transport.getType())) {
-                    // Skip POH transports
-                    int originX = WorldPointUtil.unpackWorldX(transport.getOrigin());
-                    int originY = WorldPointUtil.unpackWorldY(transport.getOrigin());
-                    if (ShortestPathPlugin.isInsidePoh(originX, originY)) {
-                        continue;
-                    }
-                    assertEquals(transport.toString(), expectedLength, calculateTransportLength(transport));
-                    return; // Only test one transport
-                }
-            }
-        }
-        fail("No transport of type " + transportType + " found");
-    }
-
-    /**
-     * Verifies that ALL transports of the given type are present in the usable transports,
-     * but only calculates a path for one of them (for efficiency).
-     * This provides comprehensive coverage that all transports are enabled while being fast.
-     */
-    private void testAllTransportsAvailableWithSinglePath(TransportType transportType) {
-        setupConfig(QuestState.FINISHED, 99, TeleportationItem.NONE);
-
-        // Count expected transports from the full transport list
-        int expectedCount = 0;
-        Transport sampleTransport = null;
-        for (int origin : transports.keySet()) {
-            for (Transport transport : transports.get(origin)) {
-                if (transportType.equals(transport.getType())) {
-                    int originX = WorldPointUtil.unpackWorldX(transport.getOrigin());
-                    int originY = WorldPointUtil.unpackWorldY(transport.getOrigin());
-                    if (ShortestPathPlugin.isInsidePoh(originX, originY)) {
-                        continue;
-                    }
-                    expectedCount++;
-                    if (sampleTransport == null) {
-                        sampleTransport = transport;
-                    }
-                }
-            }
-        }
-
-        // Count actual transports in the configured (usable) transports
-        int actualCount = 0;
-        for (Set<Transport> set : pathfinderConfig.getTransports().values()) {
-            for (Transport t : set) {
-                if (transportType.equals(t.getType())) {
-                    actualCount++;
-                }
-            }
-        }
-
-        assertEquals("All " + transportType + " transports should be available", expectedCount, actualCount);
-        assertTrue("At least one transport should exist", expectedCount > 0);
-
-        // Test path calculation on just one transport to verify pathfinding works
-        if (sampleTransport != null) {
-            assertEquals(sampleTransport.toString(), 2, calculateTransportLength(sampleTransport));
-        }
-    }
-
     private void testTransportMinimumLength(int minimumLength, int origin, int destination) {
         setupConfig(QuestState.FINISHED, 99, TeleportationItem.ALL);
         int actualLength = calculatePathLength(origin, destination);
@@ -1604,11 +1533,6 @@ public class PathfinderTest {
     private void testSingleTransportScenario(String label, int expectedLength, TransportType transportType) {
         setupConfig(QuestState.FINISHED, 99, TeleportationItem.NONE);
         Transport transport = findSampleTransport(transportType);
-        assertScenarioPathLength(label, expectedLength, transport.getOrigin(), transport.getDestination());
-    }
-
-    private void testConfiguredTransportScenario(String label, int expectedLength, TransportType transportType) {
-        Transport transport = findConfiguredTransport(transportType);
         assertScenarioPathLength(label, expectedLength, transport.getOrigin(), transport.getDestination());
     }
 
@@ -1668,18 +1592,6 @@ public class PathfinderTest {
             }
         }
         fail("No transport of type " + transportType + " found");
-        return null;
-    }
-
-    private Transport findConfiguredTransport(TransportType transportType) {
-        for (Set<Transport> set : pathfinderConfig.getTransports().values()) {
-            for (Transport transport : set) {
-                if (transportType.equals(transport.getType())) {
-                    return transport;
-                }
-            }
-        }
-        fail("No configured transport of type " + transportType + " found");
         return null;
     }
 
@@ -1824,6 +1736,96 @@ public class PathfinderTest {
             pathfinderConfig.getTransportsPacked(bankVisited).getOrDefault(origin, Set.of()));
         stepTransports.addAll(pathfinderConfig.getUsableTeleports(bankVisited));
         return stepTransports;
+    }
+
+    // ── Temporary: verify ProfilingPathfinder mirrors Pathfinder exactly ──
+
+    @Test
+    public void profilingDoesNotAffectResults() {
+        setupConfig(QuestState.FINISHED, 99, TeleportationItem.ALL);
+        setupInventory(
+            new Item(ItemID.COINS, 10000000),
+            new Item(ItemID.DRAMEN_STAFF, 1),
+            new Item(ItemID.ROPE, 1));
+        setupEquipment();
+
+        int[][] routes = {
+            // Short walk (Lumbridge)
+            {WorldPointUtil.packWorldPoint(3222, 3218, 0), WorldPointUtil.packWorldPoint(3233, 3230, 0)},
+            // Medium route with fairy ring (Zanaris entrance -> Edgeville)
+            {WorldPointUtil.packWorldPoint(3201, 3169, 0), WorldPointUtil.packWorldPoint(3094, 3491, 0)},
+            // Cross-map route (Lumbridge -> Ardougne)
+            {WorldPointUtil.packWorldPoint(3222, 3218, 0), WorldPointUtil.packWorldPoint(2662, 3305, 0)},
+        };
+
+        for (int[] route : routes) {
+            int origin = route[0];
+            int destination = route[1];
+
+            Pathfinder pathfinder = new Pathfinder(pathfinderConfig, origin, Set.of(destination));
+            pathfinder.run();
+            PathfinderResult expected = pathfinder.getResult();
+
+            ProfilingPathfinder profiling = new ProfilingPathfinder(pathfinderConfig, origin, Set.of(destination));
+            profiling.run();
+            PathfinderResult actual = profiling.getResult();
+
+            String label = "(" + WorldPointUtil.unpackWorldX(origin) + "," + WorldPointUtil.unpackWorldY(origin) + ")"
+                + " -> (" + WorldPointUtil.unpackWorldX(destination) + "," + WorldPointUtil.unpackWorldY(destination) + ")";
+
+            assertEquals(label + " reached", expected.isReached(), actual.isReached());
+            assertEquals(label + " terminationReason", expected.getTerminationReason(), actual.getTerminationReason());
+            assertEquals(label + " path length", expected.getPathSteps().size(), actual.getPathSteps().size());
+            assertEquals(label + " nodesChecked", expected.getNodesChecked(), actual.getNodesChecked());
+            assertEquals(label + " transportsChecked", expected.getTransportsChecked(), actual.getTransportsChecked());
+
+            for (int i = 0; i < expected.getPathSteps().size(); i++) {
+                PathStep e = expected.getPathSteps().get(i);
+                PathStep a = actual.getPathSteps().get(i);
+                assertEquals(label + " step[" + i + "] position", e.getPackedPosition(), a.getPackedPosition());
+                assertEquals(label + " step[" + i + "] bankVisited", e.isBankVisited(), a.isBankVisited());
+            }
+
+            // Verify profiling produces meaningful timing data
+            PathfinderProfile profile = profiling.getProfile();
+
+            // Top-level phases should all have recorded time for non-trivial routes
+            long totalPhaseNanos = profile.getQueueSelectionNanos()
+                + profile.getAddNeighborsNanos()
+                + profile.getTargetCheckNanos()
+                + profile.getWildernessCheckNanos()
+                + profile.getCutoffCheckNanos()
+                + profile.getBookkeepingNanos();
+            assertTrue(label + " total phase nanos should be > 0", totalPhaseNanos > 0);
+            assertTrue(label + " addNeighbors should dominate (> 0)", profile.getAddNeighborsNanos() > 0);
+            assertTrue(label + " queueSelection should be > 0", profile.getQueueSelectionNanos() > 0);
+            assertTrue(label + " targetCheck should be > 0", profile.getTargetCheckNanos() > 0);
+
+            // Sub-phase timing within addNeighbors
+            long totalSubphaseNanos = profile.getBankCheckNanos()
+                + profile.getTransportLookupNanos()
+                + profile.getCollisionCheckNanos()
+                + profile.getWalkableTileNanos()
+                + profile.getBlockedTileTransportNanos()
+                + profile.getAbstractNodeNanos();
+            assertTrue(label + " sub-phase nanos should be > 0", totalSubphaseNanos > 0);
+            assertTrue(label + " collisionCheck sub-phase should be > 0", profile.getCollisionCheckNanos() > 0);
+            assertTrue(label + " walkableTile sub-phase should be > 0", profile.getWalkableTileNanos() > 0);
+
+            // Counters should be consistent with result
+            assertEquals(label + " tileNeighborsAdded should match nodesChecked",
+                actual.getNodesChecked(), profile.getTileNeighborsAdded());
+            assertEquals(label + " transportNeighborsAdded should match transportsChecked",
+                actual.getTransportsChecked(), profile.getTransportNeighborsAdded());
+            assertTrue(label + " peakBoundarySize should be > 0", profile.getPeakBoundarySize() > 0);
+            assertTrue(label + " transportEvaluations should be > 0", profile.getTransportEvaluations() > 0);
+
+            // Heatmap should have recorded tile visits
+            assertFalse(label + " tile visit heatmap should not be empty", profile.getTileVisitCounts().isEmpty());
+
+            // Elapsed time in the result should be positive
+            assertTrue(label + " elapsed nanos should be > 0", actual.getElapsedNanos() > 0);
+        }
     }
 
 }
