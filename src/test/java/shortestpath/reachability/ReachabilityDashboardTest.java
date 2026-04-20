@@ -1,8 +1,6 @@
 package shortestpath.reachability;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -22,11 +20,13 @@ import shortestpath.TestShortestPathConfig;
 import shortestpath.WorldPointUtil;
 import shortestpath.dashboard.DashboardBundlePublisher;
 import shortestpath.dashboard.PathfinderDashboardModels;
-import shortestpath.dashboard.PathfinderDashboardReportWriter;
+import shortestpath.dashboard.ProfilerReportWriter;
 import shortestpath.pathfinder.Pathfinder;
 import shortestpath.pathfinder.PathfinderConfig;
+import shortestpath.pathfinder.PathfinderProfile;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.pathfinder.PathStep;
+import shortestpath.pathfinder.ProfilingPathfinder;
 import shortestpath.pathfinder.TestPathfinderConfig;
 import shortestpath.transport.Transport;
 
@@ -37,18 +37,19 @@ import static org.mockito.Mockito.when;
 
 public class ReachabilityDashboardTest {
     private static final String DATASET_PROPERTY = "reachability.dataset";
-    private static final String BUNDLE_ID_PROPERTY = "reachability.bundleId";
     private static final String REPORT_TITLE_PROPERTY = "reachability.reportTitle";
     private static final String REPORT_SUBTITLE_PROPERTY = "reachability.reportSubtitle";
-    private static final String DEFAULT_DATASET = "/reachability/clue_locations_full.csv";
+    private static final String DEFAULT_DATASET = "/reachability/routes.csv";
     // A very large number of targets will take a long time to run, and sometimes during testing you
     // want to just test rendering etc on fewer targets.
     private static final int MAX_TARGETS = Integer.getInteger("reachability.maxTargets", 10000);
     private static final String SCENARIO_PROPERTY = "reachability.scenario";
+    private static final String PROFILE_PROPERTY = "reachability.profile";
+    private static final String BUNDLE_NAME_PROPERTY = DashboardBundlePublisher.BUNDLE_NAME_PROPERTY;
     private static final ReachabilityScenario DEFAULT_SCENARIO = ReachabilityScenario.DEFAULT;
 
     private final ReachabilityTargetLoader targetLoader = new ReachabilityTargetLoader();
-    private final PathfinderDashboardReportWriter reportWriter = new PathfinderDashboardReportWriter();
+    private final ProfilerReportWriter reportWriter = new ProfilerReportWriter();
     private final DashboardBundlePublisher bundlePublisher = new DashboardBundlePublisher();
 
     private Client client;
@@ -83,26 +84,51 @@ public class ReachabilityDashboardTest {
             Boolean.getBoolean("runReachabilityVerification"));
 
         String dataset = System.getProperty(DATASET_PROPERTY, DEFAULT_DATASET);
+        boolean profile = Boolean.parseBoolean(System.getProperty(PROFILE_PROPERTY, "true"));
+        String bundleName = System.getProperty(BUNDLE_NAME_PROPERTY, "routes");
         List<ReachabilityTarget> allTargets = loadTargets(dataset);
         List<ReachabilityTarget> targets = allTargets.subList(0, Math.min(MAX_TARGETS, allTargets.size()));
         List<PathfinderDashboardModels.RunRecord> runs = new ArrayList<>();
         Map<String, String> routeSummary = new LinkedHashMap<>();
         long started = System.currentTimeMillis();
         Path siteRoot = bundlePublisher.getOutputRoot();
-        String bundleId = System.getProperty(BUNDLE_ID_PROPERTY, scenario.bundleId);
         String reportTitle = System.getProperty(REPORT_TITLE_PROPERTY, scenario.reportTitle);
         String reportSubtitle = System.getProperty(REPORT_SUBTITLE_PROPERTY, scenario.reportSubtitle);
-        Path outputDirectory = siteRoot.resolve("bundles").resolve(bundleId);
-        Path reportPath = outputDirectory.resolve("report.json");
+        Path reportPath = siteRoot.resolve("bundles").resolve(bundleName).resolve("report.json");
+
+        TeleportationItem currentTeleports = scenario.teleportationItemSetting;
+        int targetIndex = 0;
 
         for (ReachabilityTarget target : targets) {
-            Pathfinder pathfinder = new Pathfinder(
-                pathfinderConfig,
-                scenario.start,
-                Set.of(target.getPackedPoint()),
-                null);
-            pathfinder.run();
-            PathfinderResult result = pathfinder.getResult();
+            targetIndex++;
+            System.out.printf("[%d/%d] %s%n", targetIndex, targets.size(), target.getDescription());
+            System.out.flush();
+            // Reconfigure pathfinder if this target overrides teleport settings
+            if (target.hasTeleportOverride() && target.getTeleportOverride() != currentTeleports) {
+                currentTeleports = target.getTeleportOverride();
+                config.setUseTeleportationItemsValue(currentTeleports);
+                pathfinderConfig = new TestPathfinderConfig(client, config);
+                scenario.configurePathfinder(pathfinderConfig);
+                pathfinderConfig.refresh();
+            }
+
+            int start = target.hasStartPoint() ? target.getStartPoint() : scenario.start;
+            String category = target.getCategory() != null ? target.getCategory() : "reachability";
+
+            PathfinderResult result;
+            PathfinderProfile profileData = null;
+            if (profile) {
+                ProfilingPathfinder profiler = new ProfilingPathfinder(
+                    pathfinderConfig, start, Set.of(target.getPackedPoint()));
+                profiler.run();
+                result = profiler.getResult();
+                profileData = profiler.getProfile();
+            } else {
+                Pathfinder pathfinder = new Pathfinder(
+                    pathfinderConfig, start, Set.of(target.getPackedPoint()));
+                pathfinder.run();
+                result = pathfinder.getResult();
+            }
             List<PathStep> path = result != null ? result.getPathSteps() : List.of();
             int pathLength = path.size();
             double elapsedMillis = result != null ? (result.getElapsedNanos() / 1_000_000.0) : 0.0;
@@ -128,29 +154,31 @@ public class ReachabilityDashboardTest {
                     "Dataset: " + datasetLabel(dataset),
                     "Description: " + target.getDescription(),
                     "Expected reachable: true");
-                runs.add(reportWriter.createRunRecord(
+                PathfinderDashboardModels.RunRecord run = reportWriter.createRunRecord(
                     target.getDescription(),
-                    "reachability",
+                    category,
                     details,
                     result,
                     pathfinderConfig,
                     reached,
                     null,
-                    null));
+                    null);
+                if (profileData != null) {
+                    reportWriter.populateProfilerData(run, profileData);
+                }
+                bundlePublisher.externalizeRunHeatmap(bundleName, runs.size(), run);
+                runs.add(run);
             }
         }
 
-        Files.createDirectories(outputDirectory);
-        bundlePublisher.publishBundle(
-            bundleId,
+        PathfinderDashboardModels.Report report = reportWriter.createReport(
             reportTitle,
             reportSubtitle,
-            reportWriter.createReport(
-                "Pathfinder Dashboard",
-                reportSubtitle,
-                System.currentTimeMillis() - started,
-                runs,
-                reportWriter.createTransportLayerPoints(pathfinderConfig)));
+            System.currentTimeMillis() - started,
+            runs,
+            reportWriter.createTransportLayerPoints(pathfinderConfig));
+
+        bundlePublisher.publishBundle(bundleName, report);
 
         System.out.println("Reachability route summary:");
         System.out.println(" - scenario: " + scenario.id);
@@ -272,25 +300,29 @@ public class ReachabilityDashboardTest {
             WorldPointUtil.packWorldPoint(3185, 3436, 0),
             TeleportationItem.ALL,
             false,
-            "clue-steps-default",
             "Clue Steps Default",
-            "Clue steps sweep from bank start");
+            "Clue steps sweep from bank start"),
+        PROFILER(
+            "profiler",
+            WorldPointUtil.packWorldPoint(3222, 3218, 0),
+            TeleportationItem.ALL,
+            false,
+            "Profiler",
+            "Performance profiling scenarios");
 
         private final String id;
         private final int start;
         private final TeleportationItem teleportationItemSetting;
         private final boolean includeBankPath;
-        private final String bundleId;
         private final String reportTitle;
         private final String reportSubtitle;
 
         ReachabilityScenario(String id, int start, TeleportationItem teleportationItemSetting,
-            boolean includeBankPath, String bundleId, String reportTitle, String reportSubtitle) {
+            boolean includeBankPath, String reportTitle, String reportSubtitle) {
             this.id = id;
             this.start = start;
             this.teleportationItemSetting = teleportationItemSetting;
             this.includeBankPath = includeBankPath;
-            this.bundleId = bundleId;
             this.reportTitle = reportTitle;
             this.reportSubtitle = reportSubtitle;
         }

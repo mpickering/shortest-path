@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import shortestpath.TeleportationItem;
 import shortestpath.Util;
 import shortestpath.WorldPointUtil;
 
@@ -30,7 +31,9 @@ class ReachabilityTargetLoader {
 
             String header = scanner.nextLine();
             List<ReachabilityTarget> targets;
-            if (header.contains("clue_type") && header.contains("x") && header.contains("y") && header.contains("plane")) {
+            if (header.contains("start_x") && header.contains("teleports")) {
+                targets = parseRouteCsv(scanner, header, resourcePath);
+            } else if (header.contains("clue_type") && header.contains("x") && header.contains("y") && header.contains("plane")) {
                 targets = parseCsv(scanner, header, resourcePath);
             } else {
                 targets = parseTsv(scanner, header, resourcePath);
@@ -109,6 +112,57 @@ class ReachabilityTargetLoader {
         }
 
         return new ArrayList<>(dedupedTargets.values());
+    }
+
+    private List<ReachabilityTarget> parseRouteCsv(Scanner scanner, String header, String source) throws IOException {
+        String[] headers = header.split(",", -1);
+        int nameIndex = indexOf(headers, "name");
+        int categoryIndex = indexOf(headers, "category");
+        int startXIndex = indexOf(headers, "start_x");
+        int startYIndex = indexOf(headers, "start_y");
+        int startPlaneIndex = indexOf(headers, "start_plane");
+        int xIndex = indexOf(headers, "x");
+        int yIndex = indexOf(headers, "y");
+        int planeIndex = indexOf(headers, "plane");
+        int teleportsIndex = indexOf(headers, "teleports");
+        if (nameIndex < 0 || xIndex < 0 || yIndex < 0 || planeIndex < 0) {
+            throw new IOException("Invalid route CSV header in " + source);
+        }
+
+        List<ReachabilityTarget> targets = new ArrayList<>();
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            if (line.isBlank()) {
+                continue;
+            }
+
+            String[] fields = line.split(",", -1);
+            int packedPoint = WorldPointUtil.packWorldPoint(
+                Integer.parseInt(fields[xIndex]),
+                Integer.parseInt(fields[yIndex]),
+                Integer.parseInt(fields[planeIndex]));
+
+            int startPoint = WorldPointUtil.UNDEFINED;
+            if (startXIndex >= 0 && startYIndex >= 0 && startPlaneIndex >= 0
+                && !fields[startXIndex].isEmpty()) {
+                startPoint = WorldPointUtil.packWorldPoint(
+                    Integer.parseInt(fields[startXIndex]),
+                    Integer.parseInt(fields[startYIndex]),
+                    Integer.parseInt(fields[startPlaneIndex]));
+            }
+
+            String category = categoryIndex >= 0 ? fields[categoryIndex] : null;
+
+            TeleportationItem teleportOverride = null;
+            if (teleportsIndex >= 0 && !fields[teleportsIndex].isEmpty()) {
+                teleportOverride = TeleportationItem.valueOf(fields[teleportsIndex]);
+            }
+
+            targets.add(new ReachabilityTarget(
+                fields[nameIndex], packedPoint, category, startPoint, teleportOverride));
+        }
+
+        return targets;
     }
 
     private List<ReachabilityTarget> parseTsv(Scanner scanner, String header, String source) throws IOException {

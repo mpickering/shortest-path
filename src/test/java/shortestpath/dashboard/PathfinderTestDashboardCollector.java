@@ -7,10 +7,9 @@ import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderResult;
 
 public final class PathfinderTestDashboardCollector {
-    private static final String BUNDLE_ID = "pathfinder-tests";
     private static final String OUTPUT_ROOT_PROPERTY = DashboardBundlePublisher.OUTPUT_ROOT_PROPERTY;
     private static final PathfinderDashboardReportWriter REPORT_WRITER = new PathfinderDashboardReportWriter();
-    private static final DashboardBundlePublisher BUNDLE_PUBLISHER = new DashboardBundlePublisher();
+    private static final DashboardBundlePublisher PUBLISHER = new DashboardBundlePublisher();
     private static final List<PathfinderDashboardModels.RunRecord> RUNS = new ArrayList<>();
     private static final long STARTED = System.currentTimeMillis();
 
@@ -52,15 +51,15 @@ public final class PathfinderTestDashboardCollector {
 
     private static void writeReport() {
         try {
-            BUNDLE_PUBLISHER.publishBundle(
-                BUNDLE_ID,
+            PathfinderDashboardModels.Report report = REPORT_WRITER.createReport(
                 "Pathfinder Dashboard",
                 "Routes captured from PathfinderTest",
-                REPORT_WRITER.createReport(
-                    "Pathfinder Dashboard",
-                    "Routes captured from PathfinderTest",
-                    System.currentTimeMillis() - STARTED,
-                    RUNS));
+                System.currentTimeMillis() - STARTED,
+                RUNS);
+
+            String bundleName = System.getProperty(
+                DashboardBundlePublisher.BUNDLE_NAME_PROPERTY, "pathfinder-tests");
+            PUBLISHER.publishBundle(bundleName, report);
         } catch (IOException e) {
             throw new RuntimeException("Failed to write pathfinder test dashboard", e);
         }

@@ -6,18 +6,6 @@ public final class PathfinderDashboardModels {
     private PathfinderDashboardModels() {
     }
 
-    public static class BundleIndex {
-        public List<BundleManifest> bundles;
-    }
-
-    public static class BundleManifest {
-        public String id;
-        public String title;
-        public String subtitle;
-        public String reportPath;
-        public String generatedAt;
-    }
-
     public static class Report {
         public String generatedAt;
         public String title;
@@ -49,6 +37,15 @@ public final class PathfinderDashboardModels {
         public List<TransportStep> transports;
         public List<Marker> markers;
         public List<String> details;
+
+        // Optional profiler fields (null when not profiled)
+        public PhaseBreakdown phases;
+        public SubPhaseBreakdown subPhases;
+        public ProfilerCounters counters;
+        public List<TimeSeriesSample> timeSeries;
+        public TileHeatmap tileHeatmap;
+        /** Relative path to a separate heatmap JSON file (set when heatmap is externalised) */
+        public String heatmapFile;
     }
 
     public static class Stats {
@@ -86,5 +83,70 @@ public final class PathfinderDashboardModels {
         public int y;
         public int plane;
         public boolean bankVisited;
+    }
+
+    // ── Profiler models (optional per-run data) ─────────────────────
+
+    public static class PhaseBreakdown {
+        public long addNeighborsNanos;
+        public long queueSelectionNanos;
+        public long targetCheckNanos;
+        public long wildernessCheckNanos;
+        public long cutoffCheckNanos;
+        public long bookkeepingNanos;
+        public long otherNanos;
+    }
+
+    public static class SubPhaseBreakdown {
+        public long bankCheckNanos;
+        public long transportLookupNanos;
+        public long collisionCheckNanos;
+        public long walkableTileNanos;
+        public long blockedTileTransportNanos;
+        public long abstractNodeNanos;
+    }
+
+    public static class ProfilerCounters {
+        public int tileNeighborsAdded;
+        public int transportNeighborsAdded;
+        public int visitedSkipped;
+        public int abstractNodesExpanded;
+        public int transportEvaluations;
+        public int blockedTileTransportChecks;
+        public int bankTransitions;
+        public int wildernessLevelChanges;
+        public int peakBoundarySize;
+        public int peakPendingSize;
+    }
+
+    public static class TimeSeriesSample {
+        public int iteration;
+        public int boundarySize;
+        public int pendingSize;
+        public int currentCost;
+        public double elapsedMs;
+    }
+
+    public static class TileHeatmap {
+        public List<TileVisit> tiles;
+    }
+
+    public static class TileVisit {
+        public int x;
+        public int y;
+        public int count;
+    }
+
+    // ── Bundle index (bundles/index.json) ───────────────────────────
+
+    public static class BundleIndex {
+        public List<BundleEntry> bundles;
+    }
+
+    public static class BundleEntry {
+        public String name;
+        public String title;
+        public String generatedAt;
+        public String reportPath;
     }
 }
