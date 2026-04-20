@@ -46,6 +46,10 @@ public final class AbstractTransportGraph {
         return attachmentNodeIdsByComponent.getOrDefault(componentId, EMPTY_INT_ARRAY);
     }
 
+    public Map<Integer, int[]> getAttachmentNodeIdsByComponent() {
+        return attachmentNodeIdsByComponent;
+    }
+
     public int getGlobalSourceNodeId() {
         return globalSourceNodeId;
     }

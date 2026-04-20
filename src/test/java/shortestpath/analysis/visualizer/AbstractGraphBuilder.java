@@ -12,7 +12,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import shortestpath.analysis.ComponentAnalysisSupport;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportLoader;
@@ -92,7 +91,7 @@ public final class AbstractGraphBuilder {
         ComponentLabelIndex componentLabelIndex,
         int packedPoint
     ) {
-        return ComponentAnalysisSupport.resolveComponents(collisionMap, componentLabelIndex.getTileToComponent(), packedPoint);
+        return componentLabelIndex.getResolvedComponentIds(packedPoint);
     }
 
     private static String transportLabel(Transport transport) {

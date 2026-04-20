@@ -24,6 +24,7 @@ import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderHeuristic;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.pathfinder.Pathfinder.PathfinderStats;
+import shortestpath.pathfinder.CollisionMap.NeighborStats;
 import shortestpath.pathfinder.SplitFlagMap;
 import shortestpath.pathfinder.TestPathfinderConfig;
 import shortestpath.pathfinder.TransportAvailability;
@@ -195,6 +196,10 @@ public class HeuristicVisualizerMain {
                         System.out.println(" - closed set nanos: " + stats.getClosedSetNanos());
                         System.out.println(" - wilderness-avoid skips: " + stats.getWildernessAvoidSkipCount());
                     }
+                    if (heuristicField instanceof AbstractGraphHeuristicField) {
+                        printUndefinedEstimateTrace((AbstractGraphHeuristicField) heuristicField);
+                    }
+                    printNeighborStats(pathfinderConfig.getMap().getStats());
                     printPathTransports(result.getPathSteps(), pathfinderConfig);
                 }
             }
@@ -527,6 +532,52 @@ public class HeuristicVisualizerMain {
 
     private static long averageNanos(long totalNanos, long count) {
         return count <= 0L ? 0L : totalNanos / count;
+    }
+
+    private static void printUndefinedEstimateTrace(AbstractGraphHeuristicField heuristicField) {
+        System.out.println("Undefined heuristic estimates:");
+        System.out.println(" - count: " + heuristicField.getUndefinedEstimateCount());
+        for (AbstractGraphHeuristicField.UndefinedEstimateTrace trace : heuristicField.getUndefinedEstimateTraces()) {
+            System.out.println(" - " + formatPackedPoint(trace.getPackedPoint())
+                + " component=" + trace.getComponentId()
+                + " mask=" + formatTransportMask(trace.getRemainingTransportMask())
+                + " bankVisited=" + trace.isBankVisited()
+                + " cost=" + trace.getCost());
+        }
+    }
+
+    private static void printNeighborStats(NeighborStats stats) {
+        System.out.println("Neighbor internals:");
+        System.out.println(" - tile neighbor calls: " + stats.getTileNeighborCalls());
+        System.out.println(" - abstract neighbor calls: " + stats.getAbstractNeighborCalls());
+        System.out.println(" - blocked tile neighbor calls: " + stats.getBlockedTileNeighborCalls());
+        System.out.println(" - unblocked tile neighbor calls: " + stats.getUnblockedTileNeighborCalls());
+        System.out.println(" - traversable computation nanos: " + stats.getTraversableComputationNanos());
+        System.out.println(" - walk neighbor loop nanos: " + stats.getWalkNeighborLoopNanos());
+        System.out.println(" - walk neighbor candidate checks: " + stats.getWalkNeighborCandidateChecks());
+        System.out.println(" - walk neighbor visited rejected: " + stats.getWalkNeighborVisitedRejected());
+        System.out.println(" - walk neighbor accepted: " + stats.getWalkNeighborAccepted());
+        System.out.println(" - tile transport lookup count: " + stats.getTileTransportLookupCount());
+        System.out.println(" - tile transport lookup nanos: " + stats.getTileTransportLookupNanos());
+        System.out.println(" - tile transport candidates: " + stats.getTileTransportCandidates());
+        System.out.println(" - tile transport mask rejected: " + stats.getTileTransportMaskRejected());
+        System.out.println(" - tile transport visited rejected: " + stats.getTileTransportVisitedRejected());
+        System.out.println(" - tile transport accepted: " + stats.getTileTransportAccepted());
+        System.out.println(" - global abstract node checks: " + stats.getGlobalAbstractNodeChecks());
+        System.out.println(" - global abstract node accepted: " + stats.getGlobalAbstractNodeAccepted());
+        System.out.println(" - blocked-adjacent transport direction checks: " + stats.getBlockedAdjacentTransportDirectionChecks());
+        System.out.println(" - blocked-adjacent transport lookup count: " + stats.getBlockedAdjacentTransportLookupCount());
+        System.out.println(" - blocked-adjacent transport lookup nanos: " + stats.getBlockedAdjacentTransportLookupNanos());
+        System.out.println(" - blocked-adjacent transport candidates: " + stats.getBlockedAdjacentTransportCandidates());
+        System.out.println(" - blocked-adjacent transport rejected: " + stats.getBlockedAdjacentTransportRejected());
+        System.out.println(" - blocked-adjacent transport accepted: " + stats.getBlockedAdjacentTransportAccepted());
+        System.out.println(" - abstract teleport lookup count: " + stats.getAbstractTeleportLookupCount());
+        System.out.println(" - abstract teleport lookup nanos: " + stats.getAbstractTeleportLookupNanos());
+        System.out.println(" - abstract teleport candidates: " + stats.getAbstractTeleportCandidates());
+        System.out.println(" - abstract teleport visited rejected: " + stats.getAbstractTeleportVisitedRejected());
+        System.out.println(" - abstract teleport wilderness rejected: " + stats.getAbstractTeleportWildernessRejected());
+        System.out.println(" - abstract teleport avoid-wilderness rejected: " + stats.getAbstractTeleportAvoidWildernessRejected());
+        System.out.println(" - abstract teleport accepted: " + stats.getAbstractTeleportAccepted());
     }
 
     private static final class SnapshotPathfinderConfig extends TestPathfinderConfig {

@@ -223,6 +223,7 @@ public class Pathfinder implements Runnable {
     @Override
     public void run() {
         stats.start();
+        map.resetStats();
         Node startNode = new Node(start, null, 0, false);
         long initialHeuristicStartNanos = System.nanoTime();
         double initialHeuristicValue = heuristic.estimate(startNode);

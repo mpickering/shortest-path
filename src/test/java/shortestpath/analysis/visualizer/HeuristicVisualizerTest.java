@@ -158,8 +158,9 @@ public class HeuristicVisualizerTest {
             TransportType.TRANSPORT,
             0);
 
-        AbstractTransportGraph graph = AbstractGraphBuilder.build(repoCollisionMap(), componentLabelIndex, transports);
-        AbstractGraphHeuristicField heuristic = new AbstractGraphHeuristicField(componentLabelIndex, goal, graph);
+        CollisionMap collisionMap = repoCollisionMap();
+        AbstractTransportGraph graph = AbstractGraphBuilder.build(collisionMap, componentLabelIndex, transports);
+        AbstractGraphHeuristicField heuristic = new AbstractGraphHeuristicField(collisionMap, componentLabelIndex, goal, graph);
 
         HeuristicSample sample = heuristic.sample(source, TileStateQuery.TileState.WALKABLE);
         Assert.assertTrue(sample.isDefined());
@@ -242,10 +243,12 @@ public class HeuristicVisualizerTest {
             TransportType.FAIRY_RING,
             0);
 
+        CollisionMap collisionMap = repoCollisionMap();
         AbstractGraphHeuristicField heuristic = new AbstractGraphHeuristicField(
+            collisionMap,
             componentLabelIndex,
             goal,
-            AbstractGraphBuilder.build(repoCollisionMap(), componentLabelIndex, transports));
+            AbstractGraphBuilder.build(collisionMap, componentLabelIndex, transports));
 
         int noFairyRingMask = TransportUsageMask.ALL_AVAILABLE & ~TransportUsageMask.FAIRY_RING;
         HeuristicSample withFairyRing = heuristic.sample(source, TileStateQuery.TileState.WALKABLE, TransportUsageMask.ALL_AVAILABLE);

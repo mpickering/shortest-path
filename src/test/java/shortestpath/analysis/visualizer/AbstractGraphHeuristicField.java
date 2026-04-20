@@ -1,7 +1,10 @@
 package shortestpath.analysis.visualizer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.Node;
@@ -12,9 +15,11 @@ import shortestpath.transport.TransportType;
 public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHeuristic {
     private final ComponentLabelIndex componentLabelIndex;
     private final int goal;
-    private final Integer goalComponentId;
+    private final Set<Integer> goalComponentIds;
     private final AbstractTransportGraph graph;
     private final AbstractTransportGraph.ReverseSearchResult reverseSearchResult;
+    private final Map<Integer, AttachmentData> attachmentsByComponent;
+    private final List<UndefinedEstimateTrace> undefinedEstimateTraces = new ArrayList<>();
     private long evaluationCount;
     private long totalEvaluationNanos;
     private long sampleCount;
@@ -25,17 +30,20 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
     private long attachmentScanNanos;
     private long attachmentCandidatesExamined;
     private long reachableAttachmentCandidatesExamined;
+    private long undefinedEstimateCount;
 
     public AbstractGraphHeuristicField(CollisionMap collisionMap, ComponentLabelIndex componentLabelIndex, int goal) {
-        this(componentLabelIndex, goal, AbstractGraphBuilder.build(collisionMap, componentLabelIndex));
+        this(collisionMap, componentLabelIndex, goal, AbstractGraphBuilder.build(collisionMap, componentLabelIndex));
     }
 
-    AbstractGraphHeuristicField(ComponentLabelIndex componentLabelIndex, int goal, AbstractTransportGraph graph) {
+    AbstractGraphHeuristicField(CollisionMap collisionMap, ComponentLabelIndex componentLabelIndex, int goal, AbstractTransportGraph graph) {
         this.componentLabelIndex = componentLabelIndex;
         this.goal = goal;
-        this.goalComponentId = componentLabelIndex.getComponentId(goal);
+        this.goalComponentIds = componentLabelIndex.getResolvedComponentIds(goal);
         this.graph = graph;
-        this.reverseSearchResult = graph.reverseDistances(goal, goalComponentId);
+        Integer reverseGoalComponentId = goalComponentIds.isEmpty() ? null : goalComponentIds.iterator().next();
+        this.reverseSearchResult = graph.reverseDistances(goal, reverseGoalComponentId);
+        this.attachmentsByComponent = buildAttachmentData(graph);
     }
 
     @Override
@@ -67,7 +75,19 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
         evaluationCount++;
         estimateCount++;
         estimateNanos += elapsedNanos;
-        return sample.isDefined() ? sample.getValue() : 0.0d;
+        if (sample.isDefined()) {
+            return sample.getValue();
+        }
+        undefinedEstimateCount++;
+        if (undefinedEstimateTraces.size() < 64) {
+            undefinedEstimateTraces.add(new UndefinedEstimateTrace(
+                node.packedPosition,
+                componentLabelIndex.getResolvedComponentIds(node.packedPosition).stream().findFirst().orElse(null),
+                node.remainingTransportMask,
+                node.bankVisited,
+                node.cost));
+        }
+        return Double.POSITIVE_INFINITY;
     }
 
     public AbstractTransportGraph getGraph() {
@@ -118,24 +138,40 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
         return reachableAttachmentCandidatesExamined;
     }
 
+    public long getUndefinedEstimateCount() {
+        return undefinedEstimateCount;
+    }
+
+    public List<UndefinedEstimateTrace> getUndefinedEstimateTraces() {
+        return undefinedEstimateTraces;
+    }
+
     public AttachmentChoice bestAttachment(int packedPoint, int remainingTransportMask) {
-        Integer pointComponentId = componentLabelIndex.getComponentId(packedPoint);
-        if (pointComponentId == null) {
+        Set<Integer> pointComponentIds = componentLabelIndex.getResolvedComponentIds(packedPoint);
+        if (pointComponentIds.isEmpty()) {
             return null;
         }
 
         double bestValue = Double.POSITIVE_INFINITY;
         int bestAttachmentNodeId = -1;
-        for (int attachmentNodeId : graph.getAttachmentNodeIds(pointComponentId)) {
-            int reverseDistance = reverseSearchResult.distanceToNode(attachmentNodeId, remainingTransportMask);
-            if (reverseDistance == Integer.MAX_VALUE) {
+        int pointX = WorldPointUtil.unpackWorldX(packedPoint);
+        int pointY = WorldPointUtil.unpackWorldY(packedPoint);
+        for (int pointComponentId : pointComponentIds) {
+            AttachmentData attachmentData = attachmentsByComponent.get(pointComponentId);
+            if (attachmentData == null) {
                 continue;
             }
-            int attachmentPoint = graph.getNode(attachmentNodeId).getPackedPoint();
-            double total = chebyshev(packedPoint, attachmentPoint) + reverseDistance;
-            if (total < bestValue) {
-                bestValue = total;
-                bestAttachmentNodeId = attachmentNodeId;
+            for (int i = 0; i < attachmentData.nodeIds.length; i++) {
+                int attachmentNodeId = attachmentData.nodeIds[i];
+                int reverseDistance = reverseSearchResult.distanceToNode(attachmentNodeId, remainingTransportMask);
+                if (reverseDistance == Integer.MAX_VALUE) {
+                    continue;
+                }
+                double total = chebyshev(pointX, pointY, attachmentData.xs[i], attachmentData.ys[i]) + reverseDistance;
+                if (total < bestValue) {
+                    bestValue = total;
+                    bestAttachmentNodeId = attachmentNodeId;
+                }
             }
         }
 
@@ -159,23 +195,38 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
         }
 
         double best = Double.POSITIVE_INFINITY;
-        Integer pointComponentId = componentLabelIndex.getComponentId(packedPoint);
-        if (pointComponentId != null && goalComponentId != null && pointComponentId.equals(goalComponentId)) {
+        Set<Integer> pointComponentIds = componentLabelIndex.getResolvedComponentIds(packedPoint);
+        boolean sameComponent = false;
+        for (int pointComponentId : pointComponentIds) {
+            if (goalComponentIds.contains(pointComponentId)) {
+                sameComponent = true;
+                break;
+            }
+        }
+        if (sameComponent) {
             best = chebyshev(packedPoint, goal);
         }
 
-        if (pointComponentId != null) {
+        if (!pointComponentIds.isEmpty()) {
             long scanStartNanos = System.nanoTime();
             attachmentScanCount++;
-            for (int attachmentNodeId : graph.getAttachmentNodeIds(pointComponentId)) {
-                attachmentCandidatesExamined++;
-                int reverseDistance = reverseSearchResult.distanceToNode(attachmentNodeId, remainingTransportMask);
-                if (reverseDistance == Integer.MAX_VALUE) {
+            int pointX = WorldPointUtil.unpackWorldX(packedPoint);
+            int pointY = WorldPointUtil.unpackWorldY(packedPoint);
+            for (int pointComponentId : pointComponentIds) {
+                AttachmentData attachmentData = attachmentsByComponent.get(pointComponentId);
+                if (attachmentData == null) {
                     continue;
                 }
-                reachableAttachmentCandidatesExamined++;
-                int attachmentPoint = graph.getNode(attachmentNodeId).getPackedPoint();
-                best = Math.min(best, chebyshev(packedPoint, attachmentPoint) + reverseDistance);
+                for (int i = 0; i < attachmentData.nodeIds.length; i++) {
+                    int attachmentNodeId = attachmentData.nodeIds[i];
+                    attachmentCandidatesExamined++;
+                    int reverseDistance = reverseSearchResult.distanceToNode(attachmentNodeId, remainingTransportMask);
+                    if (reverseDistance == Integer.MAX_VALUE) {
+                        continue;
+                    }
+                    reachableAttachmentCandidatesExamined++;
+                    best = Math.min(best, chebyshev(pointX, pointY, attachmentData.xs[i], attachmentData.ys[i]) + reverseDistance);
+                }
             }
             attachmentScanNanos += System.nanoTime() - scanStartNanos;
         }
@@ -190,6 +241,26 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
         return WorldPointUtil.distanceBetween(a, b, WorldPointUtil.CHEBYSHEV_DISTANCE_METRIC);
     }
 
+    private static int chebyshev(int x1, int y1, int x2, int y2) {
+        return Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2));
+    }
+
+    private static Map<Integer, AttachmentData> buildAttachmentData(AbstractTransportGraph graph) {
+        Map<Integer, AttachmentData> attachmentDataByComponent = new HashMap<>();
+        for (Map.Entry<Integer, int[]> entry : graph.getAttachmentNodeIdsByComponent().entrySet()) {
+            int[] nodeIds = entry.getValue();
+            int[] xs = new int[nodeIds.length];
+            int[] ys = new int[nodeIds.length];
+            for (int i = 0; i < nodeIds.length; i++) {
+                int packedPoint = graph.getNode(nodeIds[i]).getPackedPoint();
+                xs[i] = WorldPointUtil.unpackWorldX(packedPoint);
+                ys[i] = WorldPointUtil.unpackWorldY(packedPoint);
+            }
+            attachmentDataByComponent.put(entry.getKey(), new AttachmentData(nodeIds, xs, ys));
+        }
+        return attachmentDataByComponent;
+    }
+
     private List<WitnessStep> buildWitness(int startNodeId, int remainingTransportMask) {
         List<WitnessStep> steps = new ArrayList<>();
         int nodeId = startNodeId;
@@ -201,9 +272,9 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
             if (currentDistance == Integer.MAX_VALUE) {
                 break;
             }
-            if (node.isAttachment() && goalComponentId != null) {
+            if (node.isAttachment() && !goalComponentIds.isEmpty()) {
                 Integer nodeComponent = componentLabelIndex.getComponentId(node.getPackedPoint());
-                if (nodeComponent != null && nodeComponent.equals(goalComponentId) && currentDistance == chebyshev(node.getPackedPoint(), goal)) {
+                if (nodeComponent != null && goalComponentIds.contains(nodeComponent) && currentDistance == chebyshev(node.getPackedPoint(), goal)) {
                     steps.add(WitnessStep.goalAttach(node.getPackedPoint(), goal, currentDistance));
                     break;
                 }
@@ -309,6 +380,54 @@ public class AbstractGraphHeuristicField implements HeuristicField, PathfinderHe
 
         public List<WitnessStep> getWitnessSteps() {
             return witnessSteps;
+        }
+    }
+
+    private static final class AttachmentData {
+        private final int[] nodeIds;
+        private final int[] xs;
+        private final int[] ys;
+
+        private AttachmentData(int[] nodeIds, int[] xs, int[] ys) {
+            this.nodeIds = nodeIds;
+            this.xs = xs;
+            this.ys = ys;
+        }
+    }
+
+    public static final class UndefinedEstimateTrace {
+        private final int packedPoint;
+        private final Integer componentId;
+        private final int remainingTransportMask;
+        private final boolean bankVisited;
+        private final int cost;
+
+        private UndefinedEstimateTrace(int packedPoint, Integer componentId, int remainingTransportMask, boolean bankVisited, int cost) {
+            this.packedPoint = packedPoint;
+            this.componentId = componentId;
+            this.remainingTransportMask = remainingTransportMask;
+            this.bankVisited = bankVisited;
+            this.cost = cost;
+        }
+
+        public int getPackedPoint() {
+            return packedPoint;
+        }
+
+        public Integer getComponentId() {
+            return componentId;
+        }
+
+        public int getRemainingTransportMask() {
+            return remainingTransportMask;
+        }
+
+        public boolean isBankVisited() {
+            return bankVisited;
+        }
+
+        public int getCost() {
+            return cost;
         }
     }
 
