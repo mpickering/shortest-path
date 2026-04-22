@@ -135,14 +135,13 @@ public class CollisionMap {
                 nextTransportMask));
         }
 
-        // Global teleports are only considered once from the initial search state.
-        if (node.previous == null) {
-            Node globalTeleports = Node.abstractNode(AbstractNodeKind.fromWildernessLevel(wildernessLevel), node, pathBankVisited);
-            stats.globalAbstractNodeChecks++;
-            if (!visited.get(globalTeleports)) {
-                stats.globalAbstractNodeAccepted++;
-                neighbors.add(globalTeleports);
-            }
+        // Global teleports are considered once per abstract search state. That includes
+        // the initial state and any later bank-state or wilderness-bucket transition.
+        Node globalTeleports = Node.abstractNode(AbstractNodeKind.fromWildernessLevel(wildernessLevel), node, pathBankVisited);
+        stats.globalAbstractNodeChecks++;
+        if (!visited.get(globalTeleports)) {
+            stats.globalAbstractNodeAccepted++;
+            neighbors.add(globalTeleports);
         }
 
         // Then add tiles which we can walk to, which go into the FIFO boundary queue.
