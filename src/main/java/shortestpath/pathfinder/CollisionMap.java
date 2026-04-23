@@ -197,8 +197,6 @@ public class CollisionMap {
                     node.remainingTransportMask));
             } else if (Math.abs(d.x + d.y) == 1 && isBlocked(x + d.x, y + d.y, z)) {
                 stats.blockedAdjacentTransportDirectionChecks++;
-                // The transport starts from a blocked adjacent tile, e.g. fairy ring
-                // Only checks non-teleport transports (includes portals and levers, but not items and spells)
                 long blockedAdjacentLookupStartNanos = System.nanoTime();
                 Set<Transport> neighborTransports = config.getTransportsPacked(pathBankVisited).getOrDefault(neighborPacked, Set.of());
                 stats.blockedAdjacentTransportLookupCount++;
