@@ -40,6 +40,7 @@ public class Pathfinder implements Runnable
 	// it never walks the node chain (which is released) after the search is done.
 	private volatile List<PathStep> finalPath = null;
 	private volatile int closestReachedPoint = WorldPointUtil.UNDEFINED;
+	private volatile int finalPathCost = PathfinderResult.NO_PATH_COST;
 	private int bestRemainingDistance = Integer.MAX_VALUE;
 	private int bestTravelledDistance = Integer.MAX_VALUE;
 	private int bestX = Integer.MAX_VALUE;
@@ -158,6 +159,7 @@ public class Pathfinder implements Runnable
 			reached,
 			currentPath,
 			closestReachedPoint,
+			finalPathCost,
 			currentStats.getNodesChecked(),
 			currentStats.getTransportsChecked(),
 			currentStats.getElapsedTimeNanos(),
@@ -361,11 +363,13 @@ public class Pathfinder implements Runnable
 		{
 			finalPath = graph.getPathSteps(lastNode);
 			closestReachedPoint = graph.getClosestTilePosition(lastNode);
+			finalPathCost = graph.cost(lastNode);
 		}
 		else
 		{
 			finalPath = pathSteps;
 			closestReachedPoint = start;
+			finalPathCost = PathfinderResult.NO_PATH_COST;
 		}
 
 		done = !cancelled;
