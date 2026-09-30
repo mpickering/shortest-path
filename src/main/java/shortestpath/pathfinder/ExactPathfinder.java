@@ -37,6 +37,7 @@ public final class ExactPathfinder implements ActiveSearch
 	private volatile long reverseSearchNanos;
 	private volatile long heuristicPrepareNanos;
 	private volatile long forwardSearchNanos;
+	private volatile long walkRewriteNanos;
 	private volatile boolean graphReused;
 	private volatile boolean targetReused;
 
@@ -223,6 +224,11 @@ public final class ExactPathfinder implements ActiveSearch
 	{ return forwardSearchNanos;
 	}
 
+	/** Time spent rewriting the route's walking legs into the game's own walking paths. */
+	public long getWalkRewriteNanos()
+	{ return walkRewriteNanos;
+	}
+
 	/** Whether the account graph came from the session rather than being built for this search. */
 	public boolean isGraphReused()
 	{ return graphReused;
@@ -261,6 +267,7 @@ public final class ExactPathfinder implements ActiveSearch
 			ExactForwardSearch.Result best = null;
 			int bestTarget = firstTarget();
 			int partialCost = PathfinderResult.NO_PATH_COST;
+			List<Integer> clickPoints = List.of();
 			exactStats = ExactForwardSearch.Counters.empty();
 			if (!cancelled && packedTargets.length != 0)
 			{
@@ -294,17 +301,27 @@ public final class ExactPathfinder implements ActiveSearch
 				stats.nodesChecked += current.counters().statesPopped();
 				stats.transportsChecked += current.counters().transportCandidates();
 				exactStats = current.counters();
+				List<PathStep> found = null;
 				if (current.reached())
 				{
 					best = current;
-					path = current.path();
-					bestTarget = last(path);
+					found = current.path();
 				}
 				else if (timedOut.get() && !cancelled)
 				{
 					// Like legacy: a cut-off search still routes to the tile it got closest to.
-					path = current.closestPath();
+					found = current.closestPath();
 					partialCost = current.closestCost();
+				}
+				if (found != null)
+				{
+					// Publish only the rewritten path, so the render thread never shows the raw one.
+					phaseStarted = System.nanoTime();
+					InGameWalkRewriter.Result walked = new InGameWalkRewriter(collision).rewrite(found);
+					walkRewriteNanos = System.nanoTime() - phaseStarted;
+					clickPoints = walked.clickPoints();
+					path = walked.path();
+					if (best != null) bestTarget = last(path);
 				}
 			}
 
@@ -315,10 +332,12 @@ public final class ExactPathfinder implements ActiveSearch
 			else if (timedOut.get())
 				result = new PathfinderResult(start, bestTarget, best != null, path,
 					last(path), best == null ? partialCost : best.cost(), stats.nodesChecked,
-					stats.transportsChecked, System.nanoTime() - started, PathTerminationReason.CUTOFF_REACHED);
+					stats.transportsChecked, System.nanoTime() - started, PathTerminationReason.CUTOFF_REACHED, null,
+					clickPoints);
 			else if (best != null)
 				result = new PathfinderResult(start, bestTarget, true, path, last(path), best.cost(), stats.nodesChecked,
-					stats.transportsChecked, System.nanoTime() - started, PathTerminationReason.TARGET_REACHED);
+					stats.transportsChecked, System.nanoTime() - started, PathTerminationReason.TARGET_REACHED, null,
+					clickPoints);
 			else
 				result = new PathfinderResult(start, firstTarget(), false, path, last(path), PathfinderResult.NO_PATH_COST,
 					stats.nodesChecked, stats.transportsChecked, System.nanoTime() - started,

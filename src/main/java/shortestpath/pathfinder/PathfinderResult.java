@@ -19,6 +19,11 @@ public class PathfinderResult
 	private final long elapsedNanos;
 	private final PathTerminationReason terminationReason;
 	private final String message;
+	/**
+	 * Ascending indices into {@link #getPathSteps()} of the tiles the player clicks to walk the
+	 * route in game; empty when the backend does not compute them.
+	 */
+	private final List<Integer> clickPoints;
 
 	public PathfinderResult(
 		int start,
@@ -75,6 +80,24 @@ public class PathfinderResult
 		PathTerminationReason terminationReason,
 		String message)
 	{
+		this(start, target, reached, pathSteps, closestReachedPoint, pathCost, nodesChecked,
+			transportsChecked, elapsedNanos, terminationReason, message, List.of());
+	}
+
+	public PathfinderResult(
+		int start,
+		int target,
+		boolean reached,
+		List<PathStep> pathSteps,
+		int closestReachedPoint,
+		int pathCost,
+		int nodesChecked,
+		int transportsChecked,
+		long elapsedNanos,
+		PathTerminationReason terminationReason,
+		String message,
+		List<Integer> clickPoints)
+	{
 		this.start = start;
 		this.target = target;
 		this.reached = reached;
@@ -86,5 +109,6 @@ public class PathfinderResult
 		this.elapsedNanos = elapsedNanos;
 		this.terminationReason = terminationReason;
 		this.message = message;
+		this.clickPoints = clickPoints;
 	}
 }

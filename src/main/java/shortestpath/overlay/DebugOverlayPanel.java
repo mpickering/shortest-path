@@ -110,7 +110,8 @@ public class DebugOverlayPanel extends OverlayPanel
 		}
 
 		List<PathStep> path = search.getPath();
-		components.add(makeLine("Path:", path == null ? "none" : path.size() + " tiles"));
+		String tiles = path == null ? "none" : path.size() + " tiles";
+		components.add(makeLine("Path:", result == null ? tiles : tiles + ", " + result.getClickPoints().size() + " clicks"));
 
 		PathfinderStats stats = search.getStats();
 		if (stats == null)
@@ -121,6 +122,7 @@ public class DebugOverlayPanel extends OverlayPanel
 		if (exact != null)
 		{
 			components.add(makeLine("  Forward search:", millis(exact.getForwardSearchNanos())));
+			components.add(makeLine("  Walk rewrite:", millis(exact.getWalkRewriteNanos())));
 			components.add(makeLine("  Target prep:", exact.isTargetReused() ? "reused"
 				: millis(exact.getReverseSearchNanos() + exact.getHeuristicPrepareNanos())));
 			components.add(makeLine("  Graph prep:", exact.isGraphReused() ? "reused"
