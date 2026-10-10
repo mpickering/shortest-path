@@ -25,12 +25,7 @@ public class TransportDataLintTest
 	 * data and remove the entry; the test fails if an entry here no longer is a dead end.
 	 */
 	private static final Set<String> KNOWN_DEAD_ENDS = new HashSet<>(Arrays.asList(
-		// Construction/Max cape POH teleports to Pollnivneach (#746)
-		"3339 3001 0  TELEPORTATION_ITEM  Construction cape: Home",
-		"3339 3001 0  TELEPORTATION_ITEM  Construction cape: Pollnivneach",
-		"3339 3001 0  TELEPORTATION_ITEM  Max cape: POH Portals: Pollnivneach",
-		"3339 3001 0  TELEPORTATION_ITEM  Max cape: Tele to POH",
-		// Other teleports and transports
+		// Teleports and transports
 		"1934 4428 0  TELEPORTATION_ITEM  Pharaoh's sceptre: Jalsavrah",
 		"2483 3188 0  CANOE  Tree Gnome Village",
 		"2506 3584 1  TRANSPORT  ",
