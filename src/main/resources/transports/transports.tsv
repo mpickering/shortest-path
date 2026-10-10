@@ -6012,3 +6012,102 @@
 # God Wars Dungeon: swimming the river to Zamorak's Fortress (70 Hitpoints)
 2885 5333 2	2885 5344 2	Climb-off Ice bridge 26518	70 Hitpoints					5	
 2885 5344 2	2885 5333 2	Climb-off Ice bridge 26518	70 Hitpoints					5	
+									
+# Kourend Castle, first to second floor
+1615 3659 1	1617 3660 2	Climb-up Staircase 12536						1	
+1618 3658 1	1618 3659 2	Climb-up Staircase 12536						1	
+1617 3660 2	1615 3659 1	Climb-down Staircase 12538						1	
+1618 3659 2	1618 3658 1	Climb-down Staircase 12538						1	
+1616 3686 1	1616 3686 2	Climb-up Staircase 12536						1	
+1615 3688 1	1615 3687 2	Climb-up Staircase 12536						1	
+1616 3686 2	1616 3686 1	Climb-down Staircase 12538						1	
+1615 3687 2	1615 3688 1	Climb-down Staircase 12538						1	
+									
+# Legends' Guild, top floor ladder
+2731 3375 1	2731 3375 2	Climb-up Ladder 16683						2	
+2731 3375 2	2731 3375 1	Climb-down Ladder 16679						2	
+2732 3374 1	2732 3374 2	Climb-up Ladder 16683						2	
+2732 3374 2	2732 3374 1	Climb-down Ladder 16679						2	
+2732 3376 1	2732 3376 2	Climb-up Ladder 16683						2	
+2732 3376 2	2732 3376 1	Climb-down Ladder 16679						2	
+2733 3375 1	2733 3375 2	Climb-up Ladder 16683						2	
+2733 3375 2	2733 3375 1	Climb-down Ladder 16679						2	
+									
+# Civitas illa Fortis, Alchemical Society basement
+1388 2918 0	1388 9313 0	Climb-down Staircase 54946						1	
+1388 9313 0	1388 2918 0	Climb-up Staircase 54945						1	
+1389 2918 0	1389 9313 0	Climb-down Staircase 54946						1	
+1389 9313 0	1389 2918 0	Climb-up Staircase 54945						1	
+									
+# Woodcutting Guild Ent dungeon: the cave, the vine back up, and the roots inside
+1606 3508 0	1596 9900 0	Enter Cave 28855						2	
+1596 9900 0	1606 3508 0	Climb Vine 28856						2	
+1551 9880 0	1551 9882 0	Step-over Root 26721						2	
+1551 9882 0	1551 9880 0	Step-over Root 26721						2	
+1552 9880 0	1552 9882 0	Step-over Root 26720						2	
+1552 9882 0	1552 9880 0	Step-over Root 26720						2	
+1554 9871 0	1556 9871 0	Step-over Root 26720						2	
+1556 9871 0	1554 9871 0	Step-over Root 26720						2	
+1555 9870 0	1555 9872 0	Step-over Root 26720						2	
+1555 9872 0	1555 9870 0	Step-over Root 26720						2	
+1588 9899 0	1590 9899 0	Step-over Root 26721						2	
+1590 9899 0	1588 9899 0	Step-over Root 26721						2	
+1588 9900 0	1590 9900 0	Step-over Root 26720						2	
+1590 9900 0	1588 9900 0	Step-over Root 26720						2	
+									
+# Falador Park mole hills into the Mole Hole (spade)
+2983 3387 0	1760 5191 0	Use Spade -> Mole hill 12202		952=1				3	
+2986 3387 0	1760 5191 0	Use Spade -> Mole hill 12202		952=1				3	
+2988 3378 0	1760 5191 0	Use Spade -> Mole hill 12202		952=1				3	
+2995 3377 0	1760 5191 0	Use Spade -> Mole hill 12202		952=1				3	
+2998 3375 0	1760 5191 0	Use Spade -> Mole hill 12202		952=1				3	
+3004 3376 0	1760 5191 0	Use Spade -> Mole hill 12202		952=1				3	
+									
+# Prifddinas: Gauntlet Portal into the Gauntlet lobby
+3228 6114 0	3033 6121 1	Enter Gauntlet Portal 36081			Song of the Elves			2	
+3228 6115 0	3033 6121 1	Enter Gauntlet Portal 36081			Song of the Elves			2	
+									
+# Mor Ul Rek: hot vent doors to the inner city (a fire cape or fire max cape)
+2436 5121 0	2436 5119 0	Pass Hot vent door 30266		6570=1|13329=1|24223=1|24134=1				1	
+2436 5119 0	2436 5121 0	Pass Hot vent door 30266						1	
+2457 5120 0	2457 5118 0	Pass Hot vent door 30266		6570=1|13329=1|24223=1|24134=1				1	
+2457 5118 0	2457 5120 0	Pass Hot vent door 30266						1	
+2474 5138 0	2474 5136 0	Pass Hot vent door 30266		6570=1|13329=1|24223=1|24134=1				1	
+2474 5136 0	2474 5138 0	Pass Hot vent door 30266						1	
+2493 5174 0	2495 5174 0	Pass Hot vent door 30266		6570=1|13329=1|24223=1|24134=1				1	
+2495 5174 0	2493 5174 0	Pass Hot vent door 30266						1	
+2494 5157 0	2496 5157 0	Pass Hot vent door 30266		6570=1|13329=1|24223=1|24134=1				1	
+2496 5157 0	2494 5157 0	Pass Hot vent door 30266						1	
+									
+# Ruins of Camdozaal (Below Ice Mountain)
+2949 3506 0	2952 5762 0	Enter Cave entrance 40887			Below Ice Mountain			2	
+2952 5762 0	2949 3506 0	Exit Ruins Exit 41446			Below Ice Mountain			2	
+									
+# Viyeldi caves: the winch down from the Shaman Caves, and the ledges to the main cave
+2758 9329 0	2377 4712 0	Climb-down Winch 2935			Legends' Quest			4	
+2377 4712 0	2758 9329 0	Climb Climbing rope 2958			Legends' Quest			4	
+2376 4717 0	2378 4717 0	Climb-over Rocky Ledge 2959			Legends' Quest			2	
+2378 4717 0	2376 4717 0	Climb-over Rocky Ledge 2959			Legends' Quest			2	
+2377 4727 0	2378 4728 0	Climb-over Rocky Ledge 2960			Legends' Quest			2	
+2378 4728 0	2377 4727 0	Climb-over Rocky Ledge 2960			Legends' Quest			2	
+2382 4728 0	2382 4730 0	Climb-over Rocky Ledge 2961			Legends' Quest			2	
+2382 4730 0	2382 4728 0	Climb-over Rocky Ledge 2961			Legends' Quest			2	
+2387 4727 0	2388 4728 0	Climb-over Rocks 2962			Legends' Quest			2	
+2388 4728 0	2387 4727 0	Climb-over Rocks 2962			Legends' Quest			2	
+2390 4723 0	2390 4725 0	Climb-over Rocks 2963			Legends' Quest			2	
+2390 4725 0	2390 4723 0	Climb-over Rocks 2963			Legends' Quest			2	
+2390 4717 0	2390 4719 0	Climb-over Rocks 2964			Legends' Quest			2	
+2390 4719 0	2390 4717 0	Climb-over Rocks 2964			Legends' Quest			2	
+									
+# Kourend Castle, ground to first floor
+1615 3667 0	1615 3667 1	Climb-up Staircase 11807						1	
+1615 3667 1	1615 3667 0	Climb-down Staircase 11799						1	
+1615 3679 0	1615 3679 1	Climb-up Staircase 11807						1	
+1615 3679 1	1615 3679 0	Climb-down Staircase 11799						1	
+									
+# Legends' Guild, ground to first floor
+2731 3378 0	2731 3378 1	Climb-up Staircase 15653						1	
+2731 3378 1	2731 3378 0	Climb-down Staircase 15654						1	
+									
+# The Darkfrost: the slope down into the Hueycoatl's public arena
+1524 3290 0	1519 3289 0	Slide Slope 55234						3	
