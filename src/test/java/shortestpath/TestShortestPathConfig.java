@@ -11,6 +11,7 @@ public class TestShortestPathConfig implements ShortestPathConfig
 	private boolean unlockCanoeAxe = false;
 	private boolean unlockXericsHonour = false;
 	private boolean unlockDragontoothPassage = false;
+	private boolean unlockSoulRift = false;
 
 	@SuppressWarnings("unused")
 	public void setCalculationCutoffValue(int calculationCutoff)
@@ -60,6 +61,11 @@ public class TestShortestPathConfig implements ShortestPathConfig
 	}
 
 	@SuppressWarnings("unused")
+	public void setUnlockSoulRiftValue(boolean unlockSoulRift)
+	{
+		this.unlockSoulRift = unlockSoulRift;
+	}
+
 	public void setUnlockDragontoothPassageValue(boolean unlockDragontoothPassage)
 	{
 		this.unlockDragontoothPassage = unlockDragontoothPassage;
@@ -105,6 +111,12 @@ public class TestShortestPathConfig implements ShortestPathConfig
 	public boolean unlockDragontoothPassage()
 	{
 		return unlockDragontoothPassage;
+	}
+
+	@Override
+	public boolean unlockSoulRift()
+	{
+		return unlockSoulRift;
 	}
 
 	@Override

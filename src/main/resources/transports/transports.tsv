@@ -5538,8 +5538,8 @@
 									
 # Soul Altar									
 # todo: verify if the destination is correct									
-# todo: unlocks after using dark essence block/fragments on Kourend's Soul Altar									
-3050 4829 0	1816 3856 0	Exit-through Soul rift 25382							
+# Unlocked by using dark essence on the Soul Altar (Soul rift unlocked setting)									
+3050 4829 0	1816 3856 0	Exit-through Soul rift 25382		UNLOCK_SOUL_RIFT=1					
 									
 # Air Altar									
 3047 4825 0	2846 4836 0	Exit-through Air rift 25382							

@@ -25,6 +25,11 @@ public enum Unlock
 	 * Xeric's Honour, unlocking the talisman teleports.
 	 */
 	XERICS_HONOUR,
+
+	/**
+	 * The Abyss soul rift to the Soul Altar, opened with dark essence on the altar.
+	 */
+	SOUL_RIFT,
 	;
 
 	private static final String TOKEN_PREFIX = "UNLOCK_";
