@@ -159,6 +159,8 @@ public class PathfinderConfig
 	 */
 	private TransportAvailability transportAvailabilityWithoutBank;
 	private TransportAvailability transportAvailabilityWithBank;
+	// Rebuilt on refresh: which targets can only be reached through the Wilderness.
+	private volatile WildernessReachability wildernessReachability;
 	/**
 	 * Reference that points to either allDestinations or filteredDestinations
 	 */
@@ -656,6 +658,17 @@ public class PathfinderConfig
 		withBank.remapPohTransports();
 		transportAvailabilityWithoutBank = withoutBank.build();
 		transportAvailabilityWithBank = withBank.build();
+		wildernessReachability = new WildernessReachability(getTransportAvailability(includeBankPath));
+	}
+
+	/**
+	 * Whether every route from start to the goals has to enter the Wilderness, so Avoid
+	 * wilderness should be lifted for that search the same way as for a target inside it.
+	 */
+	public boolean onlyReachableThroughWilderness(int start, Set<Integer> goals)
+	{
+		WildernessReachability reachability = wildernessReachability;
+		return reachability != null && reachability.onlyThroughWilderness(getMap(), start, goals);
 	}
 
 	public boolean avoidWilderness(int packedPosition, int packedNeighborPosition, boolean targetInWilderness)

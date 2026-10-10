@@ -120,9 +120,9 @@ public final class ExactPathfinder implements ActiveSearch
 		long phaseStarted = System.nanoTime();
 		this.account = config.prepareExactRoutingAccount(true);
 		this.accountPrepareNanos = System.nanoTime() - phaseStarted;
-		this.restrictions = restrictions(config, this.targets);
 		TargetGoals resolved = TargetGoals.resolve(config, start, this.targets);
 		this.goals = resolved.goals();
+		this.restrictions = restrictions(config, start, this.targets, this.goals);
 		this.hasViableGoal = resolved.hasViableGoal();
 		this.cutoffMillis = config.getCalculationCutoffMillis();
 		this.heuristicWeight = heuristicWeight;
@@ -139,11 +139,14 @@ public final class ExactPathfinder implements ActiveSearch
 	/**
 	 * The same positional gates legacy checks per edge: {@code avoidWilderness} and the league's
 	 * always-blocked region, each lifted when a target lies inside the gated area (the user asked
-	 * for that tile, so the route must be allowed to reach it).
+	 * for that tile, so the route must be allowed to reach it). Avoid wilderness is also lifted when
+	 * the target can only be reached through the Wilderness.
 	 */
-	private static SearchRestrictions restrictions(PathfinderConfig config, Set<Integer> targets)
+	private static SearchRestrictions restrictions(PathfinderConfig config, int start, Set<Integer> targets,
+		Set<Integer> goals)
 	{
-		boolean avoidWilderness = config.isAvoidWilderness() && !WildernessChecker.isInWilderness(targets);
+		boolean avoidWilderness = config.isAvoidWilderness() && !WildernessChecker.isInWilderness(targets)
+			&& !config.onlyReachableThroughWilderness(start, goals);
 		LeagueModeState league = config.getLeagueModeState();
 		IntPredicate blockedRegion = null;
 		if (league != null && league.isSeasonal())

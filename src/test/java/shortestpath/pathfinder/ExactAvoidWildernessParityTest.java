@@ -31,7 +31,7 @@ import shortestpath.pathfinder.exact.RoutingStatic;
  * Exact honours {@code avoidWilderness} and the league's always-blocked region like legacy:
  * nothing may enter the gated area on foot, and a global teleport cast outside the wilderness
  * cannot land inside. The same exemptions apply in both backends: starting inside the gated area
- * may still leave it, and a target inside it lifts the gate entirely.
+ * may still leave it, and a target inside it, or only reachable through it, lifts the gate entirely.
  */
 public class ExactAvoidWildernessParityTest
 {
@@ -40,6 +40,8 @@ public class ExactAvoidWildernessParityTest
 	/** A safe pocket surrounded by wilderness: on foot it can only be entered through it. */
 	private static final int FEROX_ENCLAVE = WorldPointUtil.packWorldPoint(3141, 3630, 0);
 	private static final int CHAOS_TEMPLE = WorldPointUtil.packWorldPoint(3231, 3608, 0);
+	/** The King Black Dragon's lair: outside the wilderness, but only entered by a lever inside it. */
+	private static final int KBD_LAIR = WorldPointUtil.packWorldPoint(2271, 4680, 0);
 	/** Level-27 wilderness (benchmark early/quest-natural-0006's start). */
 	private static final int START_WILDERNESS = WorldPointUtil.packWorldPoint(3051, 3736, 0);
 	/** Asgarnia, away from the league's always-blocked Misthalin. */
@@ -60,29 +62,40 @@ public class ExactAvoidWildernessParityTest
 	}
 
 	@Test
-	public void wildernessCannotBeEnteredOnFootWhileAvoidingIt()
+	public void targetOnlyReachableThroughWildernessLiftsTheGate()
 	{
-		// Every walking route to Ferox crosses the wilderness; with no teleports enabled both
-		// backends must give up.
+		// Every walking route to Ferox crosses the wilderness, and with no teleports enabled
+		// nothing lands there: avoiding the wilderness would only make it unreachable, so both
+		// backends lift the gate as for a target inside the wilderness.
 		PathfinderConfig config = config(true, false);
 		PathfinderResult legacy = legacy(config, LUMBRIDGE, FEROX_ENCLAVE);
 		ExactPathfinder exact = exact(config, LUMBRIDGE, FEROX_ENCLAVE);
-		assertFalse("legacy reached Ferox without entering the wilderness", legacy.isReached());
-		assertFalse("exact entered the wilderness while avoiding it", exact.getResult().isReached());
-
-		// Without the gate the same search walks straight through, and pays the same as legacy.
-		config = config(false, false);
-		legacy = legacy(config, LUMBRIDGE, FEROX_ENCLAVE);
-		exact = exact(config, LUMBRIDGE, FEROX_ENCLAVE);
-		assertTrue(legacy.isReached());
-		assertTrue(exact.getResult().isReached());
+		assertTrue("legacy kept avoiding the only way to Ferox", legacy.isReached());
+		assertTrue("exact kept avoiding the only way to Ferox", exact.getResult().isReached());
 		assertEquals(legacy.getPathCost(), exact.getResult().getPathCost());
+
+		// The lifted gate gives the same route as not avoiding the wilderness at all.
+		PathfinderConfig ungated = config(false, false);
+		assertEquals(legacy(ungated, LUMBRIDGE, FEROX_ENCLAVE).getPathCost(), legacy.getPathCost());
 
 		// The route crosses the Wilderness Ditch by transport; the landing step must report
 		// which transport produced it, not just the tile it landed on.
 		assertTrue("the ditch hop does not report its transport",
 			exact.getResult().getPathSteps().stream().anyMatch(
 				s -> s.getTransport() != null && s.getTransport().getDestination() == s.getPackedPosition()));
+	}
+
+	@Test
+	public void areaEnteredOnlyFromTheWildernessLiftsTheGate()
+	{
+		// The KBD lair is not in the wilderness, but its only way in is the lever deep inside it,
+		// even with every teleport usable.
+		PathfinderConfig config = config(true, true);
+		PathfinderResult legacy = legacy(config, LUMBRIDGE, KBD_LAIR);
+		ExactPathfinder exact = exact(config, LUMBRIDGE, KBD_LAIR);
+		assertTrue(legacy.isReached());
+		assertTrue(exact.getResult().isReached());
+		assertEquals(legacy.getPathCost(), exact.getResult().getPathCost());
 	}
 
 	@Test
@@ -187,6 +200,7 @@ public class ExactAvoidWildernessParityTest
 		when(settings.avoidWilderness()).thenReturn(avoidWilderness);
 		when(settings.useWildernessObelisks()).thenReturn(teleports);
 		when(settings.useTeleportationMinigames()).thenReturn(teleports);
+		when(settings.useTeleportationLevers()).thenReturn(teleports);
 
 		PathfinderConfig config = new TestPathfinderConfig(client, settings, QuestState.FINISHED, true, true);
 		config.refresh();

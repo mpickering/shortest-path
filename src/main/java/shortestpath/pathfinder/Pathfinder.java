@@ -104,7 +104,8 @@ public class Pathfinder implements ActiveSearch
 				goals.stream().mapToInt(Integer::intValue).toArray());
 		this.completionCallback = completionCallback;
 		visited = new VisitedTiles(map, config.getBankVisitCost());
-		targetInWilderness = WildernessChecker.isInWilderness(targets);
+		targetInWilderness = WildernessChecker.isInWilderness(targets)
+			|| config.isAvoidWilderness() && config.onlyReachableThroughWilderness(start, goals);
 		targetInBlockedRegion = anyInBlockedRegion(config.getLeagueModeState(), targets);
 		wildernessLevel = 31;
 	}
