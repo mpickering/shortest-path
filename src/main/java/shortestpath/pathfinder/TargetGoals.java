@@ -25,6 +25,10 @@ public final class TargetGoals
 	// goals, so this bounds the enclosure scan; deeper rings only contribute
 	// transport destinations.
 	private static final int ENCLOSURE_SCAN_RADIUS = 4;
+	// Largest walkable pocket the sealed-pocket check floods before giving
+	// up and treating the tile as connected to the wider map. Pockets left
+	// between an object and a wall are a handful of tiles.
+	private static final int SEALED_POCKET_LIMIT = 64;
 	// Upper bound for the blocked-target expansion scan. The unreachable distance
 	// config allows values up to 20000; scanning a (2r+1)^2 square per blocked
 	// target must stay cheap since it runs per request on the client thread.
@@ -234,6 +238,13 @@ public final class TargetGoals
 					boundaryFaces.add(packed);
 					continue;
 				}
+				// A pocket nothing can walk or teleport into would always win
+				// the enclosure test below and anchor the search on a side no
+				// route reaches, so the reachable neighbours never become goals.
+				if (sealedPocket(config, map, start, packed))
+				{
+					continue;
+				}
 				final int reach = localReach(map, packed);
 				candidates.add(new int[] {packed, reach});
 				if (reach < anchorReach)
@@ -355,6 +366,38 @@ public final class TargetGoals
 		}
 		return (wallBetween(map, x, y, x + dx, y, z) || wallBetween(map, x + dx, y, nx, ny, z))
 			&& (wallBetween(map, x, y, x, y + dy, z) || wallBetween(map, x, y + dy, nx, ny, z));
+	}
+
+	// Whether packedPoint lies in a small walkable component that no route
+	// can enter: the flood closes within SEALED_POCKET_LIMIT tiles, and the
+	// component holds neither the start nor a transport destination.
+	private static boolean sealedPocket(PathfinderConfig config, CollisionMap map, int start,
+		int packedPoint)
+	{
+		final Set<Integer> seen = new HashSet<>();
+		final ArrayDeque<Integer> queue = new ArrayDeque<>();
+		seen.add(packedPoint);
+		queue.add(packedPoint);
+		while (!queue.isEmpty())
+		{
+			final int tile = queue.poll();
+			if (tile == start || config.isTransportDestination(tile))
+			{
+				return false;
+			}
+			for (int neighbour : map.ordinaryWalkingNeighbors(tile))
+			{
+				if (seen.add(neighbour))
+				{
+					if (seen.size() > SEALED_POCKET_LIMIT)
+					{
+						return false;
+					}
+					queue.add(neighbour);
+				}
+			}
+		}
+		return true;
 	}
 
 	// Counts the distinct tiles reachable from packedPoint within

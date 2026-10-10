@@ -945,6 +945,45 @@ public class PathfinderTest
 	}
 
 	@Test
+	public void testBlockedTargetIgnoresSealedPocketBehindObject()
+	{
+		// Clue scroll objects standing against a wall or counter leave a tiny
+		// walkable pocket behind them that no route can enter. The pocket is
+		// always the most enclosed ring-1 tile, so it used to anchor the
+		// target's side: the reachable neighbours never became goals and the
+		// search exhausted the map. Burthorpe camp boxes, the Varrock east
+		// bank first-floor drawers and Juna at the Tears of Guthix.
+		final int radius = 6;
+		when(config.unreachableTargetDistance()).thenReturn(radius);
+		setupConfig(QuestState.FINISHED, 99, TeleportationItem.NONE);
+		setupInventory();
+		final int[][] cases = {
+			// start x, y, target x, y, plane
+			{2885, 3536, 2885, 3540, 0},
+			{3253, 3421, 3250, 3420, 1},
+			{3249, 9519, 3252, 9517, 2},
+		};
+		for (int[] c : cases)
+		{
+			final int plane = c[4];
+			assertTrue("test requires a blocked target tile",
+				pathfinderConfig.getMap().isBlocked(c[2], c[3], plane));
+			int target = WorldPointUtil.packWorldPoint(c[2], c[3], plane);
+			Pathfinder pathfinder = new Pathfinder(pathfinderConfig,
+				WorldPointUtil.packWorldPoint(c[0], c[1], plane), Set.of(target));
+			pathfinder.run();
+			PathfinderResult result = pathfinder.getResult();
+			assertNotNull(result);
+			assertTrue("expected a route next to " + c[2] + "," + c[3] + "," + plane,
+				result.isReached());
+			List<PathStep> steps = result.getPathSteps();
+			int end = steps.get(steps.size() - 1).getPackedPosition();
+			assertTrue("route must end beside the target, ended at " + WorldPointUtil.unpackWorldPoint(end),
+				WorldPointUtil.distanceBetween(end, target) <= 2);
+		}
+	}
+
+	@Test
 	public void testBlockedWallFaceTargetEndsOnAdjacentFace()
 	{
 		// The rock at (1504, 3859) is a blast-mine wall in Lovakengj: the
