@@ -5943,3 +5943,40 @@
 # Villa Lucens									
 									
 1425 2933 0	1427 2933 0	Pass-through Entryway			Death on the Isle			2	
+									
+# Fisher Realm, Sir Percival's castle
+2633 4682 0	2634 4682 1	Climb-up Staircase 16671						1	
+2635 4681 0	2634 4682 1	Climb-up Staircase 16671						1	
+2634 4682 1	2633 4682 0	Climb-down Staircase 16673						1	
+									
+# Tai Bwo Wannai hardwood grove (100 trading sticks to enter)
+2816 3083 0	2817 3083 0	Quick-Pay(100) Hardwood Grove Doors 9038		6306=100				1	
+2816 3084 0	2817 3084 0	Quick-Pay(100) Hardwood Grove Doors 9039		6306=100				1	
+2817 3083 0	2816 3083 0	Open Hardwood Grove Doors 9038						1	
+2817 3084 0	2816 3084 0	Open Hardwood Grove Doors 9039						1	
+									
+# Cooks' Guild (32 Cooking and a chef's hat, cooking cape, max cape or Varrock armour 3/4)
+3143 3443 0	3143 3444 0	Open Door 24958	32 Cooking	1949=1|20205=1|9801=1|9802=1|MAX_CAPE=1|13106=1|13107=1				1	
+3143 3444 0	3143 3443 0	Open Door 24958						1	
+									
+# Wilderness magic axe hut (lockpick and 23 Thieving)
+3190 3957 0	3190 3958 0	Pick-lock Door 11726	23 Thieving	1523=1				1	
+3190 3958 0	3190 3957 0	Open Door 11726						1	
+3191 3963 0	3191 3962 0	Pick-lock Door 11726	23 Thieving	1523=1				1	
+3191 3962 0	3191 3963 0	Open Door 11726						1	
+									
+# Lumbridge Swamp shed
+3201 3169 0	3202 3169 0	Open Door 2406						1	
+3202 3169 0	3201 3169 0	Open Door 2406						1	
+									
+# Villa Lucens stage
+1453 2934 0	1455 2934 0	Pass-through Entryway 54707			Death on the Isle			2	
+1455 2934 0	1453 2934 0	Pass-through Entryway 54707			Death on the Isle			2	
+									
+# Iceberg, Ping and Pong's room
+2658 10410 0	2658 10408 0	Open Door 21068						1	
+2658 10408 0	2658 10410 0	Open Door 21068						1	
+									
+# Tarn's Lair, wall trap passage (run past or search to disarm)
+3148 4556 0	3147 4556 0	Search Wall 20594						1	
+3147 4556 0	3148 4556 0	Search Wall 20594						1	
