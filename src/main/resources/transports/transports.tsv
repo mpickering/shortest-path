@@ -5022,9 +5022,14 @@
 # Watchtower									
 2549 3112 2	2549 3112 1	Climb-down Ladder 2797						2	
 2548 3111 2	2549 3112 1	Climb-down Ladder 2797						2	
-2548 3111 1	2549 3112 2	Climb-up Ladder 2796						2	
-2550 3111 1	2549 3112 2	Climb-up Ladder 2796						2	
-2549 3112 1	2549 3112 2	Climb-up Ladder 2796						2	
+2933 4712 2	2549 3112 1	Climb-down Ladder 2797						2	
+2932 4711 2	2549 3112 1	Climb-down Ladder 2797						2	
+2548 3111 1	2549 3112 2	Climb-up Ladder 2796					212<14	2	
+2548 3111 1	2933 4712 2	Climb-up Ladder 2796			Watchtower			2	
+2550 3111 1	2549 3112 2	Climb-up Ladder 2796					212<14	2	
+2550 3111 1	2933 4712 2	Climb-up Ladder 2796			Watchtower			2	
+2549 3112 1	2549 3112 2	Climb-up Ladder 2796					212<14	2	
+2549 3112 1	2933 4712 2	Climb-up Ladder 2796			Watchtower			2	
 2545 3111 1	2544 3112 0	Climb-down Ladder 17122						2	
 2544 3112 1	2544 3112 0	Climb-down Ladder 17122						2	
 2543 3111 1	2544 3112 0	Climb-down Ladder 17122						2	
@@ -5980,3 +5985,30 @@
 # Tarn's Lair, wall trap passage (run past or search to disarm)
 3148 4556 0	3147 4556 0	Search Wall 20594						1	
 3147 4556 0	3148 4556 0	Search Wall 20594						1	
+									
+# Arceuus Library stairs (the railings only lead down)
+1617 3795 0	1610 3795 1	Climb Stairs 27853						2	
+1617 3796 0	1610 3796 1	Climb Stairs 27854						2	
+1610 3795 1	1617 3795 0	Climb Stairs 27855						2	
+1610 3796 1	1617 3796 0	Climb Stairs 27856						2	
+1617 3826 0	1610 3826 1	Climb Stairs 27853						2	
+1617 3827 0	1610 3827 1	Climb Stairs 27854						2	
+1610 3826 1	1617 3826 0	Climb Stairs 27855						2	
+1610 3827 1	1617 3827 0	Climb Stairs 27856						2	
+1644 3818 0	1644 3825 1	Climb Stairs 27853						2	
+1645 3818 0	1645 3825 1	Climb Stairs 27854						2	
+1644 3825 1	1644 3818 0	Climb Stairs 27855						2	
+1645 3825 1	1645 3818 0	Climb Stairs 27856						2	
+1615 3818 1	1608 3818 2	Climb Stairs 27851						2	
+1615 3819 1	1608 3818 2	Climb Stairs 27851						2	
+1608 3818 2	1615 3818 1	Climb Stairs 27852						2	
+1621 3791 1	1621 3798 2	Climb Stairs 27851						2	
+1622 3791 1	1621 3798 2	Climb Stairs 27851						2	
+1621 3798 2	1621 3791 1	Climb Stairs 27852						2	
+1643 3828 1	1650 3828 2	Climb Stairs 27851						2	
+1643 3829 1	1650 3828 2	Climb Stairs 27851						2	
+1650 3828 2	1643 3828 1	Climb Stairs 27852						2	
+									
+# God Wars Dungeon: swimming the river to Zamorak's Fortress (70 Hitpoints)
+2885 5333 2	2885 5344 2	Climb-off Ice bridge 26518	70 Hitpoints					5	
+2885 5344 2	2885 5333 2	Climb-off Ice bridge 26518	70 Hitpoints					5	
