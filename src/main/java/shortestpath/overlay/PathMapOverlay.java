@@ -121,8 +121,19 @@ public class PathMapOverlay extends Overlay
 					}
 
 					boolean isAvailable = Arrays.asList(availableAtOrigin).contains(b);
-					graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
+					graphics.setColor(NewTransportHighlights.isNew(a, b) ? NewTransportHighlights.COLOR
+						: isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
 					graphics.drawLine(mapAX, mapAY, mapBX, mapBY);
+				}
+			}
+
+			graphics.setColor(NewTransportHighlights.COLOR);
+			for (NewTransportHighlights.Entry entry : NewTransportHighlights.entries())
+			{
+				if (worldMapClipArea.contains(plugin.mapWorldPointToGraphicsPointX(entry.getDestination()),
+					plugin.mapWorldPointToGraphicsPointY(entry.getDestination())))
+				{
+					drawOnMap(graphics, entry.getDestination(), false, null);
 				}
 			}
 		}

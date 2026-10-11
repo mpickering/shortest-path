@@ -103,7 +103,8 @@ public class PathTileOverlay extends Overlay
 				}
 
 				boolean isAvailable = Arrays.asList(availableAtOrigin).contains(b);
-				graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
+				graphics.setColor(NewTransportHighlights.isNew(a, b) ? NewTransportHighlights.COLOR
+					: isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
 
 				int destination = b.getDestination();
 				if (destination == Transport.UNDEFINED_DESTINATION)
@@ -137,6 +138,27 @@ public class PathTileOverlay extends Overlay
 
 			graphics.setColor(Color.WHITE);
 			graphics.drawString(s.toString(), ca.getX(), ca.getY());
+		}
+
+		renderNewTransportLandings(graphics);
+	}
+
+	private void renderNewTransportLandings(Graphics2D graphics)
+	{
+		for (NewTransportHighlights.Entry entry : NewTransportHighlights.entries())
+		{
+			if (entry.getOrigin() != Transport.UNDEFINED_ORIGIN)
+			{
+				drawTile(graphics, entry.getOrigin(), NewTransportHighlights.COLOR, -1, true);
+			}
+			Point landing = tileCenter(entry.getDestination());
+			if (landing == null)
+			{
+				continue;
+			}
+			drawTile(graphics, entry.getDestination(), NewTransportHighlights.COLOR, -1, true);
+			graphics.setColor(NewTransportHighlights.COLOR);
+			graphics.drawString("NEW " + entry.getLabel(), landing.getX(), landing.getY() + 12);
 		}
 	}
 

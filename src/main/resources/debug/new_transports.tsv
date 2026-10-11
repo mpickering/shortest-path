@@ -1,0 +1,172 @@
+# Origin	Destination	Label
+2770 9340 0	2764 9339 0	agility_shortcuts: Squeeze-through Crevice 53242
+2764 9339 0	2770 9340 0	agility_shortcuts: Squeeze-through Crevice 53242
+	1436 3128 0	seasonal_transports: Evil Eye: Varlamore - Moons of Peril
+	2967 4254 2	seasonal_transports: Evil Eye: Wilderness - Corporeal Beast
+	2899 3713 0	seasonal_transports: Map of Alacrity: Asgarnia - God wars dungeon: Crack
+1858 7051 0	2967 4254 2	teleportation_boxes: 7: Corporeal Beast
+1858 7051 0	3245 9500 2	teleportation_boxes: 8: Chasm of Tears
+	2954 3224 0	teleportation_items: Construction cape: Home
+	2894 3465 0	teleportation_items: Construction cape: Home
+	3340 3004 0	teleportation_items: Construction cape: Home
+	2670 3632 0	teleportation_items: Construction cape: Home
+	2758 3178 0	teleportation_items: Construction cape: Home
+	2544 3095 0	teleportation_items: Construction cape: Home
+	1744 3517 0	teleportation_items: Construction cape: Home
+	3239 6076 0	teleportation_items: Construction cape: Home
+	1422 2965 0	teleportation_items: Construction cape: Home
+	2954 3224 0	teleportation_items: Construction cape: Rimmington
+	2894 3465 0	teleportation_items: Construction cape: Taverley
+	3340 3004 0	teleportation_items: Construction cape: Pollnivneach
+	1744 3517 0	teleportation_items: Construction cape: Hosidius
+	2670 3632 0	teleportation_items: Construction cape: Rellekka
+	2758 3178 0	teleportation_items: Construction cape: Brimhaven
+	2544 3095 0	teleportation_items: Construction cape: Yanille
+	3239 6076 0	teleportation_items: Construction cape: Prifddinas
+	1422 2965 0	teleportation_items: Construction cape: Aldarin
+	2954 3224 0	teleportation_items: Max cape: Tele to POH
+	2894 3465 0	teleportation_items: Max cape: Tele to POH
+	3340 3004 0	teleportation_items: Max cape: Tele to POH
+	2670 3632 0	teleportation_items: Max cape: Tele to POH
+	2758 3178 0	teleportation_items: Max cape: Tele to POH
+	2544 3095 0	teleportation_items: Max cape: Tele to POH
+	1744 3517 0	teleportation_items: Max cape: Tele to POH
+	3239 6076 0	teleportation_items: Max cape: Tele to POH
+	1422 2965 0	teleportation_items: Max cape: Tele to POH
+	2954 3224 0	teleportation_items: Max cape: POH Portals: Rimmington
+	2894 3465 0	teleportation_items: Max cape: POH Portals: Taverley
+	3340 3004 0	teleportation_items: Max cape: POH Portals: Pollnivneach
+	1744 3517 0	teleportation_items: Max cape: POH Portals: Hosidius
+	2670 3632 0	teleportation_items: Max cape: POH Portals: Rellekka
+	2758 3178 0	teleportation_items: Max cape: POH Portals: Brimhaven
+	2544 3095 0	teleportation_items: Max cape: POH Portals: Yanille
+	3239 6076 0	teleportation_items: Max cape: POH Portals: Prifddinas
+	1422 2965 0	teleportation_items: Max cape: POH Portals: Aldarin
+	1934 4428 3	teleportation_items: Pharaoh's sceptre: Jalsavrah
+2933 4712 2	2549 3112 1	transports: Climb-down Ladder 2797
+2932 4711 2	2549 3112 1	transports: Climb-down Ladder 2797
+2548 3111 1	2549 3112 2	transports: Climb-up Ladder 2796
+2548 3111 1	2933 4712 2	transports: Climb-up Ladder 2796
+2550 3111 1	2549 3112 2	transports: Climb-up Ladder 2796
+2550 3111 1	2933 4712 2	transports: Climb-up Ladder 2796
+2549 3112 1	2549 3112 2	transports: Climb-up Ladder 2796
+2549 3112 1	2933 4712 2	transports: Climb-up Ladder 2796
+2633 4682 0	2634 4682 1	transports: Climb-up Staircase 16671
+2635 4681 0	2634 4682 1	transports: Climb-up Staircase 16671
+2634 4682 1	2633 4682 0	transports: Climb-down Staircase 16673
+2816 3083 0	2817 3083 0	transports: Quick-Pay(100) Hardwood Grove Doors 9038
+2816 3084 0	2817 3084 0	transports: Quick-Pay(100) Hardwood Grove Doors 9039
+2817 3083 0	2816 3083 0	transports: Open Hardwood Grove Doors 9038
+2817 3084 0	2816 3084 0	transports: Open Hardwood Grove Doors 9039
+3143 3443 0	3143 3444 0	transports: Open Door 24958
+3143 3444 0	3143 3443 0	transports: Open Door 24958
+3190 3957 0	3190 3958 0	transports: Pick-lock Door 11726
+3190 3958 0	3190 3957 0	transports: Open Door 11726
+3191 3963 0	3191 3962 0	transports: Pick-lock Door 11726
+3191 3962 0	3191 3963 0	transports: Open Door 11726
+3201 3169 0	3202 3169 0	transports: Open Door 2406
+3202 3169 0	3201 3169 0	transports: Open Door 2406
+1453 2934 0	1455 2934 0	transports: Pass-through Entryway 54707
+1455 2934 0	1453 2934 0	transports: Pass-through Entryway 54707
+2658 10410 0	2658 10408 0	transports: Open Door 21068
+2658 10408 0	2658 10410 0	transports: Open Door 21068
+3148 4556 0	3147 4556 0	transports: Search Wall 20594
+3147 4556 0	3148 4556 0	transports: Search Wall 20594
+1617 3795 0	1610 3795 1	transports: Climb Stairs 27853
+1617 3796 0	1610 3796 1	transports: Climb Stairs 27854
+1610 3795 1	1617 3795 0	transports: Climb Stairs 27855
+1610 3796 1	1617 3796 0	transports: Climb Stairs 27856
+1617 3826 0	1610 3826 1	transports: Climb Stairs 27853
+1617 3827 0	1610 3827 1	transports: Climb Stairs 27854
+1610 3826 1	1617 3826 0	transports: Climb Stairs 27855
+1610 3827 1	1617 3827 0	transports: Climb Stairs 27856
+1644 3818 0	1644 3825 1	transports: Climb Stairs 27853
+1645 3818 0	1645 3825 1	transports: Climb Stairs 27854
+1644 3825 1	1644 3818 0	transports: Climb Stairs 27855
+1645 3825 1	1645 3818 0	transports: Climb Stairs 27856
+1615 3818 1	1608 3818 2	transports: Climb Stairs 27851
+1615 3819 1	1608 3818 2	transports: Climb Stairs 27851
+1608 3818 2	1615 3818 1	transports: Climb Stairs 27852
+1621 3791 1	1621 3798 2	transports: Climb Stairs 27851
+1622 3791 1	1621 3798 2	transports: Climb Stairs 27851
+1621 3798 2	1621 3791 1	transports: Climb Stairs 27852
+1643 3828 1	1650 3828 2	transports: Climb Stairs 27851
+1643 3829 1	1650 3828 2	transports: Climb Stairs 27851
+1650 3828 2	1643 3828 1	transports: Climb Stairs 27852
+2885 5333 2	2885 5344 2	transports: Climb-off Ice bridge 26518
+2885 5344 2	2885 5333 2	transports: Climb-off Ice bridge 26518
+1615 3659 1	1617 3660 2	transports: Climb-up Staircase 12536
+1618 3658 1	1618 3659 2	transports: Climb-up Staircase 12536
+1617 3660 2	1615 3659 1	transports: Climb-down Staircase 12538
+1618 3659 2	1618 3658 1	transports: Climb-down Staircase 12538
+1616 3686 1	1616 3686 2	transports: Climb-up Staircase 12536
+1615 3688 1	1615 3687 2	transports: Climb-up Staircase 12536
+1616 3686 2	1616 3686 1	transports: Climb-down Staircase 12538
+1615 3687 2	1615 3688 1	transports: Climb-down Staircase 12538
+2731 3375 1	2731 3375 2	transports: Climb-up Ladder 16683
+2731 3375 2	2731 3375 1	transports: Climb-down Ladder 16679
+2732 3374 1	2732 3374 2	transports: Climb-up Ladder 16683
+2732 3374 2	2732 3374 1	transports: Climb-down Ladder 16679
+2732 3376 1	2732 3376 2	transports: Climb-up Ladder 16683
+2732 3376 2	2732 3376 1	transports: Climb-down Ladder 16679
+2733 3375 1	2733 3375 2	transports: Climb-up Ladder 16683
+2733 3375 2	2733 3375 1	transports: Climb-down Ladder 16679
+1388 2918 0	1388 9313 0	transports: Climb-down Staircase 54946
+1388 9313 0	1388 2918 0	transports: Climb-up Staircase 54945
+1389 2918 0	1389 9313 0	transports: Climb-down Staircase 54946
+1389 9313 0	1389 2918 0	transports: Climb-up Staircase 54945
+1606 3508 0	1596 9900 0	transports: Enter Cave 28855
+1596 9900 0	1606 3508 0	transports: Climb Vine 28856
+1551 9880 0	1551 9882 0	transports: Step-over Root 26721
+1551 9882 0	1551 9880 0	transports: Step-over Root 26721
+1552 9880 0	1552 9882 0	transports: Step-over Root 26720
+1552 9882 0	1552 9880 0	transports: Step-over Root 26720
+1554 9871 0	1556 9871 0	transports: Step-over Root 26720
+1556 9871 0	1554 9871 0	transports: Step-over Root 26720
+1555 9870 0	1555 9872 0	transports: Step-over Root 26720
+1555 9872 0	1555 9870 0	transports: Step-over Root 26720
+1588 9899 0	1590 9899 0	transports: Step-over Root 26721
+1590 9899 0	1588 9899 0	transports: Step-over Root 26721
+1588 9900 0	1590 9900 0	transports: Step-over Root 26720
+1590 9900 0	1588 9900 0	transports: Step-over Root 26720
+2983 3387 0	1760 5191 0	transports: Use Spade -> Mole hill 12202
+2986 3387 0	1760 5191 0	transports: Use Spade -> Mole hill 12202
+2988 3378 0	1760 5191 0	transports: Use Spade -> Mole hill 12202
+2995 3377 0	1760 5191 0	transports: Use Spade -> Mole hill 12202
+2998 3375 0	1760 5191 0	transports: Use Spade -> Mole hill 12202
+3004 3376 0	1760 5191 0	transports: Use Spade -> Mole hill 12202
+3228 6114 0	3033 6121 1	transports: Enter Gauntlet Portal 36081
+3228 6115 0	3033 6121 1	transports: Enter Gauntlet Portal 36081
+2436 5121 0	2436 5119 0	transports: Pass Hot vent door 30266
+2436 5119 0	2436 5121 0	transports: Pass Hot vent door 30266
+2457 5120 0	2457 5118 0	transports: Pass Hot vent door 30266
+2457 5118 0	2457 5120 0	transports: Pass Hot vent door 30266
+2474 5138 0	2474 5136 0	transports: Pass Hot vent door 30266
+2474 5136 0	2474 5138 0	transports: Pass Hot vent door 30266
+2493 5174 0	2495 5174 0	transports: Pass Hot vent door 30266
+2495 5174 0	2493 5174 0	transports: Pass Hot vent door 30266
+2494 5157 0	2496 5157 0	transports: Pass Hot vent door 30266
+2496 5157 0	2494 5157 0	transports: Pass Hot vent door 30266
+2949 3506 0	2952 5762 0	transports: Enter Cave entrance 40887
+2952 5762 0	2949 3506 0	transports: Exit Ruins Exit 41446
+2758 9329 0	2377 4712 0	transports: Climb-down Winch 2935
+2377 4712 0	2758 9329 0	transports: Climb Climbing rope 2958
+2376 4717 0	2378 4717 0	transports: Climb-over Rocky Ledge 2959
+2378 4717 0	2376 4717 0	transports: Climb-over Rocky Ledge 2959
+2377 4727 0	2378 4728 0	transports: Climb-over Rocky Ledge 2960
+2378 4728 0	2377 4727 0	transports: Climb-over Rocky Ledge 2960
+2382 4728 0	2382 4730 0	transports: Climb-over Rocky Ledge 2961
+2382 4730 0	2382 4728 0	transports: Climb-over Rocky Ledge 2961
+2387 4727 0	2388 4728 0	transports: Climb-over Rocks 2962
+2388 4728 0	2387 4727 0	transports: Climb-over Rocks 2962
+2390 4723 0	2390 4725 0	transports: Climb-over Rocks 2963
+2390 4725 0	2390 4723 0	transports: Climb-over Rocks 2963
+2390 4717 0	2390 4719 0	transports: Climb-over Rocks 2964
+2390 4719 0	2390 4717 0	transports: Climb-over Rocks 2964
+1615 3667 0	1615 3667 1	transports: Climb-up Staircase 11807
+1615 3667 1	1615 3667 0	transports: Climb-down Staircase 11799
+1615 3679 0	1615 3679 1	transports: Climb-up Staircase 11807
+1615 3679 1	1615 3679 0	transports: Climb-down Staircase 11799
+2731 3378 0	2731 3378 1	transports: Climb-up Staircase 15653
+2731 3378 1	2731 3378 0	transports: Climb-down Staircase 15654
+1524 3290 0	1519 3289 0	transports: Slide Slope 55234
