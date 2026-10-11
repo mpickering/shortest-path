@@ -26,11 +26,8 @@ public class TransportDataLintTest
 	 */
 	private static final Set<String> KNOWN_DEAD_ENDS = new HashSet<>(Arrays.asList(
 		// Teleports and transports
-		"1934 4428 0  TELEPORTATION_ITEM  Pharaoh's sceptre: Jalsavrah",
 		"2483 3188 0  CANOE  Tree Gnome Village",
 		"2506 3584 1  TRANSPORT  ",
-		"2967 4254 0  TELEPORTATION_BOX  7: Corporeal Beast",
-		"3245 9500 0  TELEPORTATION_BOX  8: Chasm of Tears",
 		// Seasonal transports
 		"1253 3750 0  SEASONAL_TRANSPORTS  Fairy Mushroom: Kourend - Farming Guild (planted)",
 		"1304 9398 0  SEASONAL_TRANSPORTS  Map of Alacrity: Varlamore - Tonali cavern: Log balance",
@@ -49,7 +46,6 @@ public class TransportDataLintTest
 		"2766 9342 0  SEASONAL_TRANSPORTS  Map of Alacrity: Karamja - Shaman caves: Crevice",
 		"2802 3203 0  SEASONAL_TRANSPORTS  Fairy Mushroom: Karamja - Brimhaven (planted)",
 		"2913 5300 0  SEASONAL_TRANSPORTS  Map of Alacrity: Asgarnia - God wars dungeon: Saradomin rope",
-		"2967 4254 0  SEASONAL_TRANSPORTS  Evil Eye: Wilderness - Corporeal Beast",
 		"3039 4969 0  SEASONAL_TRANSPORTS  Banker's Briefcase: Asgarnia - Rogues' Den",
 		"3046 10332 0  SEASONAL_TRANSPORTS  Map of Alacrity: Wilderness - Deep wilderness dungeon: Crevice",
 		"3060 3258 0  SEASONAL_TRANSPORTS  Fairy Mushroom: Asgarnia - Port Sarim (planted)",
