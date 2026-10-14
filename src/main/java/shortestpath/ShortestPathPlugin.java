@@ -432,10 +432,7 @@ public class ShortestPathPlugin extends Plugin
 		overlayManager.add(spellbookHighlightOverlay);
 		overlayManager.add(inventoryHighlightOverlay);
 
-		if (config.drawDebugPanel())
-		{
-			overlayManager.add(debugOverlayPanel);
-		}
+		updateDebugPanel();
 
 		keyManager.registerKeyListener(clearPathKeylistener);
 		portalNexusKeybinds.loadFromProfile();
@@ -791,16 +788,9 @@ public class ShortestPathPlugin extends Plugin
 
 		cacheConfigValues();
 
-		if ("drawDebugPanel".equals(event.getKey()))
+		if ("debugLayers".equals(event.getKey()))
 		{
-			if (config.drawDebugPanel())
-			{
-				overlayManager.add(debugOverlayPanel);
-			}
-			else
-			{
-				overlayManager.remove(debugOverlayPanel);
-			}
+			updateDebugPanel();
 			return;
 		}
 
@@ -2097,14 +2087,27 @@ public class ShortestPathPlugin extends Plugin
 		return defaultValue;
 	}
 
+	private void updateDebugPanel()
+	{
+		if (config.debugLayers().contains(DebugLayer.PANEL))
+		{
+			overlayManager.add(debugOverlayPanel);
+		}
+		else
+		{
+			overlayManager.remove(debugOverlayPanel);
+		}
+	}
+
 	private void cacheConfigValues()
 	{
-		drawCollisionMap = override("drawCollisionMap", config.drawCollisionMap());
+		Set<DebugLayer> debugLayers = config.debugLayers();
+		drawCollisionMap = override("drawCollisionMap", debugLayers.contains(DebugLayer.COLLISION_MAP));
 		drawMap = override("drawMap", config.drawMap());
 		drawMinimap = override("drawMinimap", config.drawMinimap());
 		drawTiles = override("drawTiles", config.drawTiles());
-		drawTransports = override("drawTransports", config.drawTransports());
-		drawClickPoints = override("drawClickPoints", config.drawClickPoints());
+		drawTransports = override("drawTransports", debugLayers.contains(DebugLayer.TRANSPORTS));
+		drawClickPoints = override("drawClickPoints", debugLayers.contains(DebugLayer.CLICK_POINTS));
 		showTransportInfo = override("showTransportInfo", config.showTransportInfo());
 		showBankPickupInfo = override("showBankPickupInfo", config.showBankPickupInfo());
 		showUnreachableText = override("showUnreachableText", config.showUnreachableText());
