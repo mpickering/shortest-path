@@ -1821,6 +1821,12 @@ public class ShortestPathPlugin extends Plugin
 		return pathfinderConfig.getTransports();
 	}
 
+	/** Why the player cannot use {@code transport}, in a few words, or null when they can. */
+	public String explainUnavailable(Transport transport)
+	{
+		return pathfinderConfig.explainUnavailable(transport);
+	}
+
 	/** Every teleport usable from anywhere, including those the player cannot currently use. */
 	public Transport[] getAllTeleports()
 	{

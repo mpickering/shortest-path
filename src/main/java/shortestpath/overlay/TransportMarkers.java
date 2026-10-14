@@ -107,12 +107,19 @@ final class TransportMarkers
 			Transport transport = transports.get(i);
 			int other = leaving ? transport.getDestination() : transport.getOrigin();
 			rows.add("  " + name(plugin, transport) + (leaving ? " -> " : " <- ") + TargetMarkers.format(other)
-				+ (isAvailable(transport) ? "" : " (unavailable)"));
+				+ (isAvailable(transport) ? "" : " (" + unavailable(plugin, transport) + ")"));
 		}
 		if (shown < transports.size())
 		{
 			rows.add("  ... and " + (transports.size() - shown) + " more");
 		}
+	}
+
+	/** Why a transport is unavailable, for a tooltip. */
+	static String unavailable(ShortestPathPlugin plugin, Transport transport)
+	{
+		String reason = plugin.explainUnavailable(transport);
+		return reason == null ? "unavailable" : "unavailable: " + reason;
 	}
 
 	/** A transport's name for a tooltip: its menu text, else its object, else its type. */

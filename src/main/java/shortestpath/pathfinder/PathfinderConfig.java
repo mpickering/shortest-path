@@ -149,6 +149,8 @@ public class PathfinderConfig
 	 */
 	@Getter
 	private HeldItems heldItems = HeldItems.NONE;
+	// When transport availability was last evaluated, so explanations match it.
+	private long lastTransportRefreshMinutes;
 	// Written on the client thread, read by the pathfinder thread in
 	// isPlantedSpiritTreeAllowed — volatile keeps the cross-thread contract explicit.
 	public volatile Set<String> availableSpiritTrees = null;
@@ -629,6 +631,7 @@ public class PathfinderConfig
 		{
 			return; // Has to run on the client thread; data will be refreshed when path finding commences
 		}
+		lastTransportRefreshMinutes = evaluationTimeMinutes;
 		currentMaxQuestPoints = maximumQuestPoints();
 
 		// Fairy ring staff/diary requirements are enforced later in hasRequiredItems().
@@ -802,6 +805,25 @@ public class PathfinderConfig
 			.toArray(Transport[]::new);
 	}
 
+	/**
+	 * Why the player cannot use {@code transport} as of the last refresh, as a few words for the
+	 * debug overlays, or null when they can without banking. Uses the quest, varbit and item state
+	 * that refresh collected.
+	 */
+	public String explainUnavailable(Transport transport)
+	{
+		String reason = unavailableReason(transport, lastTransportRefreshMinutes);
+		if (reason != null)
+		{
+			return reason;
+		}
+		if (hasRequiredItems(transport, heldItems.carried()))
+		{
+			return null;
+		}
+		return hasRequiredItems(transport, heldItems.carriedAndBanked()) ? "items in the bank" : "missing items";
+	}
+
 	/** Every teleport usable from anywhere, including those the player cannot currently use. */
 	public Transport[] getAllTeleports()
 	{
@@ -880,12 +902,21 @@ public class PathfinderConfig
 
 	private boolean useTransport(Transport transport, long evaluationTimeMinutes)
 	{
+		return unavailableReason(transport, evaluationTimeMinutes) == null;
+	}
+
+	/**
+	 * Why the settings or the player's account rule {@code transport} out, as a few words for the
+	 * debug overlays, or null when nothing does; its items are checked separately.
+	 */
+	private String unavailableReason(Transport transport, long evaluationTimeMinutes)
+	{
 		// Sailing: suppress teleports while the player is aboard a boat.
 		// We don't model sailing navigation, so teleporting away mid-ocean would produce
 		// confusing suggestions. Pathfinding resumes normally after disembarking.
 		if (isOnSailingBoat && transport.getType().isTeleport())
 		{
-			return false;
+			return "on a boat";
 		}
 
 		// Master POH gate - if POH is disabled, reject all POH transports
@@ -897,7 +928,7 @@ public class PathfinderConfig
 			int destY = WorldPointUtil.unpackWorldY(transport.getDestination());
 			if (ShortestPathPlugin.isInsidePoh(originX, originY) || ShortestPathPlugin.isInsidePoh(destX, destY))
 			{
-				return false;
+				return "POH disabled";
 			}
 		}
 
@@ -905,7 +936,7 @@ public class PathfinderConfig
 		// always-blocked region or a region the player has not unlocked.
 		if (!isTransportRegionAllowed(transport))
 		{
-			return false;
+			return "league region locked";
 		}
 
 		final boolean isQuestLocked = transport.isQuestLocked();
@@ -914,26 +945,26 @@ public class PathfinderConfig
 		// Check if transport type is enabled in config
 		if (!transportTypeConfig.isEnabled(type))
 		{
-			return false;
+			return "type disabled in settings";
 		}
 
 		// Handle POH variants for types that have them
 		if (!checkPohVariant(transport, type))
 		{
-			return false;
+			return "POH option off";
 		}
 
 		// Handle special cases for teleportation items and seasonal transports
 		if (!checkTeleportationItemRules(transport, type))
 		{
-			return false;
+			return "teleportation item setting";
 		}
 
 		// Respawn rows for Prifddinas (and the colliding Lumbridge default) are
 		// gated on the declared respawn in config, not on varbits
 		if (!checkRespawnGate(transport))
 		{
-			return false;
+			return "respawn point";
 		}
 
 		// Pure-unlock requirements are gated on the declared unlock set here,
@@ -941,7 +972,7 @@ public class PathfinderConfig
 		// modes can skip that evaluation entirely and must still honour the gate
 		if (!checkUnlockGates(transport))
 		{
-			return false;
+			return "not unlocked in settings";
 		}
 
 		// Handle jewellery box tier filtering
@@ -949,37 +980,37 @@ public class PathfinderConfig
 		{
 			if (!checkJewelleryBoxTier(transport))
 			{
-				return false;
+				return "jewellery box tier";
 			}
 		}
 
 		if (!hasRequiredLevels(transport))
 		{
-			return false;
+			return "skill levels";
 		}
 
 		if (isQuestLocked && !completedQuests(transport))
 		{
-			return false;
+			return "quests";
 		}
 
 		if (varbitChecks(transport, evaluationTimeMinutes))
 		{
-			return false;
+			return "varbit requirement";
 		}
 
 		if (varPlayerChecks(transport, evaluationTimeMinutes))
 		{
-			return false;
+			return "varplayer requirement";
 		}
 
 		if (TransportType.SPIRIT_TREE.equals(type) || TransportType.SEASONAL_TRANSPORTS.equals(type)
 			|| TransportType.TELEPORTATION_ITEM.equals(type))
 		{
-			return checkPlantedSpiritTrees(transport);
+			return checkPlantedSpiritTrees(transport) ? null : "tree not planted";
 		}
 
-		return true;
+		return null;
 	}
 
 	/**
