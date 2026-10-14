@@ -907,6 +907,25 @@ public class PathfinderConfig
 			.toArray(Transport[]::new);
 	}
 
+	/**
+	 * Why the player cannot use {@code transport} as of the last refresh, as a few words for the
+	 * debug overlays, or null when they can without banking. Uses the quest, varbit and item state
+	 * that refresh collected.
+	 */
+	public String explainUnavailable(Transport transport)
+	{
+		shortestpath.requirement.RejectionReason reason = requirements.check(transport);
+		if (reason != shortestpath.requirement.RejectionReason.NONE)
+		{
+			return reason.name().toLowerCase(java.util.Locale.ROOT).replace('_', ' ');
+		}
+		if (eligibility.usable(transport, BankVisitState.CARRIED))
+		{
+			return null;
+		}
+		return eligibility.usable(transport, BankVisitState.BANKED) ? "items in the bank" : "missing items";
+	}
+
 	/** Every teleport usable from anywhere, including those the player cannot currently use. */
 	public Transport[] getAllTeleports()
 	{

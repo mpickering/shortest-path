@@ -107,7 +107,7 @@ public final class Requirements
 	 * named requirement gates, then {@link #itemRequirement} consults the
 	 * eligibility snapshot's item pools last.
 	 */
-	RejectionReason check(Transport transport)
+	public RejectionReason check(Transport transport)
 	{
 		RejectionReason reason = gates(transport);
 		if (reason == RejectionReason.NONE) reason = itemRequirement(transport);

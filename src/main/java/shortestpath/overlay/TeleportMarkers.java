@@ -41,7 +41,7 @@ final class TeleportMarkers
 	{
 		USABLE("usable"),
 		AFTER_BANK("after banking"),
-		UNAVAILABLE("unavailable");
+		UNAVAILABLE(null);
 
 		private final String label;
 
@@ -104,7 +104,8 @@ final class TeleportMarkers
 				{
 					best = availability;
 				}
-				lines.add(name(teleport) + ": " + availability.label);
+				lines.add(TransportMarkers.name(plugin, teleport) + ": " + (availability == Availability.UNAVAILABLE
+					? TransportMarkers.unavailable(plugin, teleport) : availability.label));
 			}
 			Collections.sort(lines);
 			List<String> rows = new ArrayList<>();
@@ -119,12 +120,6 @@ final class TeleportMarkers
 			built.add(new Marker(entry.getKey(), colour(best), rows));
 		}
 		return built;
-	}
-
-	private String name(Transport teleport)
-	{
-		String info = plugin.formatTransportDisplay(teleport);
-		return info == null || info.isEmpty() ? teleport.getType().name() : info;
 	}
 
 	private static Color colour(Availability availability)
