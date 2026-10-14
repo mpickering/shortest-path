@@ -179,7 +179,7 @@ public final class EffectiveConfig implements ShortestPathConfig
 	@Override
 	public boolean drawClickPoints()
 	{
-		return override(ConfigKey.DRAW_CLICK_POINTS, base.drawClickPoints());
+		return override(ConfigKey.DRAW_CLICK_POINTS, base.debugLayers().contains(shortestpath.DebugLayer.CLICK_POINTS));
 	}
 
 	@Override
@@ -251,19 +251,19 @@ public final class EffectiveConfig implements ShortestPathConfig
 	@Override
 	public boolean drawTransports()
 	{
-		return override(ConfigKey.DRAW_TRANSPORTS, base.drawTransports());
+		return override(ConfigKey.DRAW_TRANSPORTS, base.debugLayers().contains(shortestpath.DebugLayer.TRANSPORTS));
 	}
 
 	@Override
 	public boolean drawCollisionMap()
 	{
-		return override(ConfigKey.DRAW_COLLISION_MAP, base.drawCollisionMap());
+		return override(ConfigKey.DRAW_COLLISION_MAP, base.debugLayers().contains(shortestpath.DebugLayer.COLLISION_MAP));
 	}
 
 	@Override
 	public boolean drawDebugPanel()
 	{
-		return override(ConfigKey.DRAW_DEBUG_PANEL, base.drawDebugPanel());
+		return override(ConfigKey.DRAW_DEBUG_PANEL, base.debugLayers().contains(shortestpath.DebugLayer.PANEL));
 	}
 
 	@Override

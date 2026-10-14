@@ -154,6 +154,7 @@ public enum ConfigKey
 	CLEAR_PATH_HOTKEY("clearPathHotkey", ShortestPathConfig::clearPathHotkey, Coercion.NONE, Effect.DISPLAY_ONLY),
 	DRAW_TRANSPORTS("drawTransports", ShortestPathConfig::drawTransports, Coercion.BOOLEAN, Effect.DISPLAY_ONLY),
 	DRAW_COLLISION_MAP("drawCollisionMap", ShortestPathConfig::drawCollisionMap, Coercion.BOOLEAN, Effect.DISPLAY_ONLY),
+	DEBUG_LAYERS("debugLayers", ShortestPathConfig::debugLayers, Coercion.NONE, Effect.SIDE_EFFECT_DEBUG_OVERLAY),
 	DRAW_DEBUG_PANEL("drawDebugPanel", ShortestPathConfig::drawDebugPanel, Coercion.BOOLEAN, Effect.SIDE_EFFECT_DEBUG_OVERLAY),
 	POST_TRANSPORTS("postTransports", ShortestPathConfig::postTransports, Coercion.BOOLEAN, Effect.DISPLAY_ONLY),
 	UNREACHABLE_TEXT("unreachableText", String.class, "Destination could not be reached", Coercion.NONE, Effect.DISPLAY_ONLY),

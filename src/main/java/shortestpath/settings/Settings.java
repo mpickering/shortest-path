@@ -655,7 +655,7 @@ public class Settings
 			recalculateDistance = num(base, ConfigKey.RECALCULATE_DISTANCE);
 			reachedDistance = num(base, ConfigKey.FINISH_DISTANCE);
 			cancelInstead = Boolean.TRUE.equals(base.apply(ConfigKey.CANCEL_INSTEAD));
-			drawDebugPanel = configured.drawDebugPanel();
+			drawDebugPanel = configured.debugLayers().contains(shortestpath.DebugLayer.PANEL);
 			postTransports = effective.postTransports();
 		}
 

@@ -578,11 +578,47 @@ public interface ShortestPathConfig extends Config
 	String sectionDebug = "sectionDebug";
 
 	@ConfigItem(
-		keyName = "drawTransports",
-		name = "Draw Transports",
-		description = "Draw all transports on map and game view.<br>White = available, Orange = unavailable (missing requirements)",
+		keyName = "debugLayers",
+		name = "Debug layers",
+		description = "The debug views to draw:<br>"
+			+ "Stats panel: the pathfinding search state, timings and errors<br>"
+			+ "Transports: every transport on the map and game view; white = available, orange = unavailable<br>"
+			+ "Collision map: blocked tiles and walls<br>"
+			+ "Click points: exact route click points in the game view",
 		position = 204,
 		section = sectionDebug
+	)
+	default Set<DebugLayer> debugLayers()
+	{
+		Set<DebugLayer> layers = EnumSet.noneOf(DebugLayer.class);
+		if (drawDebugPanel())
+		{
+			layers.add(DebugLayer.PANEL);
+		}
+		if (drawTransports())
+		{
+			layers.add(DebugLayer.TRANSPORTS);
+		}
+		if (drawCollisionMap())
+		{
+			layers.add(DebugLayer.COLLISION_MAP);
+		}
+		if (drawClickPoints())
+		{
+			layers.add(DebugLayer.CLICK_POINTS);
+		}
+		return layers;
+	}
+
+	/**
+	 * Legacy persisted settings used as the migration default for {@link #debugLayers()}.
+	 * Remove once the old config values are no longer supported.
+	 */
+	@ConfigItem(
+		keyName = "drawTransports",
+		name = "",
+		description = "",
+		hidden = true
 	)
 	default boolean drawTransports()
 	{
@@ -591,10 +627,9 @@ public interface ShortestPathConfig extends Config
 
 	@ConfigItem(
 		keyName = "drawCollisionMap",
-		name = "Draw Collision Map",
-		description = "Draw the collision map",
-		position = 205,
-		section = sectionDebug
+		name = "",
+		description = "",
+		hidden = true
 	)
 	default boolean drawCollisionMap()
 	{
@@ -603,10 +638,9 @@ public interface ShortestPathConfig extends Config
 
 	@ConfigItem(
 		keyName = "drawDebugPanel",
-		name = "Show Debug Panel",
-		description = "Show the pathfinding debug stats panel",
-		position = 206,
-		section = sectionDebug
+		name = "",
+		description = "",
+		hidden = true
 	)
 	default boolean drawDebugPanel()
 	{
@@ -615,10 +649,9 @@ public interface ShortestPathConfig extends Config
 
 	@ConfigItem(
 		keyName = "drawClickPoints",
-		name = "Show Click Points",
-		description = "Highlight route click points in magenta in the game view",
-		position = 208,
-		section = sectionDebug
+		name = "",
+		description = "",
+		hidden = true
 	)
 	default boolean drawClickPoints()
 	{
@@ -628,8 +661,8 @@ public interface ShortestPathConfig extends Config
 	@ConfigItem(
 		keyName = "postTransports",
 		name = "Post Transports",
-		description = "Post the current path's transports as a PluginMessage event",
-		position = 209,
+		description = "Whether to post the transports used in the current path as a PluginMessage event",
+		position = 205,
 		section = sectionDebug
 	)
 	default boolean postTransports()
