@@ -213,6 +213,18 @@ public final class ExactPathfinder implements ActiveSearch
 	}
 
 	@Override
+	public TargetGoals getTargetGoals()
+	{
+		return goals.targetTiles();
+	}
+
+	@Override
+	public GoalStates getGoalStates()
+	{
+		return goals;
+	}
+
+	@Override
 	public Targets getTargets()
 	{ return targets;
 	}

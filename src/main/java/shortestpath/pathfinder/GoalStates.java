@@ -120,6 +120,27 @@ public final class GoalStates
 		return (layers.getOrDefault(point, 0) & (banked ? BANKED : UNBANKED)) != 0;
 	}
 
+	/** How the targets' tiles resolved, before the item checks. */
+	public TargetGoals targetTiles()
+	{
+		return tiles;
+	}
+
+	/** Whether the player holds the items of the target at {@code point}, or null for no such target. */
+	public TargetStatus status(int point)
+	{
+		return statuses.get(point);
+	}
+
+	/**
+	 * Whether a route may finish at or near the target at {@code point} at all: false for a target
+	 * whose items the player lacks while another target can be completed.
+	 */
+	public boolean finishesRoute(int point)
+	{
+		return layers.getOrDefault(point, 0) != 0;
+	}
+
 	/** Every tile that finishes the route in some layer. */
 	public Set<Integer> tiles()
 	{

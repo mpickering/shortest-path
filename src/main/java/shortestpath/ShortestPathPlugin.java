@@ -167,6 +167,7 @@ public class ShortestPathPlugin extends Plugin
 	public boolean drawTiles;
 	public boolean drawTransports;
 	public boolean drawClickPoints;
+	public boolean drawTargets;
 	public boolean showTransportInfo;
 	public boolean showBankPickupInfo;
 	public boolean showUnreachableText;
@@ -1819,6 +1820,12 @@ public class ShortestPathPlugin extends Plugin
 		return pathfinderConfig.getTransports();
 	}
 
+	/** The targets set aside because the config rules them out, e.g. in the wilderness. */
+	public Set<Integer> getFilteredTargets()
+	{
+		return pathfinderConfig.getFilteredTargets();
+	}
+
 	/**
 	 * Every loaded transport grouped by origin for display, including transports the
 	 * player cannot currently use. Same layout as {@link #getTransports()}.
@@ -2118,6 +2125,7 @@ public class ShortestPathPlugin extends Plugin
 		drawTiles = override("drawTiles", config.drawTiles());
 		drawTransports = override("drawTransports", debugLayers.contains(DebugLayer.TRANSPORTS));
 		drawClickPoints = override("drawClickPoints", debugLayers.contains(DebugLayer.CLICK_POINTS));
+		drawTargets = debugLayers.contains(DebugLayer.TARGETS);
 		showTransportInfo = override("showTransportInfo", config.showTransportInfo());
 		showBankPickupInfo = override("showBankPickupInfo", config.showBankPickupInfo());
 		showUnreachableText = override("showUnreachableText", config.showUnreachableText());

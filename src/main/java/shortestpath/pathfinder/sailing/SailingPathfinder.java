@@ -46,6 +46,8 @@ public class SailingPathfinder implements ActiveSearch
 	// a transport destination, or resolved to at least one walkable nearby tile.
 	// When false the search is skipped entirely, since no goal can ever be visited.
 	private final boolean hasViableGoal;
+	@Getter
+	private final TargetGoals targetGoals;
 	private final SailingSearch sailing;
 	private final PathfinderConfig config;
 	private final CollisionMap map;
@@ -133,9 +135,9 @@ public class SailingPathfinder implements ActiveSearch
 		this.start = start;
 		this.targets = targets;
 		Set<Integer> points = targets.points();
-		TargetGoals resolved = TargetGoals.resolve(config, start, points);
-		this.goals = resolved.goals();
-		this.hasViableGoal = resolved.hasViableGoal();
+		this.targetGoals = TargetGoals.resolve(config, start, points);
+		this.goals = targetGoals.goals();
+		this.hasViableGoal = targetGoals.hasViableGoal();
 		this.sailing = new SailingSearch(moves, boatHull, points.stream().mapToInt(Integer::intValue).toArray(),
 			goals.stream().mapToInt(Integer::intValue).toArray(), sailingHeading);
 		this.completionCallback = completionCallback;

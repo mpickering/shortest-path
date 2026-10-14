@@ -1,10 +1,12 @@
 package shortestpath.overlay;
 
 import com.google.inject.Inject;
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
+import java.awt.Stroke;
 import java.util.Arrays;
 import java.util.List;
 import net.runelite.api.Client;
@@ -14,6 +16,8 @@ import net.runelite.api.Tile;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.tooltip.Tooltip;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import shortestpath.PrimitiveIntHashMap;
 import shortestpath.ShortestPathPlugin;
 import shortestpath.WorldPointUtil;
@@ -34,12 +38,14 @@ public class DebugSceneOverlay extends Overlay
 
 	private final Client client;
 	private final ShortestPathPlugin plugin;
+	private final TooltipManager tooltipManager;
 
 	@Inject
-	private DebugSceneOverlay(Client client, ShortestPathPlugin plugin)
+	private DebugSceneOverlay(Client client, ShortestPathPlugin plugin, TooltipManager tooltipManager)
 	{
 		this.client = client;
 		this.plugin = plugin;
+		this.tooltipManager = tooltipManager;
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -57,6 +63,11 @@ public class DebugSceneOverlay extends Overlay
 		if (plugin.drawCollisionMap)
 		{
 			renderCollisionMap(graphics);
+		}
+
+		if (plugin.drawTargets)
+		{
+			renderTargets(graphics, client.getMouseCanvasPosition());
 		}
 
 		// Click points without the path are floating marks, so they follow the same drawTiles
@@ -199,6 +210,42 @@ public class DebugSceneOverlay extends Overlay
 				fillTile(graphics, point, COLOR_CLICK_POINT);
 			}
 		}
+	}
+
+	private void renderTargets(Graphics2D graphics, Point cursor)
+	{
+		List<TargetMarkers.Marker> markers = TargetMarkers.collect(plugin.getActiveSearch(), plugin.getFilteredTargets());
+		Stroke previousStroke = graphics.getStroke();
+		graphics.setStroke(new BasicStroke(2));
+		List<String> hoverRows = null;
+		for (TargetMarkers.Marker marker : markers)
+		{
+			for (Polygon poly : SceneTiles.polygons(client, marker.point))
+			{
+				if (!marker.target)
+				{
+					graphics.setColor(withAlpha(marker.colour, 60));
+					graphics.fill(poly);
+				}
+				graphics.setColor(marker.colour);
+				graphics.draw(poly);
+				// Targets come first, so a target under the cursor wins over a goal on the same tile.
+				if (hoverRows == null && cursor != null && poly.contains(cursor.getX(), cursor.getY()))
+				{
+					hoverRows = marker.rows;
+				}
+			}
+		}
+		graphics.setStroke(previousStroke);
+		if (hoverRows != null)
+		{
+			tooltipManager.add(new Tooltip(String.join("</br>", hoverRows)));
+		}
+	}
+
+	private static Color withAlpha(Color colour, int alpha)
+	{
+		return new Color(colour.getRed(), colour.getGreen(), colour.getBlue(), alpha);
 	}
 
 	private void fillTile(Graphics2D graphics, int point, Color color)

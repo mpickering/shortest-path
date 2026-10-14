@@ -152,4 +152,18 @@ public class GoalStatesTest
 			return avoidWilderness;
 		}
 	}
+
+	@Test
+	public void reportsHowEachTargetResolved()
+	{
+		GoalStates goals = goals(SPADE_CARRIED, spadeAt(BLOCKED), Target.requiring(OTHER, TargetsTest.items(ItemID.RAKE)));
+		TargetGoals tiles = goals.targetTiles();
+		assertTrue(tiles.isBlocked(BLOCKED));
+		assertFalse(tiles.fallbacks(BLOCKED).isEmpty());
+		assertFalse(tiles.isBlocked(OTHER));
+		assertEquals(TargetStatus.CARRIED, goals.status(BLOCKED));
+		assertEquals(TargetStatus.UNKNOWN, goals.status(OTHER));
+		assertTrue(goals.finishesRoute(BLOCKED));
+		assertFalse("the rake target is skipped while the spade one can be completed", goals.finishesRoute(OTHER));
+	}
 }

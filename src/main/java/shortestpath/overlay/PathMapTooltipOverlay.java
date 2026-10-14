@@ -3,6 +3,7 @@ package shortestpath.overlay;
 import com.google.inject.Inject;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,13 +23,16 @@ public class PathMapTooltipOverlay extends Overlay
 	private final Client client;
 	private final ShortestPathPlugin plugin;
 	private final WorldMapCanvas canvas;
+	private final DebugMapOverlay debugMapOverlay;
 
 	@Inject
-	private PathMapTooltipOverlay(Client client, ShortestPathPlugin plugin, WorldMapCanvas canvas)
+	private PathMapTooltipOverlay(Client client, ShortestPathPlugin plugin, WorldMapCanvas canvas,
+		DebugMapOverlay debugMapOverlay)
 	{
 		this.client = client;
 		this.plugin = plugin;
 		this.canvas = canvas;
+		this.debugMapOverlay = debugMapOverlay;
 		setPosition(OverlayPosition.DYNAMIC);
 		setPriority(Overlay.PRIORITY_HIGHEST);
 		setLayer(OverlayLayer.MANUAL);
@@ -38,47 +42,63 @@ public class PathMapTooltipOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (!plugin.drawMap || canvas.bounds() == null)
+		Rectangle bounds = canvas.bounds();
+		if (!plugin.drawMap || bounds == null)
 		{
 			return null;
 		}
 
+		Point cursorPos = client.getMouseCanvasPosition();
+		int point = WorldPointUtil.UNDEFINED;
+		List<String> rows = new ArrayList<>();
 		if (plugin.getActiveSearch() != null)
 		{
 			List<PathStep> path = plugin.getActiveSearch().getPath();
-			Point cursorPos = client.getMouseCanvasPosition();
-			for (int i = 0; i < path.size(); i++)
+			for (int i = 0; i < path.size() && point == WorldPointUtil.UNDEFINED; i++)
 			{
 				int nextPoint = WorldPointUtil.UNDEFINED;
 				if (path.size() > i + 1)
 				{
 					nextPoint = path.get(i + 1).getPackedPosition();
 				}
-				if (drawTooltip(graphics, cursorPos, path.get(i).getPackedPosition(), nextPoint, i + 1, path, i))
+				if (canvas.isHovered(path.get(i).getPackedPosition(), cursorPos))
 				{
-					return null;
+					point = path.get(i).getPackedPosition();
+					rows.addAll(pathRows(nextPoint, i + 1, path, i));
 				}
 			}
 			for (int target : plugin.getActiveSearch().getTargets().points())
 			{
-				if (!path.isEmpty() && target != path.get(path.size() - 1).getPackedPosition())
+				if (point == WorldPointUtil.UNDEFINED && !path.isEmpty()
+					&& target != path.get(path.size() - 1).getPackedPosition() && canvas.isHovered(target, cursorPos))
 				{
-					drawTooltip(graphics, cursorPos, target, WorldPointUtil.UNDEFINED, -1, path, -1);
+					point = target;
+					rows.addAll(pathRows(WorldPointUtil.UNDEFINED, -1, path, -1));
 				}
 			}
+		}
+
+		// The debug layers' hovered marker adds its own rows, below the path's.
+		List<String> debugRows = debugMapOverlay.getHoverRows();
+		if (!debugRows.isEmpty())
+		{
+			if (point == WorldPointUtil.UNDEFINED)
+			{
+				point = debugMapOverlay.getHoverPoint();
+			}
+			rows.addAll(debugRows);
+		}
+
+		if (!rows.isEmpty())
+		{
+			canvas.drawTooltip(graphics, bounds, canvas.x(point), canvas.y(point), rows);
 		}
 
 		return null;
 	}
 
-	private boolean drawTooltip(Graphics2D graphics, Point cursorPos, int point, int nextPoint, int n,
-		List<PathStep> path, int pathIndex)
+	private List<String> pathRows(int nextPoint, int n, List<PathStep> path, int pathIndex)
 	{
-		if (!canvas.isHovered(point, cursorPos))
-		{
-			return false;
-		}
-
 		List<String> rows = new ArrayList<>(Arrays.asList("Shortest path:",
 			n < 0 ? "Unused target" : ("Step " + n + " of " + plugin.getActiveSearch().getPath().size())));
 		if (nextPoint != WorldPointUtil.UNDEFINED)
@@ -103,8 +123,6 @@ public class PathMapTooltipOverlay extends Overlay
 			}
 		}
 
-		canvas.drawTooltip(graphics, canvas.bounds(), canvas.x(point), canvas.y(point), rows);
-
-		return true;
+		return rows;
 	}
 }

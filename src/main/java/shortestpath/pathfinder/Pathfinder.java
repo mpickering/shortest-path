@@ -333,6 +333,18 @@ public class Pathfinder implements ActiveSearch
 	}
 
 	@Override
+	public TargetGoals getTargetGoals()
+	{
+		return goals.targetTiles();
+	}
+
+	@Override
+	public GoalStates getGoalStates()
+	{
+		return goals;
+	}
+
+	@Override
 	public void run()
 	{
 		stats.start();
