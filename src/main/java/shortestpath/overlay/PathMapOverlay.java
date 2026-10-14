@@ -7,44 +7,35 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.Stroke;
-import java.awt.geom.Area;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import shortestpath.PrimitiveIntHashMap;
 import shortestpath.ShortestPathPlugin;
 import shortestpath.TileStyle;
 import shortestpath.WorldPointUtil;
-import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.PathStep;
-import shortestpath.pathfinder.TransportAvailability;
-import shortestpath.transport.Transport;
 
 public class PathMapOverlay extends Overlay
 {
 	private final Client client;
 	private final ShortestPathPlugin plugin;
+	private final WorldMapCanvas canvas;
 
 	@Inject
-	private PathMapOverlay(Client client, ShortestPathPlugin plugin)
+	private PathMapOverlay(Client client, ShortestPathPlugin plugin, WorldMapCanvas canvas)
 	{
 		this.client = client;
 		this.plugin = plugin;
+		this.canvas = canvas;
 		setPosition(OverlayPosition.DYNAMIC);
 		setPriority(Overlay.PRIORITY_LOW);
 		setLayer(OverlayLayer.MANUAL);
 		drawAfterLayer(InterfaceID.Worldmap.MAP_CONTAINER);
 	}
-
-	private static final Color COLOR_AVAILABLE = Color.WHITE;
-	private static final Color COLOR_UNAVAILABLE = Color.ORANGE;
 
 	@Override
 	public Dimension render(Graphics2D graphics)
@@ -54,78 +45,12 @@ public class PathMapOverlay extends Overlay
 			return null;
 		}
 
-		if (client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER) == null)
+		Rectangle worldMapRectangle = canvas.bounds();
+		if (worldMapRectangle == null)
 		{
 			return null;
 		}
-
-		Rectangle worldMapRectangle = Objects.requireNonNull(client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds();
-		Area worldMapClipArea = getWorldMapClipArea(worldMapRectangle);
-		graphics.setClip(worldMapClipArea);
-
-		if (plugin.drawCollisionMap)
-		{
-			graphics.setColor(plugin.colourCollisionMap);
-			int mapWorldPoint = plugin.calculateMapPoint(worldMapRectangle.x, worldMapRectangle.y);
-			int extentX = WorldPointUtil.unpackWorldX(mapWorldPoint);
-			int extentY = WorldPointUtil.unpackWorldY(mapWorldPoint);
-			int extentWidth = getWorldMapExtentWidth(worldMapRectangle);
-			int extentHeight = getWorldMapExtentHeight(worldMapRectangle);
-			final CollisionMap map = plugin.getMap();
-			final int z = client.getTopLevelWorldView().getPlane();
-			for (int x = extentX; x < (extentX + extentWidth + 1); x++)
-			{
-				for (int y = extentY - extentHeight; y < (extentY + 1); y++)
-				{
-					if (map.isBlocked(x, y, z))
-					{
-						drawOnMap(graphics, WorldPointUtil.packWorldPoint(x, y, z), false, null);
-					}
-				}
-			}
-		}
-
-		if (plugin.drawTransports)
-		{
-			PrimitiveIntHashMap<Transport[]> allTransports = plugin.getAllDisplayTransports();
-			PrimitiveIntHashMap<Transport[]> availableTransports = plugin.getTransports();
-
-			for (int a : allTransports.keys())
-			{
-				if (a == Transport.UNDEFINED_ORIGIN)
-				{
-					continue; // skip teleports
-				}
-
-				int mapAX = plugin.mapWorldPointToGraphicsPointX(a);
-				int mapAY = plugin.mapWorldPointToGraphicsPointY(a);
-				if (!worldMapClipArea.contains(mapAX, mapAY))
-				{
-					continue;
-				}
-
-				Transport[] availableAtOrigin = availableTransports.getOrDefault(a, TransportAvailability.EMPTY_TRANSPORTS);
-
-				for (Transport b : allTransports.getOrDefault(a, TransportAvailability.EMPTY_TRANSPORTS))
-				{
-					if (b == null || (b.getType() != null && b.getType().isTeleport()))
-					{
-						continue; // skip teleports
-					}
-
-					int mapBX = plugin.mapWorldPointToGraphicsPointX(b.getDestination());
-					int mapBY = plugin.mapWorldPointToGraphicsPointY(b.getDestination());
-					if (!worldMapClipArea.contains(mapBX, mapBY))
-					{
-						continue;
-					}
-
-					boolean isAvailable = Arrays.asList(availableAtOrigin).contains(b);
-					graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
-					graphics.drawLine(mapAX, mapAY, mapBX, mapBY);
-				}
-			}
-		}
+		graphics.setClip(canvas.clipArea(worldMapRectangle));
 
 		if (plugin.getActiveSearch() != null)
 		{
@@ -312,51 +237,5 @@ public class PathMapOverlay extends Overlay
 			}
 			graphics.fillRect(x, y, width, height);
 		}
-	}
-
-	private Area getWorldMapClipArea(Rectangle baseRectangle)
-	{
-		final Widget overview = client.getWidget(InterfaceID.Worldmap.OVERVIEW_CONTAINER);
-		final Widget surfaceSelector = client.getWidget(InterfaceID.Worldmap.MAPLIST_BOX_GRAPHIC0);
-
-		Area clipArea = new Area(baseRectangle);
-
-		if (overview != null && !overview.isHidden())
-		{
-			clipArea.subtract(new Area(overview.getBounds()));
-		}
-
-		if (surfaceSelector != null && !surfaceSelector.isHidden())
-		{
-			clipArea.subtract(new Area(surfaceSelector.getBounds()));
-		}
-
-		return clipArea;
-	}
-
-	private int getWorldMapExtentWidth(Rectangle baseRectangle)
-	{
-		return (WorldPointUtil.unpackWorldX(
-			plugin.calculateMapPoint(
-				baseRectangle.x + baseRectangle.width,
-				baseRectangle.y + baseRectangle.height))
-			-
-			WorldPointUtil.unpackWorldX(
-				plugin.calculateMapPoint(
-					baseRectangle.x,
-					baseRectangle.y)));
-	}
-
-	private int getWorldMapExtentHeight(Rectangle baseRectangle)
-	{
-		return (WorldPointUtil.unpackWorldY(
-			plugin.calculateMapPoint(
-				baseRectangle.x,
-				baseRectangle.y))
-			-
-			WorldPointUtil.unpackWorldY(
-				plugin.calculateMapPoint(
-					baseRectangle.x + baseRectangle.width,
-					baseRectangle.y + baseRectangle.height)));
 	}
 }

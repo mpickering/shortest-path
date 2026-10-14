@@ -78,7 +78,9 @@ import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.Text;
 import shortestpath.overlay.BankItemHighlightOverlay;
+import shortestpath.overlay.DebugMapOverlay;
 import shortestpath.overlay.DebugOverlayPanel;
+import shortestpath.overlay.DebugSceneOverlay;
 import shortestpath.overlay.InventoryHighlightOverlay;
 import shortestpath.overlay.PathMapOverlay;
 import shortestpath.overlay.PathMapTooltipOverlay;
@@ -220,6 +222,10 @@ public class ShortestPathPlugin extends Plugin
 	private InventoryHighlightOverlay inventoryHighlightOverlay;
 	@Inject
 	private DebugOverlayPanel debugOverlayPanel;
+	@Inject
+	private DebugSceneOverlay debugSceneOverlay;
+	@Inject
+	private DebugMapOverlay debugMapOverlay;
 	@Inject
 	private SpriteManager spriteManager;
 	@Inject
@@ -431,6 +437,8 @@ public class ShortestPathPlugin extends Plugin
 		overlayManager.add(bankItemHighlightOverlay);
 		overlayManager.add(spellbookHighlightOverlay);
 		overlayManager.add(inventoryHighlightOverlay);
+		overlayManager.add(debugSceneOverlay);
+		overlayManager.add(debugMapOverlay);
 
 		updateDebugPanel();
 
@@ -450,6 +458,8 @@ public class ShortestPathPlugin extends Plugin
 		overlayManager.remove(spellbookHighlightOverlay);
 		overlayManager.remove(inventoryHighlightOverlay);
 		overlayManager.remove(debugOverlayPanel);
+		overlayManager.remove(debugSceneOverlay);
+		overlayManager.remove(debugMapOverlay);
 
 		synchronized (pathfinderMutex)
 		{
