@@ -41,14 +41,16 @@ public final class TargetGoals
 	private final boolean viable;
 	private final Map<Integer, Set<Integer>> fallbacks;
 	private final Set<Integer> viableTargets;
+	private final Set<Integer> blockedTargets;
 
 	private TargetGoals(Set<Integer> goals, boolean viable, Map<Integer, Set<Integer>> fallbacks,
-		Set<Integer> viableTargets)
+		Set<Integer> viableTargets, Set<Integer> blockedTargets)
 	{
 		this.goals = goals;
 		this.viable = viable;
 		this.fallbacks = fallbacks;
 		this.viableTargets = viableTargets;
+		this.blockedTargets = blockedTargets;
 	}
 
 	/**
@@ -82,6 +84,12 @@ public final class TargetGoals
 		return viableTargets.contains(target);
 	}
 
+	/** Whether the target resolved to fallback tiles. */
+	public boolean isBlocked(int target)
+	{
+		return blockedTargets.contains(target);
+	}
+
 	/**
 	 * Resolves each of {@code targets} with {@code rule}: a target the search can end on is its own
 	 * goal; any other is replaced by its fallback tiles. A target is viable when the search can end
@@ -92,6 +100,7 @@ public final class TargetGoals
 		Set<Integer> resolvedGoals = targets;
 		Map<Integer, Set<Integer>> fallbacks = new HashMap<>();
 		Set<Integer> viableTargets = new HashSet<>();
+		Set<Integer> blockedTargets = new HashSet<>();
 		for (int target : targets)
 		{
 			if (rule.endsOnItself(target))
@@ -99,6 +108,7 @@ public final class TargetGoals
 				viableTargets.add(target);
 				continue;
 			}
+			blockedTargets.add(target);
 			// A transport landing on the target can still visit it even when the tile
 			// is blocked for walking (e.g. fairy rings).
 			if (transportDestination.test(target))
@@ -117,7 +127,7 @@ public final class TargetGoals
 				viableTargets.add(target);
 			}
 		}
-		return new TargetGoals(resolvedGoals, !viableTargets.isEmpty(), fallbacks, viableTargets);
+		return new TargetGoals(resolvedGoals, !viableTargets.isEmpty(), fallbacks, viableTargets, blockedTargets);
 	}
 
 	/**

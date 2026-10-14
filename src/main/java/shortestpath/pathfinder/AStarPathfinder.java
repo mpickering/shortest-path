@@ -228,8 +228,17 @@ public final class AStarPathfinder implements ActiveSearch
 	}
 
 
+	@Override
+	public TargetGoals getTargetGoals()
+	{
+		return goals.targetTiles();
+	}
 
-
+	@Override
+	public GoalStates getGoalStates()
+	{
+		return goals;
+	}
 
 	@Override
 	public List<PathStep> getPath()

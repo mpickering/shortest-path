@@ -52,6 +52,8 @@ public class SailingPathfinder implements ActiveSearch
 	private boolean hasViableGoal;
 	private final GoalRule goalRule;
 	private final IntPredicate transportDestination;
+	@Getter
+	private TargetGoals targetGoals;
 	private final SailingSearch sailing;
 	private final PathfinderConfig config;
 	private final CollisionMap map;
@@ -378,6 +380,7 @@ public class SailingPathfinder implements ActiveSearch
 	{
 		stats.start();
 		TargetGoals resolved = TargetGoals.resolve(targets.points(), transportDestination, goalRule);
+		targetGoals = resolved;
 		goals = resolved.goals();
 		hasViableGoal = resolved.hasViableGoal();
 		sailing.setGoals(goals.stream().mapToInt(Integer::intValue).toArray());

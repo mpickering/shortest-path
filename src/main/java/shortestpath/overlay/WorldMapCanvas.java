@@ -110,6 +110,27 @@ public class WorldMapCanvas
 	}
 
 	/**
+	 * How far, in pixels, the cursor may be from a tile's centre and still hover it: the tile's
+	 * own half-width, but never so small that a zoomed-out marker cannot be hovered.
+	 */
+	public double hoverRadius()
+	{
+		return Math.max(6, pixelsPerTile() / 2);
+	}
+
+	/** The pixel distance from the cursor to a tile's centre; infinite when the map is closed. */
+	public double distance(int point, Point cursor)
+	{
+		int x = x(point);
+		int y = y(point);
+		if (cursor == null || x == Integer.MIN_VALUE || y == Integer.MIN_VALUE)
+		{
+			return Double.POSITIVE_INFINITY;
+		}
+		return Math.hypot(cursor.getX() - x, cursor.getY() - y);
+	}
+
+	/**
 	 * The world tiles the map shows: {minX, minY, maxX, maxY}, inclusive, or null when the map is
 	 * closed.
 	 */

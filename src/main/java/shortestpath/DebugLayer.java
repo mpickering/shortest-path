@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 public enum DebugLayer
 {
 	PANEL("Stats panel"),
+	TARGETS("Targets and goals"),
 	TRANSPORTS("Transports"),
 	COLLISION_MAP("Collision map"),
 	CLICK_POINTS("Click points");

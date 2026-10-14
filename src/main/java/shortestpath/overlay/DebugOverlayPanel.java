@@ -18,6 +18,7 @@ import shortestpath.pathfinder.PathStep;
 import shortestpath.pathfinder.PathTerminationReason;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.pathfinder.PathfinderStats;
+import shortestpath.pathfinder.TargetGoals;
 
 public class DebugOverlayPanel extends OverlayPanel
 {
@@ -117,6 +118,7 @@ public class DebugOverlayPanel extends OverlayPanel
 			tiles += ", " + search.getClickPoints().size() + " clicks";
 		}
 		components.add(makeLine("Path:", tiles));
+		renderTargets(components, search);
 
 		PathfinderStats stats = search.getStats();
 		if (stats == null)
@@ -125,6 +127,36 @@ public class DebugOverlayPanel extends OverlayPanel
 		}
 		components.add(makeLine("Time:", PathfinderStats.millis(stats.getElapsedTimeNanos())));
 		search.debugStats().forEach((label, text) -> components.add(makeLine("  " + label + ":", text)));
+	}
+
+	private void renderTargets(List<LayoutableRenderableEntity> components, ActiveSearch search)
+	{
+		TargetGoals tiles = search.getTargetGoals();
+		int blocked = 0;
+		int unreachable = 0;
+		int goals = 0;
+		for (int target : search.getTargets().points())
+		{
+			if (!tiles.isViable(target))
+			{
+				unreachable++;
+			}
+			else if (tiles.isBlocked(target))
+			{
+				blocked++;
+				goals += tiles.fallbacks(target).size();
+			}
+		}
+		String text = Integer.toString(search.getTargets().size());
+		if (blocked > 0)
+		{
+			text += ", " + blocked + " blocked -> " + goals + " goals";
+		}
+		if (unreachable > 0)
+		{
+			text += ", " + unreachable + " unreachable";
+		}
+		components.add(makeLine("Targets:", text, unreachable > 0 ? PROBLEM : Color.WHITE));
 	}
 
 	private void renderRestart(List<LayoutableRenderableEntity> components, DebugState debug, int tick)

@@ -602,6 +602,13 @@ public class PathfinderConfig
 	}
 
 	/**
+	/** The targets {@link #filterLocations} set aside until they become valid again. */
+	public Set<Integer> getFilteredTargets()
+	{
+		return Set.copyOf(filteredTargets.keySet());
+	}
+
+	/**
 	 * The targets still valid under the config, which might have invalidated some, e.g. those in the
 	 * wilderness. Targets set aside here earlier come back once valid again, required items and all.
 	 */
