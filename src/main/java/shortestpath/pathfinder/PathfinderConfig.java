@@ -69,6 +69,8 @@ public class PathfinderConfig
 	// is re-derived from each transport), so the per-origin Set/HashMap/Integer-key map the loader
 	// produces is flattened here and not retained (issue #491).
 	private final Transport[] allTransports;
+	// The teleports usable from anywhere (no origin tile), whether or not the player can use them.
+	private final Transport[] allTeleports;
 	/**
 	 * Every tile any loaded transport lands on. Transports can place the player onto
 	 * collision-blocked tiles (e.g. fairy rings), so a blocked target is still
@@ -304,6 +306,7 @@ public class PathfinderConfig
 		Map<Integer, Set<Transport>> loadedTransports = ResourceLoader.transports();
 		PohService.remapPohDestinations(loadedTransports);
 		this.allTransports = flatten(loadedTransports);
+		this.allTeleports = teleports(this.allTransports);
 		this.transportDestinations = collectTransportDestinations(this.allTransports);
 		this.allDisplayTransports = buildAllDisplayTransports(this.allTransports);
 		this.transportAvailabilities = new TransportAvailabilities(
@@ -328,6 +331,7 @@ public class PathfinderConfig
 		this.mapData = mapData;
 		this.map = ThreadLocal.withInitial(() -> new CollisionMap(this.mapData));
 		this.allTransports = flatten(allTransports);
+		this.allTeleports = teleports(this.allTransports);
 		this.transportDestinations = collectTransportDestinations(this.allTransports);
 		this.allDisplayTransports = buildAllDisplayTransports(this.allTransports);
 		this.transportAvailabilities = new TransportAvailabilities(
@@ -894,6 +898,19 @@ public class PathfinderConfig
 	public boolean isTransportDestination(int packedPosition)
 	{
 		return transportDestinations.contains(packedPosition);
+	}
+
+	private static Transport[] teleports(Transport[] transports)
+	{
+		return Arrays.stream(transports)
+			.filter(transport -> transport.getOrigin() == Transport.UNDEFINED_ORIGIN)
+			.toArray(Transport[]::new);
+	}
+
+	/** Every teleport usable from anywhere, including those the player cannot currently use. */
+	public Transport[] getAllTeleports()
+	{
+		return allTeleports;
 	}
 
 	private static PrimitiveIntHashMap<Transport[]> buildAllDisplayTransports(Transport[] transports)
