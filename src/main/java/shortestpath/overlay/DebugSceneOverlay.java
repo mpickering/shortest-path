@@ -39,6 +39,7 @@ public class DebugSceneOverlay extends Overlay
 	private final Client client;
 	private final ShortestPathPlugin plugin;
 	private final TooltipManager tooltipManager;
+	private final TeleportMarkers teleportMarkers;
 
 	@Inject
 	private DebugSceneOverlay(Client client, ShortestPathPlugin plugin, TooltipManager tooltipManager)
@@ -46,6 +47,7 @@ public class DebugSceneOverlay extends Overlay
 		this.client = client;
 		this.plugin = plugin;
 		this.tooltipManager = tooltipManager;
+		this.teleportMarkers = new TeleportMarkers(plugin);
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -63,6 +65,11 @@ public class DebugSceneOverlay extends Overlay
 		if (plugin.drawCollisionMap)
 		{
 			renderCollisionMap(graphics);
+		}
+
+		if (plugin.drawTeleports)
+		{
+			renderTeleports(graphics, client.getMouseCanvasPosition());
 		}
 
 		if (plugin.drawTargets)
@@ -209,6 +216,32 @@ public class DebugSceneOverlay extends Overlay
 			{
 				fillTile(graphics, point, COLOR_CLICK_POINT);
 			}
+		}
+	}
+
+	private void renderTeleports(Graphics2D graphics, Point cursor)
+	{
+		Stroke previousStroke = graphics.getStroke();
+		graphics.setStroke(new BasicStroke(2));
+		List<String> hoverRows = null;
+		for (TeleportMarkers.Marker marker : teleportMarkers.markers())
+		{
+			for (Polygon poly : SceneTiles.polygons(client, marker.point))
+			{
+				graphics.setColor(withAlpha(marker.colour, 50));
+				graphics.fill(poly);
+				graphics.setColor(marker.colour);
+				graphics.draw(poly);
+				if (hoverRows == null && cursor != null && poly.contains(cursor.getX(), cursor.getY()))
+				{
+					hoverRows = marker.rows;
+				}
+			}
+		}
+		graphics.setStroke(previousStroke);
+		if (hoverRows != null)
+		{
+			tooltipManager.add(new Tooltip(String.join("</br>", hoverRows)));
 		}
 	}
 

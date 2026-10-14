@@ -1416,6 +1416,8 @@ public interface ShortestPathConfig extends Config
 			+ "Stats panel: the pathfinding search state, timings and errors<br>"
 			+ "Targets and goals: each target, coloured by how it resolved, and the goal tiles a blocked target "
 			+ "finishes on instead<br>"
+			+ "Teleport destinations: where each teleport usable from anywhere lands; white = usable, "
+			+ "blue = usable after banking, orange = unavailable<br>"
 			+ "Transports: every transport on the map and game view; white = available, orange = unavailable<br>"
 			+ "Collision map: blocked tiles and walls<br>"
 			+ "Click points: exact route click points in the game view",

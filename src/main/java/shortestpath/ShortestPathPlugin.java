@@ -168,6 +168,7 @@ public class ShortestPathPlugin extends Plugin
 	public boolean drawTransports;
 	public boolean drawClickPoints;
 	public boolean drawTargets;
+	public boolean drawTeleports;
 	public boolean showTransportInfo;
 	public boolean showBankPickupInfo;
 	public boolean showUnreachableText;
@@ -1820,6 +1821,21 @@ public class ShortestPathPlugin extends Plugin
 		return pathfinderConfig.getTransports();
 	}
 
+	/** Every teleport usable from anywhere, including those the player cannot currently use. */
+	public Transport[] getAllTeleports()
+	{
+		return pathfinderConfig.getAllTeleports();
+	}
+
+	/**
+	 * The teleports usable from anywhere that the player can use, before ({@code bankVisited} false)
+	 * or after visiting a bank.
+	 */
+	public Transport[] getUsableTeleports(boolean bankVisited)
+	{
+		return pathfinderConfig.getUsableTeleports(bankVisited);
+	}
+
 	/** The targets set aside because the config rules them out, e.g. in the wilderness. */
 	public Set<Integer> getFilteredTargets()
 	{
@@ -2126,6 +2142,7 @@ public class ShortestPathPlugin extends Plugin
 		drawTransports = override("drawTransports", debugLayers.contains(DebugLayer.TRANSPORTS));
 		drawClickPoints = override("drawClickPoints", debugLayers.contains(DebugLayer.CLICK_POINTS));
 		drawTargets = debugLayers.contains(DebugLayer.TARGETS);
+		drawTeleports = debugLayers.contains(DebugLayer.TELEPORTS);
 		showTransportInfo = override("showTransportInfo", config.showTransportInfo());
 		showBankPickupInfo = override("showBankPickupInfo", config.showBankPickupInfo());
 		showUnreachableText = override("showUnreachableText", config.showUnreachableText());

@@ -38,6 +38,7 @@ public class DebugMapOverlay extends Overlay
 	private final Client client;
 	private final ShortestPathPlugin plugin;
 	private final WorldMapCanvas canvas;
+	private final TeleportMarkers teleportMarkers;
 
 	// The tile and tooltip rows of the debug marker the cursor hovered in the last frame.
 	@Getter
@@ -51,6 +52,7 @@ public class DebugMapOverlay extends Overlay
 		this.client = client;
 		this.plugin = plugin;
 		this.canvas = canvas;
+		this.teleportMarkers = new TeleportMarkers(plugin);
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -63,7 +65,8 @@ public class DebugMapOverlay extends Overlay
 	{
 		hoverPoint = WorldPointUtil.UNDEFINED;
 		hoverRows = List.of();
-		if (!plugin.drawMap || !(plugin.drawCollisionMap || plugin.drawTransports || plugin.drawTargets))
+		if (!plugin.drawMap || !(plugin.drawCollisionMap || plugin.drawTransports || plugin.drawTargets
+			|| plugin.drawTeleports))
 		{
 			return null;
 		}
@@ -86,12 +89,49 @@ public class DebugMapOverlay extends Overlay
 			renderTransports(graphics, clip);
 		}
 
+		Point cursor = client.getMouseCanvasPosition();
+		if (plugin.drawTeleports)
+		{
+			renderTeleports(graphics, clip, cursor);
+		}
+
 		if (plugin.drawTargets)
 		{
-			renderTargets(graphics, client.getMouseCanvasPosition());
+			renderTargets(graphics, cursor);
 		}
 
 		return null;
+	}
+
+	private void renderTeleports(Graphics2D graphics, Area clip, Point cursor)
+	{
+		int size = Math.max(4, Math.round(canvas.pixelsPerTile() * 0.7f));
+		double hoveredDistance = canvas.hoverRadius();
+		TeleportMarkers.Marker hovered = null;
+		for (TeleportMarkers.Marker marker : teleportMarkers.markers())
+		{
+			int x = canvas.x(marker.point);
+			int y = canvas.y(marker.point);
+			if (!clip.contains(x, y))
+			{
+				continue;
+			}
+			graphics.setColor(marker.colour);
+			graphics.fillPolygon(new int[]{x, x + size, x, x - size}, new int[]{y - size, y, y + size, y}, 4);
+			graphics.setColor(Color.BLACK);
+			graphics.drawPolygon(new int[]{x, x + size, x, x - size}, new int[]{y - size, y, y + size, y}, 4);
+			double distance = canvas.distance(marker.point, cursor);
+			if (distance <= hoveredDistance)
+			{
+				hovered = marker;
+				hoveredDistance = distance;
+			}
+		}
+		if (hovered != null)
+		{
+			hoverPoint = hovered.point;
+			hoverRows = hovered.rows;
+		}
 	}
 
 	private void renderTargets(Graphics2D graphics, Point cursor)
