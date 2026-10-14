@@ -8,7 +8,6 @@ import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.Stroke;
 import java.awt.geom.Area;
-import java.util.Arrays;
 import java.util.List;
 import javax.inject.Singleton;
 import lombok.Getter;
@@ -18,11 +17,9 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import shortestpath.PrimitiveIntHashMap;
 import shortestpath.ShortestPathPlugin;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
-import shortestpath.pathfinder.TransportAvailability;
 import shortestpath.transport.Transport;
 
 /**
@@ -34,11 +31,16 @@ public class DebugMapOverlay extends Overlay
 {
 	private static final Color COLOR_AVAILABLE = Color.WHITE;
 	private static final Color COLOR_UNAVAILABLE = Color.ORANGE;
+	// Transports within this many tiles of their origin are local hops, drawn as arrows.
+	private static final int LOCAL_HOP_TILES = 16;
+	// The world map zoom, in pixels per tile, from which local hops get arrows.
+	private static final float LOCAL_ARROW_MIN_ZOOM = 3;
 
 	private final Client client;
 	private final ShortestPathPlugin plugin;
 	private final WorldMapCanvas canvas;
 	private final TeleportMarkers teleportMarkers;
+	private final TransportMarkers transportMarkers;
 
 	// The tile and tooltip rows of the debug marker the cursor hovered in the last frame.
 	@Getter
@@ -53,6 +55,7 @@ public class DebugMapOverlay extends Overlay
 		this.plugin = plugin;
 		this.canvas = canvas;
 		this.teleportMarkers = new TeleportMarkers(plugin);
+		this.transportMarkers = new TransportMarkers(plugin);
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -84,12 +87,12 @@ public class DebugMapOverlay extends Overlay
 			renderCollisionMap(graphics, bounds);
 		}
 
+		Point cursor = client.getMouseCanvasPosition();
 		if (plugin.drawTransports)
 		{
-			renderTransports(graphics, clip);
+			renderTransports(graphics, clip, cursor);
 		}
 
-		Point cursor = client.getMouseCanvasPosition();
 		if (plugin.drawTeleports)
 		{
 			renderTeleports(graphics, clip, cursor);
@@ -232,45 +235,98 @@ public class DebugMapOverlay extends Overlay
 		}
 	}
 
-	private void renderTransports(Graphics2D graphics, Area clip)
+	/**
+	 * Every origin is a dot, white when one of its transports is usable and orange otherwise. Only
+	 * short local hops get arrows, and only once zoomed in: lines across the map for every ship,
+	 * fairy ring and tree route bury everything else. Hovering a dot draws every transport leaving
+	 * or arriving there, however far, and lists them.
+	 */
+	private void renderTransports(Graphics2D graphics, Area clip, Point cursor)
 	{
-		PrimitiveIntHashMap<Transport[]> allTransports = plugin.getAllDisplayTransports();
-		PrimitiveIntHashMap<Transport[]> availableTransports = plugin.getTransports();
+		List<TransportMarkers.Origin> origins = transportMarkers.origins();
+		float pixelsPerTile = canvas.pixelsPerTile();
+		boolean arrows = pixelsPerTile >= LOCAL_ARROW_MIN_ZOOM;
+		int dot = Math.max(3, Math.round(pixelsPerTile * 0.5f));
+		Stroke previousStroke = graphics.getStroke();
+		graphics.setStroke(new BasicStroke(1));
 
-		for (int a : allTransports.keys())
+		int hovered = WorldPointUtil.UNDEFINED;
+		double hoveredDistance = canvas.hoverRadius();
+		for (TransportMarkers.Origin origin : origins)
 		{
-			if (a == Transport.UNDEFINED_ORIGIN)
-			{
-				continue; // skip teleports
-			}
-
-			int mapAX = canvas.x(a);
-			int mapAY = canvas.y(a);
-			if (!clip.contains(mapAX, mapAY))
+			int x = canvas.x(origin.point);
+			int y = canvas.y(origin.point);
+			if (!clip.contains(x, y))
 			{
 				continue;
 			}
-
-			Transport[] availableAtOrigin = availableTransports.getOrDefault(a, TransportAvailability.EMPTY_TRANSPORTS);
-
-			for (Transport b : allTransports.getOrDefault(a, TransportAvailability.EMPTY_TRANSPORTS))
+			if (arrows)
 			{
-				if (b == null || (b.getType() != null && b.getType().isTeleport()))
+				for (Transport transport : origin.transports)
 				{
-					continue; // skip teleports
+					if (TransportMarkers.isLocal(transport, LOCAL_HOP_TILES)
+						&& !sameTile2D(transport.getOrigin(), transport.getDestination()))
+					{
+						graphics.setColor(withAlpha(colour(transport), 160));
+						drawArrow(graphics, transport.getOrigin(), transport.getDestination(), 5);
+					}
 				}
-
-				int mapBX = canvas.x(b.getDestination());
-				int mapBY = canvas.y(b.getDestination());
-				if (!clip.contains(mapBX, mapBY))
-				{
-					continue;
-				}
-
-				boolean isAvailable = Arrays.asList(availableAtOrigin).contains(b);
-				graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
-				graphics.drawLine(mapAX, mapAY, mapBX, mapBY);
 			}
+			graphics.setColor(origin.anyAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
+			graphics.fillOval(x - dot / 2, y - dot / 2, dot, dot);
+			double distance = canvas.distance(origin.point, cursor);
+			if (distance <= hoveredDistance)
+			{
+				hovered = origin.point;
+				hoveredDistance = distance;
+			}
+		}
+
+		if (hovered != WorldPointUtil.UNDEFINED)
+		{
+			graphics.setStroke(new BasicStroke(2));
+			for (Transport transport : transportMarkers.from(hovered))
+			{
+				graphics.setColor(colour(transport));
+				drawArrow(graphics, transport.getOrigin(), transport.getDestination(), 8);
+			}
+			for (Transport transport : transportMarkers.to(hovered))
+			{
+				graphics.setColor(colour(transport));
+				drawArrow(graphics, transport.getOrigin(), transport.getDestination(), 8);
+			}
+			hoverPoint = hovered;
+			hoverRows = transportMarkers.rows(hovered);
+		}
+		graphics.setStroke(previousStroke);
+	}
+
+	private Color colour(Transport transport)
+	{
+		return transportMarkers.isAvailable(transport) ? COLOR_AVAILABLE : COLOR_UNAVAILABLE;
+	}
+
+	private static boolean sameTile2D(int a, int b)
+	{
+		return WorldPointUtil.unpackWorldX(a) == WorldPointUtil.unpackWorldX(b)
+			&& WorldPointUtil.unpackWorldY(a) == WorldPointUtil.unpackWorldY(b);
+	}
+
+	private void drawArrow(Graphics2D graphics, int from, int to, int headSize)
+	{
+		int x1 = canvas.x(from);
+		int y1 = canvas.y(from);
+		int x2 = canvas.x(to);
+		int y2 = canvas.y(to);
+		if (x1 == Integer.MIN_VALUE || y1 == Integer.MIN_VALUE || x2 == Integer.MIN_VALUE || y2 == Integer.MIN_VALUE)
+		{
+			return;
+		}
+		graphics.drawLine(x1, y1, x2, y2);
+		// Skip the head on segments too short to fit it.
+		if (Math.hypot(x2 - x1, y2 - y1) >= headSize * 1.5)
+		{
+			ArrowHead.draw(graphics, x1, y1, x2, y2, headSize);
 		}
 	}
 }
