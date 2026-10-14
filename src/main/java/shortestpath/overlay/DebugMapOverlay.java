@@ -31,6 +31,8 @@ public class DebugMapOverlay extends Overlay
 {
 	private static final Color COLOR_AVAILABLE = Color.WHITE;
 	private static final Color COLOR_UNAVAILABLE = Color.ORANGE;
+	// The world map zoom, in pixels per tile, from which collision walls are drawn.
+	private static final float WALL_MIN_ZOOM = 4;
 	// Transports within this many tiles of their origin are local hops, drawn as arrows.
 	private static final int LOCAL_HOP_TILES = 16;
 	// The world map zoom, in pixels per tile, from which local hops get arrows.
@@ -209,6 +211,10 @@ public class DebugMapOverlay extends Overlay
 		return new Color(colour.getRed(), colour.getGreen(), colour.getBlue(), alpha);
 	}
 
+	/**
+	 * Blocked tiles are filled. Once zoomed in far enough to see single tiles, edges that cannot be
+	 * crossed between two open tiles (walls, fences) are drawn too, as in the game view.
+	 */
 	private void renderCollisionMap(Graphics2D graphics, Rectangle bounds)
 	{
 		int[] visible = canvas.visibleTiles(bounds);
@@ -216,23 +222,45 @@ public class DebugMapOverlay extends Overlay
 		{
 			return;
 		}
-		graphics.setColor(plugin.colourCollisionMap);
+		Color fill = plugin.colourCollisionMap;
+		boolean walls = canvas.pixelsPerTile() >= WALL_MIN_ZOOM;
+		Stroke previousStroke = graphics.getStroke();
+		graphics.setStroke(new BasicStroke(2));
 		final CollisionMap map = plugin.getMap();
 		final int z = client.getTopLevelWorldView().getPlane();
 		for (int x = visible[0]; x <= visible[2]; x++)
 		{
 			for (int y = visible[1]; y <= visible[3]; y++)
 			{
-				if (map.isBlocked(x, y, z))
+				boolean blocked = map.isBlocked(x, y, z);
+				if (!blocked && !walls)
 				{
-					Rectangle rect = canvas.tileRect(WorldPointUtil.packWorldPoint(x, y, z));
-					if (rect != null)
-					{
-						graphics.fill(rect);
-					}
+					continue;
+				}
+				Rectangle rect = canvas.tileRect(WorldPointUtil.packWorldPoint(x, y, z));
+				if (rect == null)
+				{
+					continue;
+				}
+				if (blocked)
+				{
+					graphics.setColor(fill);
+					graphics.fill(rect);
+					continue;
+				}
+				graphics.setColor(withAlpha(fill, 255));
+				// North is up on the map. Each tile draws its north and east edges.
+				if (!map.n(x, y, z) && !map.isBlocked(x, y + 1, z))
+				{
+					graphics.drawLine(rect.x, rect.y, rect.x + rect.width, rect.y);
+				}
+				if (!map.e(x, y, z) && !map.isBlocked(x + 1, y, z))
+				{
+					graphics.drawLine(rect.x + rect.width, rect.y, rect.x + rect.width, rect.y + rect.height);
 				}
 			}
 		}
+		graphics.setStroke(previousStroke);
 	}
 
 	/**
