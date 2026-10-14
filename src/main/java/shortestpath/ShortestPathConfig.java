@@ -1418,8 +1418,9 @@ public interface ShortestPathConfig extends Config
 			+ "finishes on instead<br>"
 			+ "Teleport destinations: where each teleport usable from anywhere lands; white = usable, "
 			+ "blue = usable after banking, orange = unavailable<br>"
-			+ "Transports: every transport on the map and game view; white = available, orange = unavailable<br>"
-			+ "Collision map: blocked tiles and walls<br>"
+			+ "Transports: a dot on each transport origin, white = available, orange = unavailable; "
+			+ "hover one for its routes<br>"
+			+ "Collision map: blocked tiles, walls (solid) and doors (dashed)<br>"
 			+ "Click points: exact route click points in the game view",
 		position = 204,
 		section = sectionDebug

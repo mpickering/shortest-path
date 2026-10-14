@@ -7,7 +7,6 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Polygon;
 import java.awt.Stroke;
-import java.util.Arrays;
 import java.util.List;
 import net.runelite.api.Client;
 import net.runelite.api.Perspective;
@@ -18,13 +17,11 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.tooltip.Tooltip;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
-import shortestpath.PrimitiveIntHashMap;
 import shortestpath.ShortestPathPlugin;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.ExactPathfinder;
 import shortestpath.pathfinder.PathStep;
-import shortestpath.pathfinder.TransportAvailability;
 import shortestpath.transport.Transport;
 
 /**
@@ -40,6 +37,7 @@ public class DebugSceneOverlay extends Overlay
 	private final ShortestPathPlugin plugin;
 	private final TooltipManager tooltipManager;
 	private final TeleportMarkers teleportMarkers;
+	private final TransportMarkers transportMarkers;
 
 	@Inject
 	private DebugSceneOverlay(Client client, ShortestPathPlugin plugin, TooltipManager tooltipManager)
@@ -48,6 +46,7 @@ public class DebugSceneOverlay extends Overlay
 		this.plugin = plugin;
 		this.tooltipManager = tooltipManager;
 		this.teleportMarkers = new TeleportMarkers(plugin);
+		this.transportMarkers = new TransportMarkers(plugin);
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -59,7 +58,7 @@ public class DebugSceneOverlay extends Overlay
 	{
 		if (plugin.drawTransports)
 		{
-			renderTransports(graphics);
+			renderTransports(graphics, client.getMouseCanvasPosition());
 		}
 
 		if (plugin.drawCollisionMap)
@@ -87,77 +86,83 @@ public class DebugSceneOverlay extends Overlay
 		return null;
 	}
 
-	private void renderTransports(Graphics2D graphics)
+	/**
+	 * Each origin tile is filled, with an arrow to every destination in view and a small up or
+	 * down marker when a transport changes plane. Hovering the tile lists its transports.
+	 */
+	private void renderTransports(Graphics2D graphics, Point cursor)
 	{
-		PrimitiveIntHashMap<Transport[]> allTransports = plugin.getAllDisplayTransports();
-		PrimitiveIntHashMap<Transport[]> availableTransports = plugin.getTransports();
-
-		for (int a : allTransports.keys())
+		Stroke previousStroke = graphics.getStroke();
+		graphics.setStroke(new BasicStroke(1.5f));
+		int hovered = WorldPointUtil.UNDEFINED;
+		for (TransportMarkers.Origin origin : transportMarkers.origins())
 		{
-			if (a == Transport.UNDEFINED_ORIGIN)
-			{
-				continue; // skip teleports
-			}
-
-			Point ca = SceneTiles.center(client, a);
-
+			Point ca = SceneTiles.center(client, origin.point);
 			if (ca == null)
 			{
 				continue;
 			}
 
-			boolean drawStart = false;
-			StringBuilder s = new StringBuilder();
-			Transport[] availableAtOrigin = availableTransports.getOrDefault(a, TransportAvailability.EMPTY_TRANSPORTS);
-
-			for (Transport b : allTransports.getOrDefault(a, TransportAvailability.EMPTY_TRANSPORTS))
+			for (Polygon poly : SceneTiles.polygons(client, origin.point))
 			{
-				if (b == null || (b.getType() != null && b.getType().isTeleport()))
+				graphics.setColor(plugin.colourTransports);
+				graphics.fill(poly);
+				if (hovered == WorldPointUtil.UNDEFINED && cursor != null && poly.contains(cursor.getX(), cursor.getY()))
 				{
-					continue; // skip teleports
+					hovered = origin.point;
 				}
+			}
 
-				boolean isAvailable = Arrays.asList(availableAtOrigin).contains(b);
-				graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
-
-				int destination = b.getDestination();
-				if (destination == Transport.UNDEFINED_DESTINATION)
-				{
-					continue;
-				}
+			boolean up = false;
+			boolean down = false;
+			for (Transport transport : origin.transports)
+			{
+				int destination = transport.getDestination();
+				int planeChange = WorldPointUtil.unpackWorldPlane(destination) - WorldPointUtil.unpackWorldPlane(origin.point);
+				up |= planeChange > 0;
+				down |= planeChange < 0;
 				Point cb = SceneTiles.center(client, destination);
-				if (cb != null)
+				if (cb != null && (cb.getX() != ca.getX() || cb.getY() != ca.getY()))
 				{
+					graphics.setColor(transportMarkers.isAvailable(transport) ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
 					graphics.drawLine(ca.getX(), ca.getY(), cb.getX(), cb.getY());
-					drawStart = true;
-				}
-				if (WorldPointUtil.unpackWorldPlane(destination) > WorldPointUtil.unpackWorldPlane(a))
-				{
-					s.append("+");
-				}
-				else if (WorldPointUtil.unpackWorldPlane(destination) < WorldPointUtil.unpackWorldPlane(a))
-				{
-					s.append("-");
-				}
-				else
-				{
-					s.append("=");
+					ArrowHead.draw(graphics, ca.getX(), ca.getY(), cb.getX(), cb.getY(), 8);
 				}
 			}
 
-			if (drawStart)
+			graphics.setColor(origin.anyAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
+			if (up)
 			{
-				fillTile(graphics, a, plugin.colourTransports);
+				graphics.fillPolygon(new int[]{ca.getX() - 4, ca.getX() + 4, ca.getX()},
+					new int[]{ca.getY() - 2, ca.getY() - 2, ca.getY() - 8}, 3);
 			}
+			if (down)
+			{
+				graphics.fillPolygon(new int[]{ca.getX() - 4, ca.getX() + 4, ca.getX()},
+					new int[]{ca.getY() + 2, ca.getY() + 2, ca.getY() + 8}, 3);
+			}
+		}
+		graphics.setStroke(previousStroke);
 
-			graphics.setColor(Color.WHITE);
-			graphics.drawString(s.toString(), ca.getX(), ca.getY());
+		if (hovered != WorldPointUtil.UNDEFINED)
+		{
+			tooltipManager.add(new Tooltip(String.join("</br>", transportMarkers.rows(hovered))));
 		}
 	}
 
+	/**
+	 * Blocked tiles are filled. Edges that cannot be crossed between two open tiles (walls, fences)
+	 * are drawn as solid lines, and passable edges that carry a wall, such as open doors, as dashed
+	 * lines. Edges against a blocked tile are left to its fill.
+	 */
 	private void renderCollisionMap(Graphics2D graphics)
 	{
 		CollisionMap map = plugin.getMap();
+		Color fill = plugin.colourCollisionMap;
+		Color wall = withAlpha(fill, 255);
+		Stroke previousStroke = graphics.getStroke();
+		Stroke wallStroke = new BasicStroke(3);
+		Stroke doorStroke = new BasicStroke(2, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0, new float[]{4, 4}, 0);
 		for (Tile[] row : client.getTopLevelWorldView().getScene().getTiles()[client.getTopLevelWorldView().getPlane()])
 		{
 			for (Tile tile : row)
@@ -167,9 +172,9 @@ public class DebugSceneOverlay extends Overlay
 					continue;
 				}
 
-				Polygon tilePolygon = Perspective.getCanvasTilePoly(client, tile.getLocalLocation());
+				Polygon poly = Perspective.getCanvasTilePoly(client, tile.getLocalLocation());
 
-				if (tilePolygon == null)
+				if (poly == null || poly.npoints != 4)
 				{
 					continue;
 				}
@@ -179,26 +184,34 @@ public class DebugSceneOverlay extends Overlay
 				int y = WorldPointUtil.unpackWorldY(location);
 				int z = WorldPointUtil.unpackWorldPlane(location);
 
-				String s = (!map.n(x, y, z) ? "n" : "") +
-					(!map.s(x, y, z) ? "s" : "") +
-					(!map.e(x, y, z) ? "e" : "") +
-					(!map.w(x, y, z) ? "w" : "");
+				boolean blocked = map.isBlocked(x, y, z);
+				if (blocked)
+				{
+					graphics.setColor(fill);
+					graphics.fill(poly);
+				}
 
-				if (map.isBlocked(x, y, z))
-				{
-					graphics.setColor(plugin.colourCollisionMap);
-					graphics.fill(tilePolygon);
-				}
-				if (!s.isEmpty() && !s.equals("nsew"))
-				{
-					graphics.setColor(Color.WHITE);
-					int stringX = (int) (tilePolygon.getBounds().getCenterX()
-						- graphics.getFontMetrics().getStringBounds(s, graphics).getWidth() / 2);
-					int stringY = (int) tilePolygon.getBounds().getCenterY();
-					graphics.drawString(s, stringX, stringY);
-				}
+				// The polygon's corners run south-west, south-east, north-east, north-west. Each tile
+				// draws its north and east edges, so every edge is drawn once.
+				graphics.setColor(wall);
+				drawEdge(graphics, poly, 2, 3, blocked || map.isBlocked(x, y + 1, z), map.n(x, y, z),
+					map.wallN(x, y, z), wallStroke, doorStroke);
+				drawEdge(graphics, poly, 1, 2, blocked || map.isBlocked(x + 1, y, z), map.e(x, y, z),
+					map.wallE(x, y, z), wallStroke, doorStroke);
 			}
 		}
+		graphics.setStroke(previousStroke);
+	}
+
+	private static void drawEdge(Graphics2D graphics, Polygon poly, int from, int to, boolean againstBlocked,
+		boolean passable, boolean hasWall, Stroke wallStroke, Stroke doorStroke)
+	{
+		if (againstBlocked || passable && !hasWall)
+		{
+			return;
+		}
+		graphics.setStroke(passable ? doorStroke : wallStroke);
+		graphics.drawLine(poly.xpoints[from], poly.ypoints[from], poly.xpoints[to], poly.ypoints[to]);
 	}
 
 	private void renderClickPoints(Graphics2D graphics, ExactPathfinder exact)
