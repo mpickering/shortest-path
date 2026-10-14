@@ -2,18 +2,13 @@ package shortestpath.overlay;
 
 import com.google.inject.Inject;
 import java.awt.Dimension;
-import java.awt.FontMetrics;
 import java.awt.Graphics2D;
-import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.InterfaceID;
-import net.runelite.client.ui.FontManager;
-import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -28,13 +23,8 @@ import shortestpath.widgets.WidgetGeometry;
 
 public class PathMapTooltipOverlay extends Overlay
 {
-	private static final int TOOLTIP_OFFSET_HEIGHT = 25;
-	private static final int TOOLTIP_OFFSET_WIDTH = 15;
-	private static final int TOOLTIP_PADDING_HEIGHT = 1;
-	private static final int TOOLTIP_PADDING_WIDTH = 2;
-	private static final int TOOLTIP_TEXT_OFFSET_HEIGHT = -2;
-
 	private final Client client;
+	private final WorldMapCanvas canvas;
 	private final Settings settings;
 	private final PathScheduler scheduler;
 	private final WidgetGeometry geometry;
@@ -42,9 +32,10 @@ public class PathMapTooltipOverlay extends Overlay
 
 	@Inject
 	private PathMapTooltipOverlay(Client client, Settings settings, PathScheduler scheduler,
-		WidgetGeometry geometry, PathAnnotator annotator)
+		WidgetGeometry geometry, PathAnnotator annotator, WorldMapCanvas canvas)
 	{
 		this.client = client;
+		this.canvas = canvas;
 		this.settings = settings;
 		this.scheduler = scheduler;
 		this.geometry = geometry;
@@ -90,24 +81,7 @@ public class PathMapTooltipOverlay extends Overlay
 	private boolean drawTooltip(Graphics2D graphics, Point cursorPos, int point, int nextPoint, int n,
 		List<PathStep> path, int pathIndex)
 	{
-		int offsetPoint = WorldPointUtil.dxdy(point, 1, -1);
-		Point start = geometry.mapWorldPointToGraphicsPoint(point);
-		Point end = geometry.mapWorldPointToGraphicsPoint(offsetPoint);
-
-		if (start == null || end == null)
-		{
-			return false;
-		}
-
-		int startX = start.getX();
-		int startY = start.getY();
-		int endX = end.getX();
-		int endY = end.getY();
-
-		int width = endX - startX;
-
-		if (cursorPos.getX() < (startX - width / 2) || cursorPos.getX() > (endX - width / 2) ||
-			cursorPos.getY() < (startY - width / 2) || cursorPos.getY() > (endY - width / 2))
+		if (!canvas.isHovered(point, cursorPos))
 		{
 			return false;
 		}
@@ -136,47 +110,7 @@ public class PathMapTooltipOverlay extends Overlay
 			}
 		}
 
-		graphics.setFont(FontManager.getRunescapeFont());
-		FontMetrics fm = graphics.getFontMetrics();
-		int tooltipHeight = fm.getHeight();
-		int tooltipWidth = 0;
-		if (rows.stream().map(fm::stringWidth).max(Integer::compare).isPresent())
-		{
-			tooltipWidth = rows.stream().map(fm::stringWidth).max(Integer::compareTo).get();
-		}
-		int clippedHeight = tooltipHeight * rows.size() + TOOLTIP_PADDING_HEIGHT * 2;
-		int clippedWidth = tooltipWidth + TOOLTIP_PADDING_WIDTH * 2;
-
-		Rectangle worldMapBounds = Objects.requireNonNull(client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds();
-		int worldMapRightBoundary = worldMapBounds.width + worldMapBounds.x;
-		int worldMapBottomBoundary = worldMapBounds.height + worldMapBounds.y;
-
-		int drawPointX = startX + TOOLTIP_OFFSET_WIDTH;
-		int drawPointY = startY;
-		if (drawPointX + clippedWidth > worldMapRightBoundary)
-		{
-			drawPointX = worldMapRightBoundary - clippedWidth;
-		}
-		if (drawPointY + clippedHeight > worldMapBottomBoundary)
-		{
-			drawPointY = startY - clippedHeight;
-		}
-		drawPointY += TOOLTIP_OFFSET_HEIGHT;
-
-		int tooltipRectX = drawPointX - TOOLTIP_PADDING_WIDTH;
-		int tooltipRectY = drawPointY - TOOLTIP_PADDING_HEIGHT;
-
-		graphics.setColor(JagexColors.TOOLTIP_BACKGROUND);
-		graphics.fillRect(tooltipRectX, tooltipRectY, clippedWidth, clippedHeight);
-
-		graphics.setColor(JagexColors.TOOLTIP_BORDER);
-		graphics.drawRect(tooltipRectX, tooltipRectY, clippedWidth, clippedHeight);
-
-		graphics.setColor(JagexColors.TOOLTIP_TEXT);
-		for (int i = 0; i < rows.size(); i++)
-		{
-			graphics.drawString(rows.get(i), drawPointX, drawPointY + TOOLTIP_TEXT_OFFSET_HEIGHT + (i + 1) * tooltipHeight);
-		}
+		canvas.drawTooltip(graphics, canvas.bounds(), canvas.x(point), canvas.y(point), rows);
 
 		return true;
 	}

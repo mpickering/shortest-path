@@ -7,9 +7,7 @@ import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.Stroke;
-import java.awt.geom.Area;
 import java.util.List;
-import java.util.Objects;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.InterfaceID;
@@ -31,6 +29,7 @@ import shortestpath.widgets.WidgetGeometry;
 public class PathMapOverlay extends Overlay
 {
 	private final Client client;
+	private final WorldMapCanvas canvas;
 	private final Settings settings;
 	private final PathRenderState renderState;
 	private final PathScheduler scheduler;
@@ -39,9 +38,10 @@ public class PathMapOverlay extends Overlay
 
 	@Inject
 	private PathMapOverlay(Client client, Settings settings, PathRenderState renderState,
-		PathScheduler scheduler, WidgetGeometry geometry, PathAnnotator annotator)
+		PathScheduler scheduler, WidgetGeometry geometry, PathAnnotator annotator, WorldMapCanvas canvas)
 	{
 		this.client = client;
+		this.canvas = canvas;
 		this.settings = settings;
 		this.renderState = renderState;
 		this.scheduler = scheduler;
@@ -53,9 +53,6 @@ public class PathMapOverlay extends Overlay
 		drawAfterLayer(InterfaceID.Worldmap.MAP_CONTAINER);
 	}
 
-	private static final Color COLOR_AVAILABLE = Color.WHITE;
-	private static final Color COLOR_UNAVAILABLE = Color.ORANGE;
-
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
@@ -64,64 +61,12 @@ public class PathMapOverlay extends Overlay
 			return null;
 		}
 
-		if (!geometry.worldMapOpen())
+		Rectangle worldMapRectangle = canvas.bounds();
+		if (worldMapRectangle == null)
 		{
 			return null;
 		}
-
-		Rectangle worldMapRectangle = Objects.requireNonNull(client.getWidget(InterfaceID.Worldmap.MAP_CONTAINER)).getBounds();
-		Area worldMapClipArea = geometry.getWorldMapClipArea(worldMapRectangle);
-		graphics.setClip(worldMapClipArea);
-
-		if (settings.display().drawCollisionMap())
-		{
-			graphics.setColor(settings.display().colourCollisionMap());
-			int mapWorldPoint = geometry.calculateMapPoint(worldMapRectangle.x, worldMapRectangle.y);
-			int extentX = WorldPointUtil.unpackWorldX(mapWorldPoint);
-			int extentY = WorldPointUtil.unpackWorldY(mapWorldPoint);
-			int extentWidth = getWorldMapExtentWidth(worldMapRectangle);
-			int extentHeight = getWorldMapExtentHeight(worldMapRectangle);
-			final CollisionMap map = annotator.getMap();
-			final int z = client.getTopLevelWorldView().getPlane();
-			for (int x = extentX; x < (extentX + extentWidth + 1); x++)
-			{
-				for (int y = extentY - extentHeight; y < (extentY + 1); y++)
-				{
-					if (map.isBlocked(x, y, z))
-					{
-						drawOnMap(graphics, WorldPointUtil.packWorldPoint(x, y, z), false, null);
-					}
-				}
-			}
-		}
-
-		if (settings.display().drawTransports())
-		{
-			OverlayDrawing.forEachDisplayTransport(annotator, new OverlayDrawing.TransportVisitor()
-			{
-				private Point mapA;
-
-				@Override
-				public boolean beginOrigin(int origin)
-				{
-					mapA = geometry.mapWorldPointToGraphicsPoint(origin);
-					return mapA != null && worldMapClipArea.contains(mapA.getX(), mapA.getY());
-				}
-
-				@Override
-				public void visit(int origin, Transport b, boolean isAvailable)
-				{
-					Point mapB = geometry.mapWorldPointToGraphicsPoint(b.getDestination());
-					if (mapB == null || !worldMapClipArea.contains(mapB.getX(), mapB.getY()))
-					{
-						return;
-					}
-
-					graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
-					graphics.drawLine(mapA.getX(), mapA.getY(), mapB.getX(), mapB.getY());
-				}
-			});
-		}
+		graphics.setClip(canvas.clipArea(worldMapRectangle));
 
 		ActiveSearch search = scheduler.getActiveSearch();
 		if (search != null)
@@ -308,31 +253,5 @@ public class PathMapOverlay extends Overlay
 			}
 			graphics.fillRect(x, y, width, height);
 		}
-	}
-
-	private int getWorldMapExtentWidth(Rectangle baseRectangle)
-	{
-		return (WorldPointUtil.unpackWorldX(
-			geometry.calculateMapPoint(
-				baseRectangle.x + baseRectangle.width,
-				baseRectangle.y + baseRectangle.height))
-			-
-			WorldPointUtil.unpackWorldX(
-				geometry.calculateMapPoint(
-					baseRectangle.x,
-					baseRectangle.y)));
-	}
-
-	private int getWorldMapExtentHeight(Rectangle baseRectangle)
-	{
-		return (WorldPointUtil.unpackWorldY(
-			geometry.calculateMapPoint(
-				baseRectangle.x,
-				baseRectangle.y))
-			-
-			WorldPointUtil.unpackWorldY(
-				geometry.calculateMapPoint(
-					baseRectangle.x + baseRectangle.width,
-					baseRectangle.y + baseRectangle.height)));
 	}
 }

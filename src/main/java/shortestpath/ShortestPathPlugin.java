@@ -46,7 +46,9 @@ import shortestpath.api.MenuVerbs;
 import shortestpath.api.PluginMessageHandler;
 import shortestpath.items.ItemStateService;
 import shortestpath.overlay.BankItemHighlightOverlay;
+import shortestpath.overlay.DebugMapOverlay;
 import shortestpath.overlay.DebugOverlayPanel;
+import shortestpath.overlay.DebugSceneOverlay;
 import shortestpath.overlay.InventoryHighlightOverlay;
 import shortestpath.overlay.PathMapOverlay;
 import shortestpath.overlay.PathMapTooltipOverlay;
@@ -107,6 +109,10 @@ public class ShortestPathPlugin extends Plugin
 	private ScrollBookHighlightOverlay scrollBookHighlightOverlay;
 	@Inject
 	private DebugOverlayPanel debugOverlayPanel;
+	@Inject
+	private DebugSceneOverlay debugSceneOverlay;
+	@Inject
+	private DebugMapOverlay debugMapOverlay;
 	@Inject
 	private KeyManager keyManager;
 	@Inject
@@ -213,6 +219,8 @@ public class ShortestPathPlugin extends Plugin
 			pathMapOverlay, pathMapTooltipOverlay, bankItemHighlightOverlay,
 			spellbookHighlightOverlay, inventoryHighlightOverlay, scrollBookHighlightOverlay, debugOverlayPanel);
 		pluginOverlays.register(overlayManager, settings.lifecycle().drawDebugPanel());
+		overlayManager.add(debugSceneOverlay);
+		overlayManager.add(debugMapOverlay);
 
 		keyManager.registerKeyListener(clearPathKeylistener);
 		pohService.loadFromProfile();
@@ -241,6 +249,9 @@ public class ShortestPathPlugin extends Plugin
 		{
 			pluginOverlays.unregister(overlayManager);
 		}
+
+		overlayManager.remove(debugSceneOverlay);
+		overlayManager.remove(debugMapOverlay);
 
 		scheduler.shutdown();
 

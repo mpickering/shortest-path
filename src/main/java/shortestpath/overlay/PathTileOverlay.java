@@ -21,7 +21,6 @@ import net.runelite.api.Client;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
-import net.runelite.api.Tile;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
@@ -76,121 +75,6 @@ public class PathTileOverlay extends Overlay
 		setLayer(OverlayLayer.ABOVE_SCENE);
 	}
 
-	private static final Color COLOR_AVAILABLE = Color.WHITE;
-	private static final Color COLOR_UNAVAILABLE = Color.ORANGE;
-	private static final Color COLOR_CLICK_POINT = new Color(255, 0, 255, 150);
-
-	private void renderTransports(Graphics2D graphics, ActiveSearch search)
-	{
-		OverlayDrawing.forEachDisplayTransport(annotator, new OverlayDrawing.TransportVisitor()
-		{
-			private Point ca;
-			private boolean drawStart;
-			private StringBuilder s;
-
-			@Override
-			public boolean beginOrigin(int origin)
-			{
-				ca = tileCenter(origin);
-				if (ca == null)
-				{
-					return false;
-				}
-				drawStart = false;
-				s = new StringBuilder();
-				return true;
-			}
-
-			@Override
-			public void visit(int origin, Transport b, boolean isAvailable)
-			{
-				graphics.setColor(isAvailable ? COLOR_AVAILABLE : COLOR_UNAVAILABLE);
-
-				int destination = b.getDestination();
-				if (destination == Transport.UNDEFINED_DESTINATION)
-				{
-					return;
-				}
-				Point cb = tileCenter(destination);
-				if (cb != null)
-				{
-					graphics.drawLine(ca.getX(), ca.getY(), cb.getX(), cb.getY());
-					drawStart = true;
-				}
-				if (WorldPointUtil.unpackWorldPlane(destination) > WorldPointUtil.unpackWorldPlane(origin))
-				{
-					s.append("+");
-				}
-				else if (WorldPointUtil.unpackWorldPlane(destination) < WorldPointUtil.unpackWorldPlane(origin))
-				{
-					s.append("-");
-				}
-				else
-				{
-					s.append("=");
-				}
-			}
-
-			@Override
-			public void endOrigin(int origin)
-			{
-				if (drawStart)
-				{
-					drawTile(graphics, origin, settings.display().colourTransports(), -1, true, search);
-				}
-
-				graphics.setColor(Color.WHITE);
-				graphics.drawString(s.toString(), ca.getX(), ca.getY());
-			}
-		});
-	}
-
-	private void renderCollisionMap(Graphics2D graphics)
-	{
-		CollisionMap map = annotator.getMap();
-		for (Tile[] row : client.getTopLevelWorldView().getScene().getTiles()[client.getTopLevelWorldView().getPlane()])
-		{
-			for (Tile tile : row)
-			{
-				if (tile == null)
-				{
-					continue;
-				}
-
-				Polygon tilePolygon = Perspective.getCanvasTilePoly(client, tile.getLocalLocation());
-
-				if (tilePolygon == null)
-				{
-					continue;
-				}
-
-				int location = WorldPointUtil.fromLocalInstance(client, tile.getLocalLocation());
-				int x = WorldPointUtil.unpackWorldX(location);
-				int y = WorldPointUtil.unpackWorldY(location);
-				int z = WorldPointUtil.unpackWorldPlane(location);
-
-				String s = (!map.n(x, y, z) ? "n" : "") +
-					(!map.s(x, y, z) ? "s" : "") +
-					(!map.e(x, y, z) ? "e" : "") +
-					(!map.w(x, y, z) ? "w" : "");
-
-				if (map.isBlocked(x, y, z))
-				{
-					graphics.setColor(settings.display().colourCollisionMap());
-					graphics.fill(tilePolygon);
-				}
-				if (!s.isEmpty() && !s.equals("nsew"))
-				{
-					graphics.setColor(Color.WHITE);
-					int stringX = (int) (tilePolygon.getBounds().getCenterX()
-						- graphics.getFontMetrics().getStringBounds(s, graphics).getWidth() / 2);
-					int stringY = (int) tilePolygon.getBounds().getCenterY();
-					graphics.drawString(s, stringX, stringY);
-				}
-			}
-		}
-	}
-
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
@@ -199,16 +83,6 @@ public class PathTileOverlay extends Overlay
 		ActiveSearch search = scheduler.getActiveSearch();
 		playerTileLabelOffset = 0;
 		teleportPulseDrawn = false;
-
-		if (settings.display().drawTransports())
-		{
-			renderTransports(graphics, search);
-		}
-
-		if (settings.display().drawCollisionMap())
-		{
-			renderCollisionMap(graphics);
-		}
 
 		if (settings.display().drawTiles() && search != null && search.getPath() != null)
 		{
@@ -379,72 +253,27 @@ public class PathTileOverlay extends Overlay
 			}
 		}
 
-		// Click points without the path are floating marks, so they follow the same drawTiles
-		// gate and POH skip as the path tiles.
-		if (settings.display().drawTiles() && settings.display().drawClickPoints()
-			&& search != null && search.isDone() && !search.isShowingProvisionalPath())
-		{
-			List<PathStep> path = search.getPath();
-			for (int index : search.getClickPoints())
-			{
-				int point = path.get(index).getPackedPosition();
-				if (!PohService.isInsidePoh(WorldPointUtil.unpackWorldX(point),
-					WorldPointUtil.unpackWorldY(point)))
-				{
-					drawTile(graphics, point, COLOR_CLICK_POINT, -1, true, search);
-				}
-			}
-		}
-
 		return null;
 	}
 
 	private Point tileCenter(int b)
 	{
-		if (b == WorldPointUtil.UNDEFINED || client == null)
-		{
-			return null;
-		}
-
-		// Map the canonical point into the viewed instance before checking the
-		// plane — inside an instance (e.g. a POH) the stored template plane can
-		// differ from the instance plane without being on a different floor.
-		// The point filter runs pre-projection so an out-of-plane mapped point
-		// never reaches toLocalPoint, and the consumer's early exit keeps the
-		// first-valid selection.
-		final Point[] centre = new Point[1];
-		ProjectedTiles.eachProjectedTile(client, b,
-			point -> WorldPointUtil.unpackWorldPlane(point) == client.getTopLevelWorldView().getPlane(),
-			lp -> Perspective.getCanvasTilePoly(client, lp), poly ->
-			{
-				int cx = poly.getBounds().x + poly.getBounds().width / 2;
-				int cy = poly.getBounds().y + poly.getBounds().height / 2;
-				centre[0] = new Point(cx, cy);
-				return true;
-			});
-		return centre[0];
+		return SceneTiles.center(client, b);
 	}
 
 	private void drawTile(Graphics2D graphics, int location, Color color, int counter, boolean draw,
 		ActiveSearch search)
 	{
-		if (client == null)
+		for (Polygon poly : SceneTiles.polygons(client, location))
 		{
-			return;
-		}
-
-		ProjectedTiles.eachProjectedTile(client, location, null,
-			lp -> Perspective.getCanvasTilePoly(client, lp), poly ->
+			if (draw)
 			{
-				if (draw)
-				{
-					graphics.setColor(color);
-					graphics.fill(poly);
-				}
+				graphics.setColor(color);
+				graphics.fill(poly);
+			}
 
-				drawCounter(graphics, poly.getBounds().getCenterX(), poly.getBounds().getCenterY(), counter, search);
-				return false;
-			});
+			drawCounter(graphics, poly.getBounds().getCenterX(), poly.getBounds().getCenterY(), counter, search);
+		}
 	}
 
 	void drawUnreachedTargets(Graphics2D graphics, List<PathStep> path, Color colorCalculating, boolean draw,
