@@ -11,6 +11,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JList;
+import javax.swing.JComboBox;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.event.ListDataEvent;
@@ -29,6 +30,7 @@ public class LocationListPanelTest
 		assertEquals(1, entries.size());
 		LocationListPanel.Entry entry = entries.get(0);
 		assertEquals(WorldPointUtil.packWorldPoint(3200, 3201, 2), entry.point);
+		assertEquals("General", entry.category);
 		assertTrue(entry.label.contains("Climb-down ladder — upstairs"));
 		assertTrue(entry.matches(new String[]{"ladder", "3201"}));
 		assertFalse(entry.matches(new String[]{"ladder", "boat"}));
@@ -39,7 +41,7 @@ public class LocationListPanelTest
 	{
 		for (String row : List.of("3200 3201 4\tBad plane", "-1 3201 0\tNegative",
 			"32768 3201 0\tToo large", "x y z\tInvalid", "3200 3201\tMissing plane",
-			"3200 3201 0", "3200 3201 0\t "))
+			"3200 3201 0", "3200 3201 0\t ", "3200 3201 0\tDescription\t "))
 		{
 			IOException error = assertThrows(IOException.class,
 				() -> LocationListPanel.readEntries(new StringReader("# header\n" + row)));
@@ -60,8 +62,9 @@ public class LocationListPanelTest
 			{
 				routed.incrementAndGet();
 				point.set(value);
-			});
+			}, points -> assertNotNull(points));
 			JList<?> list = find(panel[0], JList.class);
+			find(panel[0], JComboBox.class).setSelectedItem("All categories");
 			list.getModel().addListDataListener(new ListDataListener()
 			{
 				@Override
@@ -99,6 +102,32 @@ public class LocationListPanelTest
 			}
 			assertEquals(1, routed.get());
 			assertEquals(WorldPointUtil.packWorldPoint(3019, 3960, 2), point.get());
+		});
+	}
+
+	@Test
+	public void categoryFiltersPublishTheSamePointsAsTheVisibleList() throws Exception
+	{
+		AtomicInteger visibleCount = new AtomicInteger();
+		SwingUtilities.invokeAndWait(() ->
+		{
+			LocationListPanel panel = new LocationListPanel(point -> fail("Filtering must not select a location"), points -> visibleCount.set(points.length));
+			JComboBox<?> category = find(panel, JComboBox.class);
+			JList<?> list = find(panel, JList.class);
+			assertEquals("Open neighbour", category.getSelectedItem());
+			assertTrue(visibleCount.get() > 0);
+			for (int i = 0; i < list.getModel().getSize(); i++)
+			{
+				assertEquals("Open neighbour", ((LocationListPanel.Entry) list.getModel().getElementAt(i)).category);
+			}
+			category.setSelectedItem("Arrival only");
+			assertEquals(list.getModel().getSize(), visibleCount.get());
+			for (int i = 0; i < list.getModel().getSize(); i++)
+			{
+				assertEquals("Arrival only", ((LocationListPanel.Entry) list.getModel().getElementAt(i)).category);
+			}
+			category.setSelectedItem("All categories");
+			assertEquals(141, visibleCount.get());
 		});
 	}
 

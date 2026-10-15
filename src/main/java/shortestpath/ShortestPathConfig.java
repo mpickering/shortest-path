@@ -589,7 +589,8 @@ public interface ShortestPathConfig extends Config
 			+ "Transports: a dot on each transport origin, white = available, orange = unavailable; "
 			+ "hover one for its routes<br>"
 			+ "Collision map: blocked tiles, walls (solid) and doors (dashed)<br>"
-			+ "Click points: exact route click points in the game view",
+			+ "Click points: exact route click points in the game view<br>"
+			+ "Location list (minimap): cyan markers for the sidebar’s current category and search results",
 		position = 204,
 		section = sectionDebug
 	)

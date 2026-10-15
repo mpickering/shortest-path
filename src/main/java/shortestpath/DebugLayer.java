@@ -10,6 +10,7 @@ public enum DebugLayer
 {
 	PANEL("Stats panel"),
 	TARGETS("Targets and goals"),
+	LOCATIONS("Location list (minimap)"),
 	TELEPORTS("Teleport destinations"),
 	TRANSPORTS("Transports"),
 	COLLISION_MAP("Collision map"),

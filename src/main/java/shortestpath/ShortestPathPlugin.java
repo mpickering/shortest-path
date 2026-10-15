@@ -152,6 +152,8 @@ public class ShortestPathPlugin extends Plugin
 	private ShortestPathPanel panel;
 	private NavigationButton navButton;
 	private NavigationButton locationNavigation;
+	@Getter
+	private volatile int[] locationPoints = new int[0];
 	private PathfinderConfig pathfinderConfig;
 	// Built in startUp — the overlay references it bundles are @Inject
 	// fields, so the composite cannot exist before injection completes.
@@ -248,7 +250,7 @@ public class ShortestPathPlugin extends Plugin
 				net.runelite.api.coords.WorldPoint worldPoint = WorldPointUtil.unpackWorldPoint(point);
 				client.getWorldMap().setWorldMapPositionTarget(worldPoint);
 			}
-		}));
+		}), points -> locationPoints = points);
 		locationNavigation = NavigationButton.builder()
 			.tooltip("Shortest Path locations")
 			.icon(ImageUtil.loadImageResource(ShortestPathPlugin.class, "/shortestpath/panel_icon.png"))
@@ -263,6 +265,7 @@ public class ShortestPathPlugin extends Plugin
 	{
 		clientToolbar.removeNavigation(locationNavigation);
 		locationNavigation = null;
+		locationPoints = new int[0];
 		// The composite is built in startUp — a shutDown reached after a
 		// failed startUp has nothing to unregister.
 		if (pluginOverlays != null)

@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.function.IntConsumer;
+import java.util.function.Consumer;
+import javax.swing.JComboBox;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
@@ -44,13 +46,15 @@ public class LocationListPanel extends PluginPanel
 	{
 		final int point;
 		final String label;
+		final String category;
 		final String searchText;
 
-		Entry(int x, int y, int plane, String description)
+		Entry(int x, int y, int plane, String description, String category)
 		{
+			this.category = category;
 			point = WorldPointUtil.packWorldPoint(x, y, plane);
 			label = x + " " + y + " " + plane + "\n" + description;
-			searchText = label.toLowerCase(Locale.ROOT);
+			searchText = (category + " " + label).toLowerCase(Locale.ROOT);
 		}
 
 		boolean matches(String[] tokens)
@@ -69,14 +73,17 @@ public class LocationListPanel extends PluginPanel
 	private final DefaultListModel<Entry> model = new DefaultListModel<>();
 	private final JList<Entry> locations = new JList<>(model);
 	private final JTextField search = new JTextField();
+	private final JComboBox<String> category = new JComboBox<>();
+	private final Consumer<int[]> onFilterChange;
 	private final JLabel count = new JLabel();
 	private final JLabel source = new JLabel("Saved blocked origins");
 	private final JButton load = new JButton("Load TSV…");
 	private final Timer searchTimer = new Timer(150, event -> applyFilter());
 	private List<Entry> entries;
 
-	public LocationListPanel(IntConsumer onSelect)
+	public LocationListPanel(IntConsumer onSelect, Consumer<int[]> onFilterChange)
 	{
+		this.onFilterChange = onFilterChange;
 		try (Reader reader = new InputStreamReader(
 			LocationListPanel.class.getResourceAsStream("/debug/locations.tsv"), StandardCharsets.UTF_8))
 		{
@@ -92,7 +99,13 @@ public class LocationListPanel extends PluginPanel
 		header.add(new JLabel("Locations"), BorderLayout.NORTH);
 		search.setToolTipText("Search descriptions or coordinates; spaces separate terms");
 		search.getAccessibleContext().setAccessibleName("Search locations");
-		header.add(search, BorderLayout.CENTER);
+		JPanel filters = new JPanel(new BorderLayout(0, 8));
+		filters.add(search, BorderLayout.NORTH);
+		category.getAccessibleContext().setAccessibleName("Location category");
+		filters.add(category, BorderLayout.SOUTH);
+		header.add(filters, BorderLayout.CENTER);
+		updateCategories();
+		category.addActionListener(event -> applyFilter());
 		load.addActionListener(event -> loadFile());
 		header.add(load, BorderLayout.SOUTH);
 		add(header, BorderLayout.NORTH);
@@ -161,6 +174,15 @@ public class LocationListPanel extends PluginPanel
 		return size;
 	}
 
+	private void updateCategories()
+	{
+		category.removeAllItems();
+		category.addItem("All categories");
+		entries.stream().map(entry -> entry.category).distinct().sorted().forEach(category::addItem);
+		category.setSelectedItem(entries.stream().anyMatch(entry -> entry.category.equals("Open neighbour"))
+			? "Open neighbour" : "All categories");
+	}
+
 	private void applyFilter()
 	{
 		searchTimer.stop();
@@ -169,7 +191,8 @@ public class LocationListPanel extends PluginPanel
 		List<Entry> visible = new ArrayList<>();
 		for (Entry entry : entries)
 		{
-			if (entry.matches(tokens))
+			if (("All categories".equals(category.getSelectedItem()) || entry.category.equals(category.getSelectedItem()))
+				&& entry.matches(tokens))
 			{
 				visible.add(entry);
 			}
@@ -178,6 +201,7 @@ public class LocationListPanel extends PluginPanel
 		model.clear();
 		model.addAll(visible);
 		count.setText(visible.size() + " of " + entries.size() + " locations");
+		onFilterChange.accept(visible.stream().mapToInt(entry -> entry.point).toArray());
 	}
 
 	private void loadFile()
@@ -206,6 +230,7 @@ public class LocationListPanel extends PluginPanel
 				try
 				{
 					entries = get();
+					updateCategories();
 					source.setText(chooser.getSelectedFile().getName());
 					source.setToolTipText(chooser.getSelectedFile().getAbsolutePath());
 					applyFilter();
@@ -236,11 +261,12 @@ public class LocationListPanel extends PluginPanel
 			{
 				continue;
 			}
-			String[] fields = line.split("\t", 2);
+			String[] fields = line.split("\t", -1);
 			String[] coordinates = fields[0].trim().split("\\s+");
 			try
 			{
-				if (fields.length != 2 || fields[1].isBlank() || coordinates.length != 3)
+				if (fields.length < 2 || fields.length > 3 || fields[1].isBlank() || coordinates.length != 3
+					|| (fields.length == 3 && fields[2].isBlank()))
 				{
 					throw new IllegalArgumentException();
 				}
@@ -251,11 +277,11 @@ public class LocationListPanel extends PluginPanel
 				{
 					throw new IllegalArgumentException();
 				}
-				result.add(new Entry(x, y, plane, fields[1].trim()));
+				result.add(new Entry(x, y, plane, fields[1].trim(), fields.length == 3 ? fields[2].trim() : "General"));
 			}
 			catch (IllegalArgumentException e)
 			{
-				throw new IOException("Line " + number + ": expected x y plane<TAB>description (x/y 0–32767, plane 0–3)", e);
+				throw new IOException("Line " + number + ": expected x y plane<TAB>description[<TAB>category] (x/y 0–32767, plane 0–3)", e);
 			}
 		}
 		return result;

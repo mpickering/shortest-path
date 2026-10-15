@@ -1,143 +1,143 @@
 # Saved blocked-origin investigation; excludes fairy rings. Not a verification checklist.
-# x y plane	Description
-3019 3960 2	TRANSPORT: Climb-down Ship's ladder 246 — arrival only
-3144 4574 2	TRANSPORT: Jump-to Ledge 20568; TRANSPORT: Jump-to Ledge 20569 — arrival only
-1438 10098 2	AGILITY_SHORTCUT: Hang-over Platform edge 56371 — open neighbour
-3016 3352 3	AGILITY_SHORTCUT: Jump Gap 14919 — open neighbour
-3017 3352 3	AGILITY_SHORTCUT: Jump Gap 14919 — open neighbour
-3018 3352 3	AGILITY_SHORTCUT: Jump Gap 14919 — open neighbour
-3180 2432 0	AGILITY_SHORTCUT: Climb Rocks 57928 — open neighbour
-3180 2434 0	AGILITY_SHORTCUT: Climb Rocks 57927 — open neighbour
-2763 2703 0	TRANSPORT: Climb-down Bamboo Ladder 4780 — open neighbour
-2762 2936 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2868 2936 0	TRANSPORT: Chop-down Jungle tree 2889 — arrival only
-2791 2937 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890 — open neighbour
-2820 2937 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2800 2938 0	TRANSPORT: Chop-down Jungle tree 2890 — arrival only
-2816 2938 0	TRANSPORT: Chop-down Jungle Bush 2892; TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2819 2938 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2820 2938 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2866 2938 0	TRANSPORT: Chop-down Jungle Bush 2893 — open neighbour
-2868 2938 0	TRANSPORT: Chop-down Jungle Bush 2892 — open neighbour
-2932 2938 0	TRANSPORT: Chop-down Jungle Bush 2892; TRANSPORT: Chop-down Jungle tree 2890 — arrival only
-2936 2938 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2889 — arrival only
-2791 2939 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2793 2939 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2799 2939 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2800 2939 0	TRANSPORT: Chop-down Jungle tree 2889 — arrival only
-2866 2939 0	TRANSPORT: Chop-down Jungle tree 2890 — open neighbour
-2868 2939 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2933 2939 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2795 2940 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2798 2940 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2800 2940 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2932 2940 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2936 2940 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2889 — arrival only
-2791 2941 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890 — arrival only
-2793 2941 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890 — arrival only
-2795 2941 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2798 2941 0	TRANSPORT: Chop-down Jungle Bush 2892 — arrival only
-2799 2941 0	TRANSPORT: Chop-down Jungle Bush 2892; TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2800 2941 0	TRANSPORT: Chop-down Jungle Bush 2893 — arrival only
-2932 2941 0	TRANSPORT: Chop-down Jungle tree 2889 — arrival only
-2933 2941 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890 — arrival only
-2925 2948 0	AGILITY_SHORTCUT: Cross Stepping stones 23646 — open neighbour
-2925 2949 0	AGILITY_SHORTCUT: Cross Stepping stones 23645; AGILITY_SHORTCUT: Cross Stepping stones 23647 — arrival only
-2925 2950 0	AGILITY_SHORTCUT: Cross Stepping stones 23646 — open neighbour
-3714 2969 0	AGILITY_SHORTCUT: Jump-to Stepping stone 19042 — open neighbour
-3330 2983 0	AGILITY_SHORTCUT: Cross Ditch 62416 — open neighbour
-2594 3085 0	TRANSPORT: Climb-down Ladder 17384 — open neighbour
-3589 3173 0	TRANSPORT: Climb-up Floor 18124 — open neighbour
-2232 3219 0	AGILITY_SHORTCUT: Enter Dense forest 3937; AGILITY_SHORTCUT: Enter Dense forest 3939 — arrival only
-2913 3221 0	TRANSPORT: Climb-up Ship's ladder 9744 — arrival only
-2458 3311 0	TRANSPORT: Climb-up Ladder 16683 — open neighbour
-3150 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533 — open neighbour
-3151 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533 — arrival only
-3152 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533 — arrival only
-3153 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533 — open neighbour
-2511 3463 0	TRANSPORT: Get in Barrel 2022; TRANSPORT: Open Door 2010 — arrival only
-3424 3476 0	AGILITY_SHORTCUT: Climb Rocks 16998; AGILITY_SHORTCUT: Squeeze-through Ornate railing 16552 — open neighbour
-3426 3478 0	AGILITY_SHORTCUT: Climb Rocks 16999 — open neighbour
-3077 3493 0	TRANSPORT: Open trapdoor 12267 — open neighbour
-3712 3496 0	TRANSPORT: Cross Gangplank 11210 — open neighbour
-3326 3520 0	TRANSPORT: Cross Wilderness Ditch 23271 — open neighbour
-3538 3543 0	TRANSPORT: Climb-up Ladder 16683 — open neighbour
-1579 3590 0	TRANSPORT: Climb Stairs 27201 — open neighbour
-1470 3654 0	TRANSPORT: Enter Hole 28915 — open neighbour
-2853 3961 0	TRANSPORT: Climb Roped tree 33327; TRANSPORT: Cross Ledge 33190 — arrival only
-2852 3964 0	TRANSPORT: Climb Rockslide 33184; TRANSPORT: Climb Rockslide 33185 — arrival only
-2855 3964 0	TRANSPORT: Climb Rockslide 33185; TRANSPORT: Climb Rope 33328 — arrival only
-1629 4023 0	TRANSPORT: Jump Gap 29326 — arrival only
-1631 4023 0	TRANSPORT: Jump Gap 29326 — arrival only
-2486 4471 0	TRANSPORT: Use Fairy ring 12003 — open neighbour
-2452 4473 0	TRANSPORT: Use Fairy ring 12094 — open neighbour
-2795 4529 0	TRANSPORT: Climb-up Ladder 4968 — arrival only
-3042 4811 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3050 4813 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3018 4822 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3058 4822 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3061 4831 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3224 4832 0	TRANSPORT: Use Portal 43478 — open neighbour
-3240 4832 0	TRANSPORT: Use Portal 43478 — open neighbour
-3018 4834 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3059 4840 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3021 4843 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3029 4850 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3050 4850 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-3039 4854 0	TRANSPORT: Go-through Passage 26250 — open neighbour
-2920 5274 0	TRANSPORT: Climb-up Rope 26375 — open neighbour
-1742 5352 0	TRANSPORT: Ride Aged log 25216 — open neighbour
-1761 5362 0	TRANSPORT: Ride Aged log 25216 — open neighbour
-2763 9103 0	TRANSPORT: Climb-up Bamboo Ladder 4781 — open neighbour
-1533 9445 0	TRANSPORT: Exit Cave 51760 — arrival only
-1533 9446 0	TRANSPORT: Exit Cave 51760 — arrival only
-1533 9447 0	TRANSPORT: Exit Cave 51760 — arrival only
-3057 9562 0	TRANSPORT: Enter Ice Cavern 10596 — open neighbour
-2572 9626 0	TRANSPORT: Climb-up Ladder 17385 — open neighbour
-2571 9667 0	TRANSPORT: Climb-up Ladder 17385 — arrival only
-2570 9668 0	TRANSPORT: Climb-up Ladder 17385 — arrival only
-1820 9946 0	AGILITY_SHORTCUT: Jump-over Strange floor 3483 — open neighbour
-3202 10132 0	TRANSPORT: Jump-to Pillar 31562 — open neighbour
-2591 2851 1	TRANSPORT: Cross Gangplank 31756 — open neighbour
-3139 3077 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-3605 3161 1	TRANSPORT: Jump-onto Rock 17958 — arrival only
-3605 3163 1	BOAT: Board Boat 38089; TRANSPORT: Climb-up Rock 17959 — arrival only
-3588 3173 1	TRANSPORT: Climb-down Floor 18122 — open neighbour
-3589 3173 1	TRANSPORT: Climb-down Floor 18122 — open neighbour
-3229 3212 1	TRANSPORT: Climb-down Ladder 16684; TRANSPORT: Climb-up Ladder 16684 — arrival only
-2683 3268 1	TRANSPORT: Cross Gangplank 2086 — arrival only
-3598 3281 1	TRANSPORT: Climb-down Stairs down 17978 — open neighbour
-3139 3305 1	TRANSPORT: Climb-down Ladder 16679 — open neighbour
-2664 3333 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-2663 3334 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-2665 3334 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-2664 3335 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-2408 3434 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-2407 3435 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-2449 3463 1	TRANSPORT: Climb-down Ladder 16679 — arrival only
-1523 3563 1	TRANSPORT: Climb Stairs 27202 — arrival only
-1579 3586 1	TRANSPORT: Climb Stairs 27202 — arrival only
-1580 3586 1	TRANSPORT: Climb Stairs 27202 — arrival only
-1561 3592 1	TRANSPORT: Climb Stairs 27202 — arrival only
-1562 3592 1	TRANSPORT: Climb Stairs 27202 — arrival only
-2631 4013 1	TRANSPORT: Use A crack 21245 — open neighbour
-3184 4560 1	TRANSPORT: Jump-to Ledge 20558; TRANSPORT: Jump-to Pillar 20541 — arrival only
-3184 4562 1	TRANSPORT: Jump-to Ledge 20559; TRANSPORT: Jump-to Pillar 20540 — arrival only
-3142 4595 1	TRANSPORT: Jump-to Ledge 20562; TRANSPORT: Jump-to Pillar 20545 — arrival only
-3144 4595 1	TRANSPORT: Jump-to Pillar 20544; TRANSPORT: Jump-to Pillar 20546; TRANSPORT: Jump-to Pillar 20547 — arrival only
-3146 4595 1	TRANSPORT: Jump-to Pillar 20543; TRANSPORT: Jump-to Pillar 20545 — arrival only
-3148 4595 1	TRANSPORT: Jump-to Pillar 20542; TRANSPORT: Jump-to Pillar 20544 — arrival only
-3182 4596 1	TRANSPORT: Jump-to Ledge 20564 — arrival only
-3186 4596 1	TRANSPORT: Jump-to Pillar 20553; TRANSPORT: Jump-to Pillar 20555 — arrival only
-3188 4596 1	TRANSPORT: Jump-to Ledge 20566; TRANSPORT: Jump-to Pillar 20554 — arrival only
-3144 4597 1	TRANSPORT: Jump-to Pillar 20545; TRANSPORT: Jump-to Pillar 20548 — arrival only
-3148 4597 1	TRANSPORT: Jump-to Ledge 20560; TRANSPORT: Jump-to Pillar 20543 — arrival only
-3184 4598 1	TRANSPORT: Jump-to Pillar 20551; TRANSPORT: Jump-to Pillar 20553 — arrival only
-3186 4598 1	TRANSPORT: Jump-to Pillar 20552; TRANSPORT: Jump-to Pillar 20554 — arrival only
-3144 4599 1	TRANSPORT: Jump-to Ledge 20563; TRANSPORT: Jump-to Pillar 20547 — arrival only
-3182 4600 1	TRANSPORT: Jump-to Ledge 20565; TRANSPORT: Jump-to Pillar 20551 — arrival only
-3184 4600 1	TRANSPORT: Jump-to Pillar 20550; TRANSPORT: Jump-to Pillar 20552 — arrival only
-3188 4600 1	TRANSPORT: Jump-to Ledge 20567 — arrival only
-2914 5300 1	TRANSPORT: Climb-up Rope 26371 — open neighbour
-1981 8998 1	AGILITY_SHORTCUT: Jump-to Pillar 31809 — open neighbour
-2385 10260 1	TRANSPORT: Walk-across Rope bridge 21317 — open neighbour
+# x y plane	Description	Category
+3019 3960 2	TRANSPORT: Climb-down Ship's ladder 246	Arrival only
+3144 4574 2	TRANSPORT: Jump-to Ledge 20568; TRANSPORT: Jump-to Ledge 20569	Arrival only
+1438 10098 2	AGILITY_SHORTCUT: Hang-over Platform edge 56371	Open neighbour
+3016 3352 3	AGILITY_SHORTCUT: Jump Gap 14919	Open neighbour
+3017 3352 3	AGILITY_SHORTCUT: Jump Gap 14919	Open neighbour
+3018 3352 3	AGILITY_SHORTCUT: Jump Gap 14919	Open neighbour
+3180 2432 0	AGILITY_SHORTCUT: Climb Rocks 57928	Open neighbour
+3180 2434 0	AGILITY_SHORTCUT: Climb Rocks 57927	Open neighbour
+2763 2703 0	TRANSPORT: Climb-down Bamboo Ladder 4780	Open neighbour
+2762 2936 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2868 2936 0	TRANSPORT: Chop-down Jungle tree 2889	Arrival only
+2791 2937 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890	Open neighbour
+2820 2937 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2800 2938 0	TRANSPORT: Chop-down Jungle tree 2890	Arrival only
+2816 2938 0	TRANSPORT: Chop-down Jungle Bush 2892; TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2819 2938 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2820 2938 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2866 2938 0	TRANSPORT: Chop-down Jungle Bush 2893	Open neighbour
+2868 2938 0	TRANSPORT: Chop-down Jungle Bush 2892	Open neighbour
+2932 2938 0	TRANSPORT: Chop-down Jungle Bush 2892; TRANSPORT: Chop-down Jungle tree 2890	Arrival only
+2936 2938 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2889	Arrival only
+2791 2939 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2793 2939 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2799 2939 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2800 2939 0	TRANSPORT: Chop-down Jungle tree 2889	Arrival only
+2866 2939 0	TRANSPORT: Chop-down Jungle tree 2890	Open neighbour
+2868 2939 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2933 2939 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2795 2940 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2798 2940 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2800 2940 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2932 2940 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2936 2940 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2889	Arrival only
+2791 2941 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890	Arrival only
+2793 2941 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890	Arrival only
+2795 2941 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2798 2941 0	TRANSPORT: Chop-down Jungle Bush 2892	Arrival only
+2799 2941 0	TRANSPORT: Chop-down Jungle Bush 2892; TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2800 2941 0	TRANSPORT: Chop-down Jungle Bush 2893	Arrival only
+2932 2941 0	TRANSPORT: Chop-down Jungle tree 2889	Arrival only
+2933 2941 0	TRANSPORT: Chop-down Jungle Bush 2893; TRANSPORT: Chop-down Jungle tree 2890	Arrival only
+2925 2948 0	AGILITY_SHORTCUT: Cross Stepping stones 23646	Open neighbour
+2925 2949 0	AGILITY_SHORTCUT: Cross Stepping stones 23645; AGILITY_SHORTCUT: Cross Stepping stones 23647	Arrival only
+2925 2950 0	AGILITY_SHORTCUT: Cross Stepping stones 23646	Open neighbour
+3714 2969 0	AGILITY_SHORTCUT: Jump-to Stepping stone 19042	Open neighbour
+3330 2983 0	AGILITY_SHORTCUT: Cross Ditch 62416	Open neighbour
+2594 3085 0	TRANSPORT: Climb-down Ladder 17384	Open neighbour
+3589 3173 0	TRANSPORT: Climb-up Floor 18124	Open neighbour
+2232 3219 0	AGILITY_SHORTCUT: Enter Dense forest 3937; AGILITY_SHORTCUT: Enter Dense forest 3939	Arrival only
+2913 3221 0	TRANSPORT: Climb-up Ship's ladder 9744	Arrival only
+2458 3311 0	TRANSPORT: Climb-up Ladder 16683	Open neighbour
+3150 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533	Open neighbour
+3151 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533	Arrival only
+3152 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533	Arrival only
+3153 3363 0	AGILITY_SHORTCUT: Jump-onto Stepping stone 16533	Open neighbour
+2511 3463 0	TRANSPORT: Get in Barrel 2022; TRANSPORT: Open Door 2010	Arrival only
+3424 3476 0	AGILITY_SHORTCUT: Climb Rocks 16998; AGILITY_SHORTCUT: Squeeze-through Ornate railing 16552	Open neighbour
+3426 3478 0	AGILITY_SHORTCUT: Climb Rocks 16999	Open neighbour
+3077 3493 0	TRANSPORT: Open trapdoor 12267	Open neighbour
+3712 3496 0	TRANSPORT: Cross Gangplank 11210	Open neighbour
+3326 3520 0	TRANSPORT: Cross Wilderness Ditch 23271	Open neighbour
+3538 3543 0	TRANSPORT: Climb-up Ladder 16683	Open neighbour
+1579 3590 0	TRANSPORT: Climb Stairs 27201	Open neighbour
+1470 3654 0	TRANSPORT: Enter Hole 28915	Open neighbour
+2853 3961 0	TRANSPORT: Climb Roped tree 33327; TRANSPORT: Cross Ledge 33190	Arrival only
+2852 3964 0	TRANSPORT: Climb Rockslide 33184; TRANSPORT: Climb Rockslide 33185	Arrival only
+2855 3964 0	TRANSPORT: Climb Rockslide 33185; TRANSPORT: Climb Rope 33328	Arrival only
+1629 4023 0	TRANSPORT: Jump Gap 29326	Arrival only
+1631 4023 0	TRANSPORT: Jump Gap 29326	Arrival only
+2486 4471 0	TRANSPORT: Use Fairy ring 12003	Open neighbour
+2452 4473 0	TRANSPORT: Use Fairy ring 12094	Open neighbour
+2795 4529 0	TRANSPORT: Climb-up Ladder 4968	Arrival only
+3042 4811 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3050 4813 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3018 4822 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3058 4822 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3061 4831 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3224 4832 0	TRANSPORT: Use Portal 43478	Open neighbour
+3240 4832 0	TRANSPORT: Use Portal 43478	Open neighbour
+3018 4834 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3059 4840 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3021 4843 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3029 4850 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3050 4850 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+3039 4854 0	TRANSPORT: Go-through Passage 26250	Open neighbour
+2920 5274 0	TRANSPORT: Climb-up Rope 26375	Open neighbour
+1742 5352 0	TRANSPORT: Ride Aged log 25216	Open neighbour
+1761 5362 0	TRANSPORT: Ride Aged log 25216	Open neighbour
+2763 9103 0	TRANSPORT: Climb-up Bamboo Ladder 4781	Open neighbour
+1533 9445 0	TRANSPORT: Exit Cave 51760	Arrival only
+1533 9446 0	TRANSPORT: Exit Cave 51760	Arrival only
+1533 9447 0	TRANSPORT: Exit Cave 51760	Arrival only
+3057 9562 0	TRANSPORT: Enter Ice Cavern 10596	Open neighbour
+2572 9626 0	TRANSPORT: Climb-up Ladder 17385	Open neighbour
+2571 9667 0	TRANSPORT: Climb-up Ladder 17385	Arrival only
+2570 9668 0	TRANSPORT: Climb-up Ladder 17385	Arrival only
+1820 9946 0	AGILITY_SHORTCUT: Jump-over Strange floor 3483	Open neighbour
+3202 10132 0	TRANSPORT: Jump-to Pillar 31562	Open neighbour
+2591 2851 1	TRANSPORT: Cross Gangplank 31756	Open neighbour
+3139 3077 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+3605 3161 1	TRANSPORT: Jump-onto Rock 17958	Arrival only
+3605 3163 1	BOAT: Board Boat 38089; TRANSPORT: Climb-up Rock 17959	Arrival only
+3588 3173 1	TRANSPORT: Climb-down Floor 18122	Open neighbour
+3589 3173 1	TRANSPORT: Climb-down Floor 18122	Open neighbour
+3229 3212 1	TRANSPORT: Climb-down Ladder 16684; TRANSPORT: Climb-up Ladder 16684	Arrival only
+2683 3268 1	TRANSPORT: Cross Gangplank 2086	Arrival only
+3598 3281 1	TRANSPORT: Climb-down Stairs down 17978	Open neighbour
+3139 3305 1	TRANSPORT: Climb-down Ladder 16679	Open neighbour
+2664 3333 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+2663 3334 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+2665 3334 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+2664 3335 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+2408 3434 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+2407 3435 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+2449 3463 1	TRANSPORT: Climb-down Ladder 16679	Arrival only
+1523 3563 1	TRANSPORT: Climb Stairs 27202	Arrival only
+1579 3586 1	TRANSPORT: Climb Stairs 27202	Arrival only
+1580 3586 1	TRANSPORT: Climb Stairs 27202	Arrival only
+1561 3592 1	TRANSPORT: Climb Stairs 27202	Arrival only
+1562 3592 1	TRANSPORT: Climb Stairs 27202	Arrival only
+2631 4013 1	TRANSPORT: Use A crack 21245	Open neighbour
+3184 4560 1	TRANSPORT: Jump-to Ledge 20558; TRANSPORT: Jump-to Pillar 20541	Arrival only
+3184 4562 1	TRANSPORT: Jump-to Ledge 20559; TRANSPORT: Jump-to Pillar 20540	Arrival only
+3142 4595 1	TRANSPORT: Jump-to Ledge 20562; TRANSPORT: Jump-to Pillar 20545	Arrival only
+3144 4595 1	TRANSPORT: Jump-to Pillar 20544; TRANSPORT: Jump-to Pillar 20546; TRANSPORT: Jump-to Pillar 20547	Arrival only
+3146 4595 1	TRANSPORT: Jump-to Pillar 20543; TRANSPORT: Jump-to Pillar 20545	Arrival only
+3148 4595 1	TRANSPORT: Jump-to Pillar 20542; TRANSPORT: Jump-to Pillar 20544	Arrival only
+3182 4596 1	TRANSPORT: Jump-to Ledge 20564	Arrival only
+3186 4596 1	TRANSPORT: Jump-to Pillar 20553; TRANSPORT: Jump-to Pillar 20555	Arrival only
+3188 4596 1	TRANSPORT: Jump-to Ledge 20566; TRANSPORT: Jump-to Pillar 20554	Arrival only
+3144 4597 1	TRANSPORT: Jump-to Pillar 20545; TRANSPORT: Jump-to Pillar 20548	Arrival only
+3148 4597 1	TRANSPORT: Jump-to Ledge 20560; TRANSPORT: Jump-to Pillar 20543	Arrival only
+3184 4598 1	TRANSPORT: Jump-to Pillar 20551; TRANSPORT: Jump-to Pillar 20553	Arrival only
+3186 4598 1	TRANSPORT: Jump-to Pillar 20552; TRANSPORT: Jump-to Pillar 20554	Arrival only
+3144 4599 1	TRANSPORT: Jump-to Ledge 20563; TRANSPORT: Jump-to Pillar 20547	Arrival only
+3182 4600 1	TRANSPORT: Jump-to Ledge 20565; TRANSPORT: Jump-to Pillar 20551	Arrival only
+3184 4600 1	TRANSPORT: Jump-to Pillar 20550; TRANSPORT: Jump-to Pillar 20552	Arrival only
+3188 4600 1	TRANSPORT: Jump-to Ledge 20567	Arrival only
+2914 5300 1	TRANSPORT: Climb-up Rope 26371	Open neighbour
+1981 8998 1	AGILITY_SHORTCUT: Jump-to Pillar 31809	Open neighbour
+2385 10260 1	TRANSPORT: Walk-across Rope bridge 21317	Open neighbour
