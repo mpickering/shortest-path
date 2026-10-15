@@ -45,6 +45,7 @@ import net.runelite.client.util.ImageUtil;
 import shortestpath.api.MenuVerbs;
 import shortestpath.api.PluginMessageHandler;
 import shortestpath.items.ItemStateService;
+import shortestpath.ui.LocationListPanel;
 import shortestpath.overlay.BankItemHighlightOverlay;
 import shortestpath.overlay.DebugMapOverlay;
 import shortestpath.overlay.DebugOverlayPanel;
@@ -150,6 +151,7 @@ public class ShortestPathPlugin extends Plugin
 	private EventBus eventBus;
 	private ShortestPathPanel panel;
 	private NavigationButton navButton;
+	private NavigationButton locationNavigation;
 	private PathfinderConfig pathfinderConfig;
 	// Built in startUp — the overlay references it bundles are @Inject
 	// fields, so the composite cannot exist before injection completes.
@@ -238,11 +240,29 @@ public class ShortestPathPlugin extends Plugin
 		{
 			clientToolbar.addNavigation(navButton);
 		}
+		LocationListPanel locations = new LocationListPanel(point -> clientThread.invokeLater(() ->
+		{
+			if (client.getGameState() == GameState.LOGGED_IN)
+			{
+				scheduler.setTarget(point);
+				net.runelite.api.coords.WorldPoint worldPoint = WorldPointUtil.unpackWorldPoint(point);
+				client.getWorldMap().setWorldMapPositionTarget(worldPoint);
+			}
+		}));
+		locationNavigation = NavigationButton.builder()
+			.tooltip("Shortest Path locations")
+			.icon(ImageUtil.loadImageResource(ShortestPathPlugin.class, "/shortestpath/panel_icon.png"))
+			.panel(locations)
+			.priority(100)
+			.build();
+		clientToolbar.addNavigation(locationNavigation);
 	}
 
 	@Override
 	protected void shutDown()
 	{
+		clientToolbar.removeNavigation(locationNavigation);
+		locationNavigation = null;
 		// The composite is built in startUp — a shutDown reached after a
 		// failed startUp has nothing to unregister.
 		if (pluginOverlays != null)
