@@ -56,6 +56,8 @@ public class PathTileOverlay extends Overlay
 	private final ItemManager itemManager;
 	private int playerTileLabelOffset = 0;
 	private boolean teleportPulseDrawn = false;
+	// The path step where the route banks, the only step that shows what to pick up
+	private int bankVisitStep = -1;
 
 	@Inject
 	public PathTileOverlay(Client client, ShortestPathPlugin plugin, ItemManager itemManager)
@@ -217,6 +219,7 @@ public class PathTileOverlay extends Overlay
 				pathColor.getAlpha() / 2);
 
 			List<PathStep> path = plugin.getActiveSearch().getPath();
+			bankVisitStep = BankPickupRequirements.bankVisitStep(path);
 			int counter = 0;
 			if (plugin.isSailing())
 			{
@@ -887,7 +890,9 @@ public class PathTileOverlay extends Overlay
 			return;
 		}
 
-		// Check if this is a bank step and items need to be picked up
+		// Check if this is the step where the route banks and items need to be picked up.
+		// Other bank tiles along the path are only walked over.
+		if (pathIndex == bankVisitStep)
 		{
 			BankPickupRequirements.BankPickupResult bankPickup = plugin.getBankPickup(path, pathIndex);
 			if (bankPickup != null && !bankPickup.phrases.isEmpty())

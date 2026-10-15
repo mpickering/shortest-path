@@ -259,6 +259,23 @@ public final class BankPickupRequirements
 	}
 
 	/**
+	 * The index of the step where the path banks: the last step before it switches into its
+	 * banked layer, which is on the bank tile. The A* backend then repeats the bank tile as the
+	 * first banked step; legacy moves on. Returns -1 when the path does not bank.
+	 */
+	public static int bankVisitStep(List<PathStep> path)
+	{
+		for (int i = 0; i + 1 < path.size(); i++)
+		{
+			if (!path.get(i).isBankVisited() && path.get(i + 1).isBankVisited())
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
+	/**
 	 * Whether the path switches into its banked layer at step {@code index}: on the step before
 	 * the switch or the first banked step, which share the bank tile.
 	 */
