@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -2004,6 +2005,29 @@ public class ShortestPathPlugin extends Plugin
 			return portalNexusKeybinds.apply(info);
 		}
 		return info;
+	}
+
+	/**
+	 * The POH exit hints shown over the player while they are in the POH: the exit of each of the
+	 * path's POH visits, in path order.
+	 */
+	public List<String> getPohExitHints(List<PathStep> path)
+	{
+		Set<String> hints = new LinkedHashSet<>();
+		for (int i = 0; path != null && i < path.size(); i++)
+		{
+			int location = path.get(i).getPackedPosition();
+			if (!isInsidePoh(WorldPointUtil.unpackWorldX(location), WorldPointUtil.unpackWorldY(location)))
+			{
+				continue;
+			}
+			String hint = getPohExitInfo(location, path, i - 1);
+			if (hint != null)
+			{
+				hints.add(hint);
+			}
+		}
+		return new ArrayList<>(hints);
 	}
 
 	/**

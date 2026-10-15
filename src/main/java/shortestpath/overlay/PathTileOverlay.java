@@ -56,6 +56,7 @@ public class PathTileOverlay extends Overlay
 	private final ItemManager itemManager;
 	private int playerTileLabelOffset = 0;
 	private boolean teleportPulseDrawn = false;
+	private boolean pohExitHintsDrawn = false;
 
 	@Inject
 	public PathTileOverlay(Client client, ShortestPathPlugin plugin, ItemManager itemManager)
@@ -191,6 +192,7 @@ public class PathTileOverlay extends Overlay
 	{
 		playerTileLabelOffset = 0;
 		teleportPulseDrawn = false;
+		pohExitHintsDrawn = false;
 
 		if (plugin.drawTransports)
 		{
@@ -861,29 +863,30 @@ public class PathTileOverlay extends Overlay
 		boolean transportAndPlayerInsidePoh = ShortestPathPlugin.isInsidePoh(lx, ly)
 			&& ShortestPathPlugin.isInsidePoh(px, py);
 
-		// When inside POH, only show the POH exit info once (not per-transport)
+		// When inside POH, only show the POH exit info once (not per-transport or per step)
 		if (transportAndPlayerInsidePoh)
 		{
+			if (pohExitHintsDrawn)
+			{
+				return;
+			}
+			pohExitHintsDrawn = true;
+
 			// No floor check here: path steps carry planes from the generic POH
 			// template (the landing is modelled at plane 0), while the player maps
 			// back at whatever template plane their actual house chunks occupy
 			// (e.g. plane 2 for a ground floor) — the two don't correspond, so any
 			// plane comparison would suppress the hint in real houses.
-			String pohExitInfo = plugin.getPohExitInfo(location, path, pathIndex - 1);
-
-			if (pohExitInfo == null)
-			{
-				return;
-			}
-			String text = "Exit: " + pohExitInfo;
-
 			Point p = Perspective.localToCanvas(client, playerLocalPoint, client.getTopLevelWorldView().getPlane());
 			if (p == null)
 			{
 				return;
 			}
 
-			drawLabel(graphics, p, text, 0);
+			for (String pohExitInfo : plugin.getPohExitHints(path))
+			{
+				drawLabel(graphics, p, "Exit: " + pohExitInfo, 0);
+			}
 			return;
 		}
 
