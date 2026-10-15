@@ -32,7 +32,6 @@ import shortestpath.PrimitiveIntList;
 import shortestpath.TileCounter;
 import shortestpath.TileStyle;
 import shortestpath.WorldPointUtil;
-import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.ActiveSearch;
 import shortestpath.pathfinder.PathStep;
 import shortestpath.poh.PohService;
@@ -59,6 +58,8 @@ public class PathTileOverlay extends Overlay
 	private final PathAnnotator annotator;
 	private int playerTileLabelOffset = 0;
 	private boolean teleportPulseDrawn = false;
+	// The path step where the route banks, the only step that shows what to pick up
+	private int bankVisitStep = -1;
 
 	@Inject
 	public PathTileOverlay(Client client, ItemManager itemManager, Settings settings,
@@ -99,6 +100,7 @@ public class PathTileOverlay extends Overlay
 				pathColor.getAlpha() / 2);
 
 			List<PathStep> path = search.getPath();
+			bankVisitStep = BankPickupRequirements.bankVisitStep(path);
 			int counter = 0;
 			if (renderState.isSailing())
 			{
@@ -603,7 +605,7 @@ public class PathTileOverlay extends Overlay
 		}
 
 		// Check if this is a bank step and items need to be picked up
-		if (drawBankPickupLabel(graphics, location, path, pathIndex, search))
+		if (pathIndex == bankVisitStep && drawBankPickupLabel(graphics, location, path, pathIndex, search))
 		{
 			return;
 		}

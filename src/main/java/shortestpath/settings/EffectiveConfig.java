@@ -42,6 +42,12 @@ public final class EffectiveConfig implements ShortestPathConfig
 		this.hiddenBase = hiddenBase;
 	}
 
+	@Override
+	public Set<shortestpath.DebugLayer> debugLayers()
+	{
+		return base.debugLayers();
+	}
+
 	@SuppressWarnings("unchecked")
 	private <T> T override(ConfigKey key, T fallback)
 	{

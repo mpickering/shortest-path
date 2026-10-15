@@ -17,13 +17,11 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 import shortestpath.TileStyle;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.ActiveSearch;
-import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.PathStep;
 import shortestpath.presentation.PathAnnotator;
 import shortestpath.scheduler.PathRenderState;
 import shortestpath.scheduler.PathScheduler;
 import shortestpath.settings.Settings;
-import shortestpath.transport.Transport;
 import shortestpath.widgets.WidgetGeometry;
 
 public class PathMapOverlay extends Overlay

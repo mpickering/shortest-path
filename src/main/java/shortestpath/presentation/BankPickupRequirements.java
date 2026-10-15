@@ -26,6 +26,24 @@ import shortestpath.requirement.model.TransportItems;
 public final class BankPickupRequirements
 {
 
+	/**
+	 * The index of the step where the path banks: the last step before it switches into its
+	 * banked layer, which is on the bank tile. The A* backend then repeats the bank tile as the
+	 * first banked step; legacy moves on. Returns -1 when the path does not bank.
+	 */
+	public static int bankVisitStep(List<PathStep> path)
+	{
+		for (int i = 0; i + 1 < path.size(); i++)
+		{
+			if (path.get(i).getBankVisitState() == shortestpath.pathfinder.BankVisitState.CARRIED
+				&& path.get(i + 1).getBankVisitState() == shortestpath.pathfinder.BankVisitState.BANKED)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	/** Combined result of a bank pickup computation: display phrases and item IDs for highlighting. */
 	public static class BankPickupResult
 	{

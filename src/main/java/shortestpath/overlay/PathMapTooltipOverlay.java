@@ -13,7 +13,6 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import shortestpath.ShortestPathPlugin;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.PathStep;
 import shortestpath.transport.Transport;
@@ -21,7 +20,9 @@ import shortestpath.transport.Transport;
 public class PathMapTooltipOverlay extends Overlay
 {
 	private final Client client;
-	private final shortestpath.scheduler.PathScheduler scheduler, shortestpath.settings.Settings settings, shortestpath.presentation.PathAnnotator annotator;
+	private final shortestpath.scheduler.PathScheduler scheduler;
+	private final shortestpath.settings.Settings settings;
+	private final shortestpath.presentation.PathAnnotator annotator;
 	private final WorldMapCanvas canvas;
 	private final DebugMapOverlay debugMapOverlay;
 

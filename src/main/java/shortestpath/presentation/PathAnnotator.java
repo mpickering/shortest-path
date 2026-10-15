@@ -601,4 +601,21 @@ public class PathAnnotator
 			panelScrollY
 		);
 	}
+	public Set<Integer> getFilteredTargets()
+	{
+		return pathfinderConfig.getFilteredTargets();
+	}
+	public Transport[] getAllTeleports()
+	{
+		return pathfinderConfig.getAllTeleports();
+	}
+	public Transport[] getUsableTeleports(boolean banked)
+	{
+		return pathfinderConfig.getUsableTeleports(banked ? shortestpath.pathfinder.BankVisitState.BANKED : shortestpath.pathfinder.BankVisitState.CARRIED);
+	}
+	public String explainUnavailable(Transport transport)
+	{
+		return pathfinderConfig.explainUnavailable(transport);
+	}
+
 }

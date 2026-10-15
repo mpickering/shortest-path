@@ -17,7 +17,10 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import shortestpath.ShortestPathPlugin;
+import shortestpath.presentation.PathAnnotator;
+import shortestpath.scheduler.PathScheduler;
+import shortestpath.settings.Settings;
+
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.transport.Transport;
@@ -39,7 +42,9 @@ public class DebugMapOverlay extends Overlay
 	private static final float LOCAL_ARROW_MIN_ZOOM = 3;
 
 	private final Client client;
-	private final ShortestPathPlugin plugin;
+	private final PathAnnotator annotator;
+	private final PathScheduler scheduler;
+	private final Settings settings;
 	private final WorldMapCanvas canvas;
 	private final TeleportMarkers teleportMarkers;
 	private final TransportMarkers transportMarkers;
@@ -51,13 +56,15 @@ public class DebugMapOverlay extends Overlay
 	private List<String> hoverRows = List.of();
 
 	@Inject
-	private DebugMapOverlay(Client client, ShortestPathPlugin plugin, WorldMapCanvas canvas)
+	private DebugMapOverlay(Client client, PathAnnotator annotator, PathScheduler scheduler, Settings settings, WorldMapCanvas canvas)
 	{
 		this.client = client;
-		this.plugin = plugin;
+		this.annotator = annotator;
+		this.scheduler = scheduler;
+		this.settings = settings;
 		this.canvas = canvas;
-		this.teleportMarkers = new TeleportMarkers(plugin);
-		this.transportMarkers = new TransportMarkers(plugin);
+		this.teleportMarkers = new TeleportMarkers(annotator);
+		this.transportMarkers = new TransportMarkers(annotator);
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -70,8 +77,8 @@ public class DebugMapOverlay extends Overlay
 	{
 		hoverPoint = WorldPointUtil.UNDEFINED;
 		hoverRows = List.of();
-		if (!plugin.drawMap || !(plugin.drawCollisionMap || plugin.drawTransports || plugin.drawTargets
-			|| plugin.drawTeleports))
+		if (!settings.display().drawMap() || !(settings.display().drawCollisionMap() || settings.display().drawTransports() || settings.configured().debugLayers().contains(shortestpath.DebugLayer.TARGETS)
+			|| settings.configured().debugLayers().contains(shortestpath.DebugLayer.TELEPORTS)))
 		{
 			return null;
 		}
@@ -84,23 +91,23 @@ public class DebugMapOverlay extends Overlay
 		Area clip = canvas.clipArea(bounds);
 		graphics.setClip(clip);
 
-		if (plugin.drawCollisionMap)
+		if (settings.display().drawCollisionMap())
 		{
 			renderCollisionMap(graphics, bounds);
 		}
 
 		Point cursor = client.getMouseCanvasPosition();
-		if (plugin.drawTransports)
+		if (settings.display().drawTransports())
 		{
 			renderTransports(graphics, clip, cursor);
 		}
 
-		if (plugin.drawTeleports)
+		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.TELEPORTS))
 		{
 			renderTeleports(graphics, clip, cursor);
 		}
 
-		if (plugin.drawTargets)
+		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.TARGETS))
 		{
 			renderTargets(graphics, cursor);
 		}
@@ -141,7 +148,7 @@ public class DebugMapOverlay extends Overlay
 
 	private void renderTargets(Graphics2D graphics, Point cursor)
 	{
-		List<TargetMarkers.Marker> markers = TargetMarkers.collect(plugin.getActiveSearch(), plugin.getFilteredTargets());
+		List<TargetMarkers.Marker> markers = TargetMarkers.collect(scheduler.getActiveSearch(), annotator.getFilteredTargets());
 		float pixelsPerTile = canvas.pixelsPerTile();
 		Stroke previousStroke = graphics.getStroke();
 
@@ -222,11 +229,11 @@ public class DebugMapOverlay extends Overlay
 		{
 			return;
 		}
-		Color fill = plugin.colourCollisionMap;
+		Color fill = settings.display().colourCollisionMap();
 		boolean walls = canvas.pixelsPerTile() >= WALL_MIN_ZOOM;
 		Stroke previousStroke = graphics.getStroke();
 		graphics.setStroke(new BasicStroke(2));
-		final CollisionMap map = plugin.getMap();
+		final CollisionMap map = annotator.getMap();
 		final int z = client.getTopLevelWorldView().getPlane();
 		for (int x = visible[0]; x <= visible[2]; x++)
 		{

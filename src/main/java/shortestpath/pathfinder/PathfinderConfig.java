@@ -605,7 +605,6 @@ public class PathfinderConfig
 		accessibleBankTiles = Collections.unmodifiableSet(acc);
 	}
 
-	/**
 	/** The targets {@link #filterLocations} set aside until they become valid again. */
 	public Set<Integer> getFilteredTargets()
 	{

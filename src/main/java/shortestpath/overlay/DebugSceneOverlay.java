@@ -17,7 +17,10 @@ import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.tooltip.Tooltip;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
-import shortestpath.ShortestPathPlugin;
+import shortestpath.presentation.PathAnnotator;
+import shortestpath.scheduler.PathScheduler;
+import shortestpath.settings.Settings;
+
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.AStarPathfinder;
@@ -34,19 +37,23 @@ public class DebugSceneOverlay extends Overlay
 	private static final Color COLOR_CLICK_POINT = new Color(255, 0, 255, 150);
 
 	private final Client client;
-	private final ShortestPathPlugin plugin;
+	private final PathAnnotator annotator;
+	private final PathScheduler scheduler;
+	private final Settings settings;
 	private final TooltipManager tooltipManager;
 	private final TeleportMarkers teleportMarkers;
 	private final TransportMarkers transportMarkers;
 
 	@Inject
-	private DebugSceneOverlay(Client client, ShortestPathPlugin plugin, TooltipManager tooltipManager)
+	private DebugSceneOverlay(Client client, PathAnnotator annotator, PathScheduler scheduler, Settings settings, TooltipManager tooltipManager)
 	{
 		this.client = client;
-		this.plugin = plugin;
+		this.annotator = annotator;
+		this.scheduler = scheduler;
+		this.settings = settings;
 		this.tooltipManager = tooltipManager;
-		this.teleportMarkers = new TeleportMarkers(plugin);
-		this.transportMarkers = new TransportMarkers(plugin);
+		this.teleportMarkers = new TeleportMarkers(annotator);
+		this.transportMarkers = new TransportMarkers(annotator);
 		setPosition(OverlayPosition.DYNAMIC);
 		// Above the path overlay, which is PRIORITY_LOW, so markers on route tiles stay visible.
 		setPriority(Overlay.PRIORITY_DEFAULT);
@@ -56,31 +63,31 @@ public class DebugSceneOverlay extends Overlay
 	@Override
 	public Dimension render(Graphics2D graphics)
 	{
-		if (plugin.drawTransports)
+		if (settings.display().drawTransports())
 		{
 			renderTransports(graphics, client.getMouseCanvasPosition());
 		}
 
-		if (plugin.drawCollisionMap)
+		if (settings.display().drawCollisionMap())
 		{
 			renderCollisionMap(graphics);
 		}
 
-		if (plugin.drawTeleports)
+		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.TELEPORTS))
 		{
 			renderTeleports(graphics, client.getMouseCanvasPosition());
 		}
 
-		if (plugin.drawTargets)
+		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.TARGETS))
 		{
 			renderTargets(graphics, client.getMouseCanvasPosition());
 		}
 
 		// Click points without the path are floating marks, so they follow the same drawTiles
 		// gate and POH skip as the path tiles.
-		if (plugin.drawTiles && plugin.drawClickPoints && plugin.getActiveSearch() instanceof AStarPathfinder)
+		if (settings.display().drawTiles() && settings.display().drawClickPoints() && scheduler.getActiveSearch() instanceof AStarPathfinder)
 		{
-			renderClickPoints(graphics, (AStarPathfinder) plugin.getActiveSearch());
+			renderClickPoints(graphics, (AStarPathfinder) scheduler.getActiveSearch());
 		}
 
 		return null;
@@ -105,7 +112,7 @@ public class DebugSceneOverlay extends Overlay
 
 			for (Polygon poly : SceneTiles.polygons(client, origin.point))
 			{
-				graphics.setColor(plugin.colourTransports);
+				graphics.setColor(settings.display().colourTransports());
 				graphics.fill(poly);
 				if (hovered == WorldPointUtil.UNDEFINED && cursor != null && poly.contains(cursor.getX(), cursor.getY()))
 				{
@@ -157,8 +164,8 @@ public class DebugSceneOverlay extends Overlay
 	 */
 	private void renderCollisionMap(Graphics2D graphics)
 	{
-		CollisionMap map = plugin.getMap();
-		Color fill = plugin.colourCollisionMap;
+		CollisionMap map = annotator.getMap();
+		Color fill = settings.display().colourCollisionMap();
 		Color wall = withAlpha(fill, 255);
 		Stroke previousStroke = graphics.getStroke();
 		Stroke wallStroke = new BasicStroke(3);
@@ -224,7 +231,7 @@ public class DebugSceneOverlay extends Overlay
 		for (int index : aStar.getClickPoints())
 		{
 			int point = path.get(index).getPackedPosition();
-			if (!ShortestPathPlugin.isInsidePoh(WorldPointUtil.unpackWorldX(point),
+			if (!shortestpath.poh.PohService.isInsidePoh(WorldPointUtil.unpackWorldX(point),
 				WorldPointUtil.unpackWorldY(point)))
 			{
 				fillTile(graphics, point, COLOR_CLICK_POINT);
@@ -260,7 +267,7 @@ public class DebugSceneOverlay extends Overlay
 
 	private void renderTargets(Graphics2D graphics, Point cursor)
 	{
-		List<TargetMarkers.Marker> markers = TargetMarkers.collect(plugin.getActiveSearch(), plugin.getFilteredTargets());
+		List<TargetMarkers.Marker> markers = TargetMarkers.collect(scheduler.getActiveSearch(), annotator.getFilteredTargets());
 		Stroke previousStroke = graphics.getStroke();
 		graphics.setStroke(new BasicStroke(2));
 		List<String> hoverRows = null;

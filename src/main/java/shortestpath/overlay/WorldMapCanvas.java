@@ -12,7 +12,7 @@ import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.JagexColors;
-import shortestpath.ShortestPathPlugin;
+import shortestpath.widgets.WidgetGeometry;
 import shortestpath.WorldPointUtil;
 
 /**
@@ -28,10 +28,10 @@ public class WorldMapCanvas
 	private static final int TOOLTIP_TEXT_OFFSET_HEIGHT = -2;
 
 	private final Client client;
-	private final ShortestPathPlugin plugin;
+	private final WidgetGeometry plugin;
 
 	@Inject
-	WorldMapCanvas(Client client, ShortestPathPlugin plugin)
+	WorldMapCanvas(Client client, WidgetGeometry plugin)
 	{
 		this.client = client;
 		this.plugin = plugin;

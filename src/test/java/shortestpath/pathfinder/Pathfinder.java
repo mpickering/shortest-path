@@ -354,11 +354,10 @@ public class Pathfinder implements ActiveSearch
 	public boolean isSailing()
 	{
 		return false;
-
 	}
 
 	@Override
-		public TargetGoals getTargetGoals()
+	public TargetGoals getTargetGoals()
 	{
 		return goals.targetTiles();
 	}

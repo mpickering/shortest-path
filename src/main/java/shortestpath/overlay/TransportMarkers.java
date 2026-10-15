@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import shortestpath.PrimitiveIntHashMap;
-import shortestpath.ShortestPathPlugin;
+import shortestpath.presentation.PathAnnotator;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.TransportAvailability;
 import shortestpath.transport.Transport;
@@ -34,7 +34,7 @@ final class TransportMarkers
 		}
 	}
 
-	private final ShortestPathPlugin plugin;
+	private final PathAnnotator plugin;
 	private PrimitiveIntHashMap<Transport[]> builtFrom;
 	private PrimitiveIntHashMap<Transport[]> builtAvailable;
 	private List<Origin> origins = List.of();
@@ -42,7 +42,7 @@ final class TransportMarkers
 	private Map<Integer, List<Transport>> byDestination = Map.of();
 	private Set<Transport> available = Set.of();
 
-	TransportMarkers(ShortestPathPlugin plugin)
+	TransportMarkers(PathAnnotator plugin)
 	{
 		this.plugin = plugin;
 	}
@@ -116,14 +116,14 @@ final class TransportMarkers
 	}
 
 	/** Why a transport is unavailable, for a tooltip. */
-	static String unavailable(ShortestPathPlugin plugin, Transport transport)
+	static String unavailable(PathAnnotator plugin, Transport transport)
 	{
 		String reason = plugin.explainUnavailable(transport);
 		return reason == null ? "unavailable" : "unavailable: " + reason;
 	}
 
 	/** A transport's name for a tooltip: its menu text, else its object, else its type. */
-	static String name(ShortestPathPlugin plugin, Transport transport)
+	static String name(PathAnnotator plugin, Transport transport)
 	{
 		String info = plugin.formatTransportDisplay(transport);
 		if (info != null && !info.isEmpty())

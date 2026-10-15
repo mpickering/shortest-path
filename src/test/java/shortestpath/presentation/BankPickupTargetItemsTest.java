@@ -143,6 +143,20 @@ public class BankPickupTargetItemsTest
 	}
 
 	@Test
+	public void bankVisitStepIsTheBankTileOnce()
+	{
+		assertEquals("A* repeats the bank tile as the first banked step", 1,
+			BankPickupRequirements.bankVisitStep(List.of(new PathStep(NEXT_TILE, BankVisitState.CARRIED),
+				new PathStep(BANK_TILE, BankVisitState.CARRIED), new PathStep(BANK_TILE, BankVisitState.BANKED), new PathStep(NEXT_TILE, BankVisitState.BANKED))));
+		assertEquals("legacy moves on as it banks", 1,
+			BankPickupRequirements.bankVisitStep(List.of(new PathStep(NEXT_TILE, BankVisitState.CARRIED),
+				new PathStep(BANK_TILE, BankVisitState.CARRIED), new PathStep(NEXT_TILE, BankVisitState.BANKED))));
+		assertEquals("walking over a bank tile is no visit", -1,
+			BankPickupRequirements.bankVisitStep(List.of(new PathStep(BANK_TILE, BankVisitState.CARRIED),
+				new PathStep(NEXT_TILE, BankVisitState.CARRIED))));
+	}
+
+	@Test
 	public void computeListsTargetItemsOnlyAtTheBankVisit()
 	{
 		ItemContainer bank = mock(ItemContainer.class);

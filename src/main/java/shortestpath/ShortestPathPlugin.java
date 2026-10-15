@@ -152,7 +152,7 @@ public class ShortestPathPlugin extends Plugin
 	private ShortestPathPanel panel;
 	private NavigationButton navButton;
 	private NavigationButton locationNavigation;
-	@Getter
+	@lombok.Getter
 	private volatile int[] locationPoints = new int[0];
 	private PathfinderConfig pathfinderConfig;
 	// Built in startUp — the overlay references it bundles are @Inject

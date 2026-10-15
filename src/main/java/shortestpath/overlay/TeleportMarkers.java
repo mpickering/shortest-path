@@ -8,7 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import shortestpath.ShortestPathPlugin;
+import shortestpath.presentation.PathAnnotator;
 import shortestpath.transport.Transport;
 
 /**
@@ -51,13 +51,13 @@ final class TeleportMarkers
 		}
 	}
 
-	private final ShortestPathPlugin plugin;
+	private final PathAnnotator plugin;
 	private Transport[] builtFrom;
 	private Transport[] builtUsable;
 	private Transport[] builtUsableAfterBank;
 	private List<Marker> markers = List.of();
 
-	TeleportMarkers(ShortestPathPlugin plugin)
+	TeleportMarkers(PathAnnotator plugin)
 	{
 		this.plugin = plugin;
 	}
