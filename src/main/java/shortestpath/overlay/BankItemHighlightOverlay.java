@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
+import java.awt.Shape;
 import java.util.List;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.InterfaceID;
@@ -84,8 +85,11 @@ public class BankItemHighlightOverlay extends AbstractHighlightOverlay
 		// drawHighlights, so the widget is non-null here (the gate returns
 		// false on a null/hidden container).
 		Color highlight = settings.display().colourBankPickupHighlight();
+		Shape clip = graphics.getClip();
+		graphics.clip(bankContainer.getBounds());
 		drawItemOutlines(graphics, itemManager, bankContainer.getChildren(), pickup.bankItemIds,
 			highlight);
+		graphics.setClip(clip);
 
 		return null;
 	}
