@@ -84,8 +84,8 @@ public class LocationListPanelTest
 				}
 			});
 			JTextField search = find(panel[0], JTextField.class);
-			search.setText("ship");
-			search.setText("SHIP 3019");
+			search.setText("floor");
+			search.setText("18124 3589");
 			// Typing leaves the list untouched until the debounce fires.
 			assertTrue(list.getModel().getSize() > 1);
 		});
@@ -101,7 +101,7 @@ public class LocationListPanelTest
 				listener.keyPressed(new KeyEvent(list, KeyEvent.KEY_PRESSED, 0, 0, KeyEvent.VK_ENTER, '\n'));
 			}
 			assertEquals(1, routed.get());
-			assertEquals(WorldPointUtil.packWorldPoint(3019, 3960, 2), point.get());
+			assertEquals(WorldPointUtil.packWorldPoint(3589, 3173, 0), point.get());
 		});
 	}
 
@@ -120,14 +120,14 @@ public class LocationListPanelTest
 			{
 				assertEquals("Open neighbour", ((LocationListPanel.Entry) list.getModel().getElementAt(i)).category);
 			}
-			category.setSelectedItem("Arrival only");
+			category.setSelectedItem("No open neighbour");
 			assertEquals(list.getModel().getSize(), visibleCount.get());
 			for (int i = 0; i < list.getModel().getSize(); i++)
 			{
-				assertEquals("Arrival only", ((LocationListPanel.Entry) list.getModel().getElementAt(i)).category);
+				assertEquals("No open neighbour", ((LocationListPanel.Entry) list.getModel().getElementAt(i)).category);
 			}
 			category.setSelectedItem("All categories");
-			assertEquals(141, visibleCount.get());
+			assertEquals(23, visibleCount.get());
 		});
 	}
 

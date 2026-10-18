@@ -4,9 +4,8 @@ Open **Shortest Path locations** in RuneLite's sidebar. Click a row, or select i
 and press Enter, to route to that coordinate and centre the open world map there.
 Selection requires being logged in. The normal target marker identifies the tile.
 
-Use the category selector to focus on **Open neighbour** (60 locations, selected
-initially), **Arrival only** (81), or **All categories**. The search applies within
-the selected category.
+Use the category selector to focus on **Open neighbour**, **No open neighbour**,
+or **All categories**. The search applies within the selected category.
 
 Enable **Debug layers → Location list (minimap)** to draw cyan markers for the
 current category and search results. Markers show nearby points on your current
@@ -16,12 +15,11 @@ minimap path drawing to be enabled.
 Search matches all space-separated terms against coordinates and descriptions,
 ignoring case. It uses Shortest Clue's 150 ms debounce and batched list updates.
 
-The initial list contains the 141 non-fairy-ring blocked origins from the saved
-transport investigation. This is a historical snapshot, not a fresh scan or a
-record of verified locations. Descriptions include interactions; categories
-distinguish open neighbours from locations reached only through an incoming
-transport. Seasonal transports and
-fairy rings are excluded.
+The bundled list contains 23 origin violations from the strict collision scan:
+these tiles are blocked and are not the exact destination of any transport.
+An open neighbour does not satisfy this rule. Coordinates include all transport
+types loaded by `ResourceLoader.transports()`. This is a saved scan, not a live
+check; regenerate it after transport corrections.
 
 **Load TSV…** replaces the list with any UTF-8 file in this format (one literal tab
 between each column):
