@@ -83,11 +83,16 @@ public class LocationListPanel extends PluginPanel
 
 	public LocationListPanel(IntConsumer onSelect, Consumer<int[]> onFilterChange)
 	{
+		this(onSelect, onFilterChange, new InputStreamReader(
+			LocationListPanel.class.getResourceAsStream("/debug/locations.tsv"), StandardCharsets.UTF_8));
+	}
+
+	LocationListPanel(IntConsumer onSelect, Consumer<int[]> onFilterChange, Reader reader)
+	{
 		this.onFilterChange = onFilterChange;
-		try (Reader reader = new InputStreamReader(
-			LocationListPanel.class.getResourceAsStream("/debug/locations.tsv"), StandardCharsets.UTF_8))
+		try (Reader sourceReader = reader)
 		{
-			entries = readEntries(reader);
+			entries = readEntries(sourceReader);
 		}
 		catch (IOException e)
 		{

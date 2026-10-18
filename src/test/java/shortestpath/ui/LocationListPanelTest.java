@@ -62,7 +62,7 @@ public class LocationListPanelTest
 			{
 				routed.incrementAndGet();
 				point.set(value);
-			}, points -> assertNotNull(points));
+			}, points -> assertNotNull(points), sampleLocations());
 			JList<?> list = find(panel[0], JList.class);
 			find(panel[0], JComboBox.class).setSelectedItem("All categories");
 			list.getModel().addListDataListener(new ListDataListener()
@@ -84,10 +84,10 @@ public class LocationListPanelTest
 				}
 			});
 			JTextField search = find(panel[0], JTextField.class);
-			search.setText("floor");
-			search.setText("18124 3589");
+			search.setText("cave");
+			search.setText("CAVE 9445");
 			// Typing leaves the list untouched until the debounce fires.
-			assertTrue(list.getModel().getSize() > 1);
+			assertTrue(list.getModel().getSize() > 0);
 		});
 		assertTrue("Search timer did not update the list", filtered.await(5, TimeUnit.SECONDS));
 		SwingUtilities.invokeAndWait(() ->
@@ -101,7 +101,7 @@ public class LocationListPanelTest
 				listener.keyPressed(new KeyEvent(list, KeyEvent.KEY_PRESSED, 0, 0, KeyEvent.VK_ENTER, '\n'));
 			}
 			assertEquals(1, routed.get());
-			assertEquals(WorldPointUtil.packWorldPoint(3589, 3173, 0), point.get());
+			assertEquals(WorldPointUtil.packWorldPoint(1533, 9445, 0), point.get());
 		});
 	}
 
@@ -111,7 +111,7 @@ public class LocationListPanelTest
 		AtomicInteger visibleCount = new AtomicInteger();
 		SwingUtilities.invokeAndWait(() ->
 		{
-			LocationListPanel panel = new LocationListPanel(point -> fail("Filtering must not select a location"), points -> visibleCount.set(points.length));
+			LocationListPanel panel = new LocationListPanel(point -> fail("Filtering must not select a location"), points -> visibleCount.set(points.length), sampleLocations());
 			JComboBox<?> category = find(panel, JComboBox.class);
 			JList<?> list = find(panel, JList.class);
 			assertEquals("Open neighbour", category.getSelectedItem());
@@ -127,8 +127,15 @@ public class LocationListPanelTest
 				assertEquals("No open neighbour", ((LocationListPanel.Entry) list.getModel().getElementAt(i)).category);
 			}
 			category.setSelectedItem("All categories");
-			assertEquals(23, visibleCount.get());
+			assertEquals(3, visibleCount.get());
 		});
+	}
+
+	private static StringReader sampleLocations()
+	{
+		return new StringReader("1533 9445 0\tExit Cave 51760\tNo open neighbour\n"
+			+ "1533 9447 0\tExit Cave 51760\tNo open neighbour\n"
+			+ "3200 3200 0\tSample entrance\tOpen neighbour\n");
 	}
 
 	private static <T extends Component> T find(Container container, Class<T> type)

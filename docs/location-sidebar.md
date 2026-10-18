@@ -15,7 +15,7 @@ minimap path drawing to be enabled.
 Search matches all space-separated terms against coordinates and descriptions,
 ignoring case. It uses Shortest Clue's 150 ms debounce and batched list updates.
 
-The bundled list contains 23 origin violations from the strict collision scan:
+The bundled list contains no origin violations from the strict collision scan:
 these tiles are blocked and are not the exact destination of any transport.
 An open neighbour does not satisfy this rule. Coordinates include all transport
 types loaded by `ResourceLoader.transports()`. This is a saved scan, not a live

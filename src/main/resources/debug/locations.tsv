@@ -1,25 +1,2 @@
-# Strict origin violations: blocked tile with no exact incoming transport.		
+# Strict origin violations: blocked tile with no exact incoming transport.
 # x y plane	Description	Category
-3589 3173 0	TRANSPORT: Climb-up Floor 18124	Open neighbour
-3426 3478 0	AGILITY_SHORTCUT: Climb Rocks 16999	Open neighbour
-1470 3654 0	TRANSPORT: Enter Hole 28915	Open neighbour
-2486 4471 0	TRANSPORT: Use Fairy ring 12003	Open neighbour
-3042 4811 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3050 4813 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3018 4822 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3058 4822 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3061 4831 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3224 4832 0	TRANSPORT: Use Portal 43478	Open neighbour
-3240 4832 0	TRANSPORT: Use Portal 43478	Open neighbour
-3018 4834 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3059 4840 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3021 4843 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3029 4850 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3050 4850 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-3039 4854 0	TRANSPORT: Go-through Passage 26250	Open neighbour
-1742 5352 0	TRANSPORT: Ride Aged log 25216	Open neighbour
-1761 5362 0	TRANSPORT: Ride Aged log 25216	Open neighbour
-1533 9445 0	TRANSPORT: Exit Cave 51760	No open neighbour
-1533 9447 0	TRANSPORT: Exit Cave 51760	No open neighbour
-3588 3173 1	TRANSPORT: Climb-down Floor 18122	Open neighbour
-3589 3173 1	TRANSPORT: Climb-down Floor 18122	Open neighbour
