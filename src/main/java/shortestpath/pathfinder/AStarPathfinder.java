@@ -25,14 +25,18 @@ public final class AStarPathfinder implements ActiveSearch
 	private final PathfinderStats stats = new PathfinderStats();
 	private final int start;
 	private final Targets targets;
-	// The states the search terminates on: the targets plus each blocked target's fallback tiles,
-	// resolved the same way the legacy backend resolves them (issue #640), each in the bank layers
-	// where the player holds that target's items. Resolved in run(), from the rule and items taken
-	// when the search is created. {@code null} until then, and for a search that failed to start.
+	// The states the search terminates on: the targets plus the fallback tiles of each one the
+	// search cannot end on (issue #640), each in the bank layers where the player holds that
+	// target's items. With collision-aware blocked targets on they follow a ReachableGoalRule over
+	// the routing static's search tiles, and otherwise the collision rule. Resolved in run(), where
+	// the routing static is loaded, from the inputs taken when the search is created. {@code null}
+	// until then, and for a search that failed to start.
 	private GoalStates goals;
-	private final GoalRule goalRule;
+	private final GoalRule collisionRule;
 	private final IntPredicate transportDestination;
 	private final HeldItems heldItems;
+	private final int unreachableTargetDistance;
+	private final boolean collisionAwareBlockedTargets;
 	private final Runnable completionCallback;
 	private final CollisionMap collision;
 	private final Supplier<RoutingStatic> routingStatic;
@@ -140,9 +144,11 @@ public final class AStarPathfinder implements ActiveSearch
 		this.collision = config.getMap();
 		this.routingStatic = routingStatic;
 		this.session = session == null ? new AStarRoutingSession() : session;
-		this.goalRule = TargetGoals.collisionRule(config, start);
+		this.collisionRule = TargetGoals.collisionRule(config, start);
 		this.transportDestination = config::isTransportDestination;
 		this.heldItems = config.getHeldItems();
+		this.unreachableTargetDistance = config.getUnreachableTargetDistance();
+		this.collisionAwareBlockedTargets = config.isCollisionAwareBlockedTargets();
 		long phaseStarted = System.nanoTime();
 		this.account = config.prepareAStarRoutingAccount(true, GoalStates.needsBank(targets, heldItems));
 		this.accountPrepareNanos = System.nanoTime() - phaseStarted;
@@ -195,9 +201,11 @@ public final class AStarPathfinder implements ActiveSearch
 		this.account = null;
 		this.restrictions = SearchRestrictions.none();
 		this.goals = null;
-		this.goalRule = null;
+		this.collisionRule = null;
 		this.transportDestination = null;
 		this.heldItems = null;
+		this.unreachableTargetDistance = 0;
+		this.collisionAwareBlockedTargets = false;
 		this.cutoffMillis = 0;
 		this.heuristicWeight = 1;
 		this.accountPrepareNanos = 0;
@@ -406,7 +414,11 @@ public final class AStarPathfinder implements ActiveSearch
 			long phaseStarted = System.nanoTime();
 			RoutingStatic staticData = routingStatic.get();
 			routingStaticNanos = System.nanoTime() - phaseStarted;
-			goals = GoalStates.resolve(TargetGoals.resolve(targets.points(), transportDestination, goalRule), targets,
+			GoalRule rule = collisionAwareBlockedTargets
+				? new ReachableGoalRule(collision, transportDestination, packed -> staticData.searchIndex(packed) >= 0,
+					start, unreachableTargetDistance)
+				: collisionRule;
+			goals = GoalStates.resolve(TargetGoals.resolve(targets.points(), transportDestination, rule), targets,
 				heldItems);
 			phaseStarted = System.nanoTime();
 			AStarRoutingSession.Lookup<SiteGraph> graph = session.graph(staticData, account);

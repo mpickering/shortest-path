@@ -271,9 +271,9 @@ public class AStarPathfinderBlockedTargetTest
 			WorldPointUtil.packWorldPoint(1504, 3860, 0), end(result));
 	}
 
-	// A blocked target must snap to a tile the player can use: the route to it
-	// may cost no more than the route to goodTile, a tile adjacent to the
-	// target on the side the player approaches from.
+	// A blocked target must snap to a tile the player can use: one cardinally
+	// adjacent to it, reached for no more than the route to goodTile, a tile
+	// adjacent to the target on the side the player approaches from.
 	private void assertSnapsNoWorseThan(int start, int target, int goodTile)
 	{
 		CollisionMap map = pathfinderConfig.getMap();
@@ -292,6 +292,11 @@ public class AStarPathfinderBlockedTargetTest
 				+ " at cost " + snapped.getPathCost() + "; " + WorldPointUtil.unpackWorldPoint(goodTile)
 				+ " costs " + good.getPathCost(),
 			snapped.getPathCost() <= good.getPathCost());
+		int end = end(snapped);
+		int dx = Math.abs(WorldPointUtil.unpackWorldX(end) - WorldPointUtil.unpackWorldX(target));
+		int dy = Math.abs(WorldPointUtil.unpackWorldY(end) - WorldPointUtil.unpackWorldY(target));
+		assertEquals("snapped route must end cardinally adjacent to the target, not on "
+			+ WorldPointUtil.unpackWorldPoint(end), 1, dx + dy);
 	}
 
 	@Test
@@ -341,5 +346,24 @@ public class AStarPathfinderBlockedTargetTest
 		setup(2);
 		assertSnapsNoWorseThan(WorldPointUtil.packWorldPoint(3222, 3218, 0),
 			WorldPointUtil.packWorldPoint(3224, 3206, 0), WorldPointUtil.packWorldPoint(3224, 3207, 0));
+	}
+
+	@Test
+	public void disconnectedTargetShortCircuitsSearch()
+	{
+		// Open sea off Draynor is walkable in the collision map but no route
+		// reaches it, nor any tile within the unreachable distance: the search
+		// must give up without exploring the map.
+		setup(2);
+		CollisionMap map = pathfinderConfig.getMap();
+		int start = WorldPointUtil.packWorldPoint(3093, 3245, 0);
+		int target = WorldPointUtil.packWorldPoint(3074, 3221, 0);
+		assertFalse("test requires a walkable target tile", map.isBlocked(3074, 3221, 0));
+
+		PathfinderResult result = search(start, Set.of(target)).getResult();
+		assertNotNull(result);
+		assertFalse(result.isReached());
+		assertEquals(PathTerminationReason.SEARCH_EXHAUSTED, result.getTerminationReason());
+		assertEquals("an unreachable target must not explore any tile", 0, result.getNodesChecked());
 	}
 }
