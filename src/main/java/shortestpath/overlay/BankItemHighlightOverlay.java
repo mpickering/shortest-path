@@ -8,6 +8,7 @@ import java.awt.Shape;
 import java.util.List;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.game.ItemManager;
 
@@ -20,6 +21,8 @@ import shortestpath.settings.Settings;
 
 public class BankItemHighlightOverlay extends AbstractHighlightOverlay
 {
+	private static final int POTION_STORE_TAB = 15;
+
 	private final ItemManager itemManager;
 	// extraGatesPass() fetches the container; drawHighlights reads it in the
 	// same render pass, keeping the widget lookup once per frame.
@@ -49,6 +52,11 @@ public class BankItemHighlightOverlay extends AbstractHighlightOverlay
 		}
 
 		if (!annotator.isBankOpen())
+		{
+			return false;
+		}
+
+		if (client.getVarbitValue(VarbitID.BANK_CURRENTTAB) == POTION_STORE_TAB)
 		{
 			return false;
 		}
