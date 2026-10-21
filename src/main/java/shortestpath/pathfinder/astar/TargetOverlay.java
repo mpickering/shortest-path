@@ -5,6 +5,7 @@ import shortestpath.pathfinder.BankVisitState;
 import shortestpath.pathfinder.CollisionMap;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import shortestpath.pathfinder.WildernessChecker;
 
 /**
  * Query-local target sites and their point-attachment walking edges.
@@ -269,11 +270,17 @@ public final class TargetOverlay
 			capacity += stat.componentSites(component).length;
 		int[] sites = new int[capacity];
 		int count = 0;
+		// Avoiding the Wilderness, keep only the sites that can walk to the target without entering it.
+		WildernessGate gate = graph.avoidsWilderness() ? stat.wildernessGate() : null;
+		boolean targetInside = gate != null && WildernessChecker.isInWilderness(packed[target]);
+		int[] targetPieces = gate == null ? null : gate.outsidePieces(packed[target]);
 		for (int component : targetComponents)
 		{
 			for (int site : stat.componentSites(component))
 			{
-				if (firstSharedComponent(targetComponents, site) == component)
+				if (firstSharedComponent(targetComponents, site) == component
+					&& (gate == null || gate.walkAllowed(gate.siteInWilderness(site), stat.siteComponents(site),
+						gate.sitePieces(site), targetInside, targetComponents, targetPieces)))
 					sites[count++] = site;
 			}
 		}
@@ -283,11 +290,12 @@ public final class TargetOverlay
 		// than Chebyshev ones keep a target deep in a winding area from looking close to its
 		// entrances, which would otherwise make the search flood everything within that slack.
 		TargetWalkDistances walk = nodes[target] >= graph.nodeCount()
-			? TargetWalkDistances.search(stat, packed[target], targetComponents) : null;
+			? TargetWalkDistances.search(stat, packed[target], targetComponents, graph.avoidsWilderness()) : null;
 		for (int i = 0; i < count; i++)
 		{
 			int site = stat.siteTile(attachmentSites[target][i]);
 			int chebyshev = distance(packed[target], site);
+			// INF (another plane, or a gated walk that never reaches the target) relaxes nothing.
 			attachmentCosts[target][i] = walk == null ? chebyshev : walk.bound(site, chebyshev);
 		}
 	}

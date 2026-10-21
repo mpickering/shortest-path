@@ -537,7 +537,7 @@ public final class AStarForwardSearch
 		int node = state / 2;
 		BankVisitState banked = (state & 1) != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED;
 		int value = space.isBase(node)
-			? heuristic.estimateBaseNode(space.tile(node), banked, space.stat.routingComponent(node))
+			? heuristic.estimateBaseNode(space.tile(node), banked, space.stat.routingComponent(node), node)
 			: heuristic.estimate(space.tile(node), banked, space.components(node));
 		page[slot] = value == CostArithmetic.INF ? SearchSpace.CACHED_INF : value + 1;
 		return value;

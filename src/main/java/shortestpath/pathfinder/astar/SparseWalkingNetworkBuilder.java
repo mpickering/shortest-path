@@ -31,9 +31,16 @@ public final class SparseWalkingNetworkBuilder
 		public final int[] offsets;
 		public final int[] destinations;
 		public final int[] weights;
+		/**
+		 * For a Wilderness-gated network, whether adjacency entry {@code i} is a spoke from a Steiner
+		 * vertex into a site outside the Wilderness in a component that has sites on both sides.
+		 * Relaxing it in the reverse search would let that site walk into the tree, and from there
+		 * into the Wilderness, so the gated reverse search skips it. {@code null} when ungated.
+		 */
+		public final boolean[] gatedEntries;
 
 		private Result(int originalCount, int vertexCount, int steinerCount, int undirectedEdgeCount, int[] offsets,
-			int[] destinations, int[] weights)
+			int[] destinations, int[] weights, boolean[] gatedEntries)
 		{
 			this.originalCount = originalCount;
 			this.vertexCount = vertexCount;
@@ -42,6 +49,7 @@ public final class SparseWalkingNetworkBuilder
 			this.offsets = offsets;
 			this.destinations = destinations;
 			this.weights = weights;
+			this.gatedEntries = gatedEntries;
 		}
 
 		public int adjacencyCount()
@@ -79,58 +87,102 @@ public final class SparseWalkingNetworkBuilder
 				maxComponentId = cid;
 			}
 		}
-		int componentCount = maxComponentId + 1;
+		EdgeList edges = new EdgeList();
+		int vertexCount = buildGroups(originalCount, siteTiles, siteComponentOffsets, siteComponentIds,
+			maxComponentId + 1, null, null, null, edges);
+		int steinerCount = vertexCount - originalCount;
+		return undirectedAdjacency(originalCount, vertexCount, steinerCount, edges, false);
+	}
 
-		// Bucket sites by component id; only components that own at least one site are processed,
+	/**
+	 * The network for searches that may not enter the Wilderness from outside it.
+	 *
+	 * <p>A <em>piece</em> is a maximal set of non-Wilderness tiles of one routing component that
+	 * walk to each other without entering the Wilderness; a site outside the Wilderness belongs to
+	 * the pieces it can walk into. Such a site may only walk to sites of its own pieces, while a
+	 * site inside the Wilderness may walk to any site of its component (leaving the Wilderness is
+	 * allowed, and treating every site as reachable keeps the distances lower bounds).
+	 *
+	 * <p>So in each {@code gatedComponents} component, the full tree marks the spokes into its
+	 * non-Wilderness sites as {@link Result#gatedEntries gated}: a gated reverse search never
+	 * relaxes them, so those sites never walk out through the full tree. Each {@code pieceTrees}
+	 * piece then gets a tree of its own over its sites, appended after every component tree.
+	 * Other components are built exactly as by {@link #build(int[], int[], int[])}.
+	 *
+	 * @param gatedComponents  per routing component, whether to gate its full tree
+	 * @param siteInWilderness per site, whether its tile is inside the Wilderness
+	 * @param sitePieceOffsets length {@code siteTiles.length + 1}, CSR offsets into {@code sitePieceIds}
+	 * @param sitePieceIds     each non-Wilderness site's pieces, ascending
+	 * @param pieceTrees       per piece, whether to build its tree
+	 */
+	public static Result buildWildernessGated(int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds,
+		boolean[] gatedComponents, boolean[] siteInWilderness, int[] sitePieceOffsets, int[] sitePieceIds,
+		boolean[] pieceTrees)
+	{
+		EdgeList edges = new EdgeList();
+		int next = buildGroups(siteTiles.length, siteTiles, siteComponentOffsets, siteComponentIds,
+			gatedComponents.length, null, gatedComponents, siteInWilderness, edges);
+		next = buildGroups(next, siteTiles, sitePieceOffsets, sitePieceIds, pieceTrees.length, pieceTrees, null,
+			null, edges);
+		return undirectedAdjacency(siteTiles.length, next, next - siteTiles.length, edges, true);
+	}
+
+	/**
+	 * Builds one tree per group (routing component or piece) that owns at least one site, in
+	 * ascending group order, numbering Steiner vertices from {@code next}.
+	 *
+	 * @param build            which groups to build, or {@code null} for all of them
+	 * @param gated            which groups gate the spokes into their non-Wilderness sites, or
+	 *                         {@code null} for none
+	 * @param siteInWilderness per site, whether it is inside the Wilderness; needed with {@code gated}
+	 */
+	private static int buildGroups(int next, int[] siteTiles, int[] siteGroupOffsets, int[] siteGroupIds,
+		int groupCount, boolean[] build, boolean[] gated, boolean[] siteInWilderness, EdgeList edges)
+	{
+		// Bucket sites by group id; only groups that own at least one site are processed,
 		// in ascending id order.
-		int[] bucketCounts = new int[componentCount];
-		for (int cid : siteComponentIds)
+		int[] bucketCounts = new int[groupCount];
+		for (int gid : siteGroupIds)
 		{
-			bucketCounts[cid]++;
+			bucketCounts[gid]++;
 		}
-		int[] bucketOffsets = new int[componentCount + 1];
-		for (int c = 0; c < componentCount; c++)
+		int[] bucketOffsets = new int[groupCount + 1];
+		for (int g = 0; g < groupCount; g++)
 		{
-			bucketOffsets[c + 1] = bucketOffsets[c] + bucketCounts[c];
+			bucketOffsets[g + 1] = bucketOffsets[g] + bucketCounts[g];
 		}
-		int[] bucketSites = new int[siteComponentIds.length];
+		int[] bucketSites = new int[siteGroupIds.length];
 		int[] cursor = bucketOffsets.clone();
-		for (int site = 0; site < originalCount; site++)
+		for (int site = 0; site < siteTiles.length; site++)
 		{
-			for (int p = siteComponentOffsets[site]; p < siteComponentOffsets[site + 1]; p++)
+			for (int p = siteGroupOffsets[site]; p < siteGroupOffsets[site + 1]; p++)
 			{
-				int cid = siteComponentIds[p];
-				bucketSites[cursor[cid]++] = site;
+				int gid = siteGroupIds[p];
+				bucketSites[cursor[gid]++] = site;
 			}
 		}
-
-		EdgeList edges = new EdgeList();
-		int next = originalCount;
-		for (int cid = 0; cid < componentCount; cid++)
+		for (int gid = 0; gid < groupCount; gid++)
 		{
-			int start = bucketOffsets[cid];
-			int end = bucketOffsets[cid + 1];
-			int size = end - start;
-			if (size == 0)
+			int start = bucketOffsets[gid];
+			int end = bucketOffsets[gid + 1];
+			if (end == start || build != null && !build[gid])
 			{
 				continue;
 			}
-			Point[] points = new Point[size];
-			for (int i = 0; i < size; i++)
+			boolean gateGroup = gated != null && gated[gid];
+			Point[] points = new Point[end - start];
+			for (int i = start; i < end; i++)
 			{
-				int siteIndex = bucketSites[start + i];
+				int siteIndex = bucketSites[i];
 				int tile = siteTiles[siteIndex];
 				int x = WorldPointUtil.unpackWorldX(tile);
 				int y = WorldPointUtil.unpackWorldY(tile);
-				points[i] = new Point(siteIndex, x + y, x - y);
+				points[i - start] = new Point(siteIndex, x + y, x - y, gateGroup && !siteInWilderness[siteIndex]);
 			}
 			Arrays.sort(points, BY_A_B_ORIGINAL);
 			next = buildComponent(next, points, edges);
 		}
-
-		int vertexCount = next;
-		int steinerCount = vertexCount - originalCount;
-		return undirectedAdjacency(originalCount, vertexCount, steinerCount, edges);
+		return next;
 	}
 
 	private enum Axis
@@ -143,12 +195,15 @@ public final class SparseWalkingNetworkBuilder
 		final int original;
 		final int a;
 		final int b;
+		/** Whether the spokes from Steiner vertices into this point are gated. */
+		final boolean gated;
 
-		Point(int original, int a, int b)
+		Point(int original, int a, int b, boolean gated)
 		{
 			this.original = original;
 			this.a = a;
 			this.b = b;
+			this.gated = gated;
 		}
 	}
 
@@ -223,7 +278,8 @@ public final class SparseWalkingNetworkBuilder
 			// keyed on (axis-or-a-b, a, b, original).
 			for (int i = 0; i + 1 < pts.length; i++)
 			{
-				edges.add(pts[i].original, pts[i + 1].original, 0);
+				// Coincident points share x and y, so they are on the same side of the Wilderness line.
+				edges.add(pts[i].original, pts[i + 1].original, 0, false);
 			}
 			return next;
 		}
@@ -290,7 +346,7 @@ public final class SparseWalkingNetworkBuilder
 		for (int i = 0; i < count; i++)
 		{
 			steinerIds[i] = firstProjection + i;
-			edges.add(pts[i].original, steinerIds[i], Math.abs(coordOf(axis, pts[i]) - splitCoordinate));
+			edges.add(pts[i].original, steinerIds[i], Math.abs(coordOf(axis, pts[i]) - splitCoordinate), pts[i].gated);
 		}
 		Integer[] order = new Integer[count];
 		for (int i = 0; i < count; i++)
@@ -312,7 +368,7 @@ public final class SparseWalkingNetworkBuilder
 			int leftIndex = order[i];
 			int rightIndex = order[i + 1];
 			int weight = Math.abs(otherCoordOf(axis, pts[leftIndex]) - otherCoordOf(axis, pts[rightIndex]));
-			edges.add(steinerIds[leftIndex], steinerIds[rightIndex], weight);
+			edges.add(steinerIds[leftIndex], steinerIds[rightIndex], weight, false);
 		}
 		return firstProjection + count;
 	}
@@ -323,9 +379,11 @@ public final class SparseWalkingNetworkBuilder
 		private int[] from = new int[16];
 		private int[] to = new int[16];
 		private int[] weight = new int[16];
+		/** Whether the direction {@code to -> from} is gated (a spoke into a gated site). */
+		private boolean[] gatedReverse = new boolean[16];
 		private int size;
 
-		void add(int a, int b, int w)
+		void add(int a, int b, int w, boolean gated)
 		{
 			if (size == from.length)
 			{
@@ -333,10 +391,12 @@ public final class SparseWalkingNetworkBuilder
 				from = Arrays.copyOf(from, capacity);
 				to = Arrays.copyOf(to, capacity);
 				weight = Arrays.copyOf(weight, capacity);
+				gatedReverse = Arrays.copyOf(gatedReverse, capacity);
 			}
 			from[size] = a;
 			to[size] = b;
 			weight[size] = w;
+			gatedReverse[size] = gated;
 			size++;
 		}
 	}
@@ -345,7 +405,8 @@ public final class SparseWalkingNetworkBuilder
 	 * Materialises both directions of every edge as CSR adjacency. The order of entries within
 	 * one vertex's range does not affect any distance.
 	 */
-	private static Result undirectedAdjacency(int originalCount, int vertexCount, int steinerCount, EdgeList edges)
+	private static Result undirectedAdjacency(int originalCount, int vertexCount, int steinerCount, EdgeList edges,
+		boolean wildernessGated)
 	{
 		int[] counts = new int[vertexCount];
 		for (int i = 0; i < edges.size; i++)
@@ -360,6 +421,7 @@ public final class SparseWalkingNetworkBuilder
 		}
 		int[] destinations = new int[offsets[vertexCount]];
 		int[] weights = new int[offsets[vertexCount]];
+		boolean[] gatedEntries = wildernessGated ? new boolean[offsets[vertexCount]] : null;
 		int[] cursor = offsets.clone();
 		for (int i = 0; i < edges.size; i++)
 		{
@@ -371,8 +433,13 @@ public final class SparseWalkingNetworkBuilder
 			cursor[a]++;
 			destinations[cursor[b]] = a;
 			weights[cursor[b]] = w;
+			if (gatedEntries != null)
+			{
+				gatedEntries[cursor[b]] = edges.gatedReverse[i];
+			}
 			cursor[b]++;
 		}
-		return new Result(originalCount, vertexCount, steinerCount, edges.size, offsets, destinations, weights);
+		return new Result(originalCount, vertexCount, steinerCount, edges.size, offsets, destinations, weights,
+			gatedEntries);
 	}
 }

@@ -6,7 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-/** Reverse labels in the relaxed graph with a clique oracle and sparse production path. */
+/**
+ * Reverse labels in the relaxed graph with a clique oracle and sparse production path. Over a
+ * graph that {@link SiteGraph#avoidsWilderness() avoids the Wilderness}, same-component walking
+ * never takes a site outside the Wilderness to one inside it.
+ */
 @AllArgsConstructor
 public final class ReverseLabels
 {
@@ -36,6 +40,7 @@ public final class ReverseLabels
 		long started = System.nanoTime();
 		SiteGraph graph = overlay.graph();
 		RoutingStatic stat = overlay.routingStatic();
+		WildernessGate gate = graph.avoidsWilderness() ? stat.wildernessGate() : null;
 		int spatialCount = graph.spatialNodeCount();
 		int[] labels = new int[overlay.queryNodeCount() * 2];
 		Arrays.fill(labels, CostArithmetic.INF);
@@ -79,6 +84,19 @@ public final class ReverseLabels
 				{
 					for (int other : stat.componentSites(component))
 					{
+						// Relaxing `other` from this site is the walk other -> node.
+						if (gate != null && !gate.walkAllowed(other, node)) continue;
+						if (other != node && relax(labels, queue, SiteGraph.stateId(other, banked),
+							CostArithmetic.add(cost, distance(stat.siteTile(node), stat.siteTile(other)))))
+							pushes++;
+					}
+				}
+				// Gated pieces also join sites next to a piece's tiles that are attached elsewhere.
+				for (int piece : gate == null ? new int[0] : gate.sitePieces(node))
+				{
+					if (!gate.gatedPiece(piece)) continue;
+					for (int other : gate.pieceSites(piece))
+					{
 						if (other != node && relax(labels, queue, SiteGraph.stateId(other, banked),
 							CostArithmetic.add(cost, distance(stat.siteTile(node), stat.siteTile(other)))))
 							pushes++;
@@ -108,9 +126,10 @@ public final class ReverseLabels
 		long started = System.nanoTime();
 		SiteGraph graph = overlay.graph();
 		RoutingStatic stat = overlay.routingStatic();
+		SparseNetwork network = stat.sparseNetwork(graph.avoidsWilderness());
 		int routingNodes = overlay.queryNodeCount();
-		int originalCount = stat.sparseOriginalCount();
-		int stateCount = (routingNodes + stat.sparseSteinerCount()) * 2;
+		int originalCount = network.originalCount;
+		int stateCount = (routingNodes + network.steinerCount) * 2;
 		int[] doubled = new int[stateCount];
 		int[] origins = new int[stateCount];
 		int[] weights = new int[stateCount];
@@ -159,12 +178,13 @@ public final class ReverseLabels
 			if (vertex < originalCount || vertex >= routingNodes)
 			{
 				int sparseVertex = vertex < originalCount ? vertex : originalCount + vertex - routingNodes;
-				for (int edge = stat.sparseOffset(sparseVertex); edge < stat.sparseOffset(sparseVertex + 1); edge++)
+				for (int edge = network.offsets[sparseVertex]; edge < network.offsets[sparseVertex + 1]; edge++)
 				{
+					if (network.gated(edge)) continue;
 					sparseEdges++;
-					int destination = sparseNode(routingNodes, originalCount, stat.sparseDestination(edge));
+					int destination = sparseNode(routingNodes, originalCount, network.destinations[edge]);
 					if (relax(doubled, origins, weights, queue, state, SiteGraph.stateId(destination, banked),
-						stat.sparseWeight(edge), false))
+						network.weights[edge], false))
 						pushes++;
 				}
 			}

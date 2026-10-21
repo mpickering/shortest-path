@@ -4,12 +4,19 @@ import java.util.Arrays;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.BankVisitState;
 import shortestpath.pathfinder.CollisionMap;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import shortestpath.pathfinder.WildernessChecker;
 
-/** Query-lifetime raw seeds and provenance-reduced exact seed scans. */
-@AllArgsConstructor
+/**
+ * Query-lifetime raw seeds and provenance-reduced exact seed scans.
+ *
+ * <p>Seeds are bucketed by routing component and bank layer. Over a graph that
+ * {@link SiteGraph#avoidsWilderness() avoids the Wilderness}, the seeds outside it are also
+ * bucketed by {@link WildernessGate piece}: a tile outside the Wilderness in a component that
+ * touches it scans only its piece's bucket, since it cannot walk to the rest of the component
+ * without entering the Wilderness. Every other tile scans its component's bucket.
+ */
 public final class PreparedHeuristic
 {
 	private static final int[] EMPTY = new int[0];
@@ -21,34 +28,51 @@ public final class PreparedHeuristic
 	private final int[][] generatorTiles;
 	private final int[][] generatorLabels;
 	@Getter @Accessors(fluent = true) private final long preparationNanos;
+	/** The Wilderness gate when the graph avoids the Wilderness, else {@code null}. */
+	private final WildernessGate gate;
+	private final int componentCount;
 
-
+	private PreparedHeuristic(TargetOverlay overlay, ReverseLabels reverse, int[][] seedTiles, int[][] seedLabels,
+		int[][] generatorTiles, int[][] generatorLabels, long preparationNanos)
+	{
+		this.overlay = overlay;
+		this.reverse = reverse;
+		this.seedTiles = seedTiles;
+		this.seedLabels = seedLabels;
+		this.generatorTiles = generatorTiles;
+		this.generatorLabels = generatorLabels;
+		this.preparationNanos = preparationNanos;
+		this.gate = overlay.graph().avoidsWilderness() ? overlay.routingStatic().wildernessGate() : null;
+		this.componentCount = overlay.routingStatic().routingComponentCount();
+	}
 
 	public static PreparedHeuristic prepare(TargetOverlay overlay, ReverseLabels reverse)
 	{
 		if (reverse == null || reverse.overlay() != overlay)
 			throw new IllegalArgumentException("reverse labels belong to another target overlay");
 		long started = System.nanoTime();
-		int bucketCount = overlay.routingStatic().routingComponentCount() * 2;
-		IntList[] raw = new IntList[bucketCount];
-		GeneratorList[] reduced = new GeneratorList[bucketCount];
 		RoutingStatic stat = overlay.routingStatic();
 		SiteGraph graph = overlay.graph();
+		WildernessGate gate = graph.avoidsWilderness() ? stat.wildernessGate() : null;
+		int componentCount = stat.routingComponentCount();
+		int bucketCount = (componentCount + (gate == null ? 0 : gate.pieceCount())) * 2;
+		IntList[] raw = new IntList[bucketCount];
+		GeneratorList[] reduced = new GeneratorList[bucketCount];
 		for (int site = 0; site < graph.spatialNodeCount(); site++)
 		{
-			addSite(raw, reduced, reverse, overlay, site, stat.siteTile(site), stat.siteComponents(site),
-				BankVisitState.CARRIED);
-			addSite(raw, reduced, reverse, overlay, site, stat.siteTile(site), stat.siteComponents(site),
-				BankVisitState.BANKED);
+			int[] pieces = gate == null ? null : gate.sitePieces(site);
+			for (BankVisitState banked : BankVisitState.values())
+				addSite(raw, reduced, reverse, overlay, gate, componentCount, site, stat.siteTile(site),
+					stat.siteComponents(site), pieces, banked);
 		}
 		for (int target = 0; target < overlay.targetCount(); target++)
 		{
 			if (!overlay.synthetic(target))
 				continue;
-			addSite(raw, reduced, reverse, overlay, overlay.targetNode(target), overlay.packedTarget(target),
-				overlay.componentsView(target), BankVisitState.CARRIED);
-			addSite(raw, reduced, reverse, overlay, overlay.targetNode(target), overlay.packedTarget(target),
-				overlay.componentsView(target), BankVisitState.BANKED);
+			int[] pieces = gate == null ? null : gate.outsidePieces(overlay.packedTarget(target));
+			for (BankVisitState banked : BankVisitState.values())
+				addSite(raw, reduced, reverse, overlay, gate, componentCount, overlay.targetNode(target),
+					overlay.packedTarget(target), overlay.componentsView(target), pieces, banked);
 		}
 		int[][] tiles = new int[bucketCount][], labels = new int[bucketCount][];
 		int[][] generatorTiles = new int[bucketCount][], generatorLabels = new int[bucketCount][];
@@ -135,11 +159,18 @@ public final class PreparedHeuristic
 
 	public int estimateBaseNode(int packed, BankVisitState banked, int component)
 	{
+		return estimateBaseNode(packed, banked, component, overlay.routingStatic().searchIndex(packed));
+	}
+
+	/** As {@link #estimateBaseNode(int, BankVisitState, int)} for search tile {@code node}. */
+	public int estimateBaseNode(int packed, BankVisitState banked, int component, int node)
+	{
 		int best = targetLabel(packed, banked);
 		int site = overlay.routingStatic().siteIndex(packed);
 		if (site >= 0) best = Math.min(best, reverse.label(site, banked));
-		return Math.min(best,
-			estimateComponent(packed, banked, component, generatorTiles, generatorLabels, true));
+		int key = gate == null || gate.tileInWilderness(node) || !gate.gatedComponent(component)
+			? componentKey(component, banked) : pieceKey(componentCount, gate.tilePiece(node), banked);
+		return Math.min(best, estimateBucket(packed, key, generatorTiles, generatorLabels, true));
 	}
 
 	/** Raw seed-scan oracle retained for reduced-generator differential checks. */
@@ -161,15 +192,27 @@ public final class PreparedHeuristic
 		int site = stat.siteIndex(packed);
 		if (site >= 0)
 			best = Math.min(best, reverse.label(site, banked));
+		boolean inside = gate == null || WildernessChecker.isInWilderness(packed);
 		for (int component : components)
-			best = Math.min(best, estimateComponent(packed, banked, component, tiles, labels, fallbackToRaw));
+		{
+			if (inside || !gate.gatedComponent(component))
+				best = Math.min(best, estimateBucket(packed, componentKey(component, banked), tiles, labels,
+					fallbackToRaw));
+		}
+		if (!inside)
+		{
+			for (int piece : gate.outsidePieces(packed))
+			{
+				if (gate.gatedPiece(piece))
+					best = Math.min(best, estimateBucket(packed, pieceKey(componentCount, piece, banked), tiles,
+						labels, fallbackToRaw));
+			}
+		}
 		return best;
 	}
 
-	private int estimateComponent(int packed, BankVisitState banked, int component, int[][] tiles, int[][] labels,
-		boolean fallbackToRaw)
+	private int estimateBucket(int packed, int key, int[][] tiles, int[][] labels, boolean fallbackToRaw)
 	{
-		int key = key(component, banked);
 		int[] bucketTiles = tiles[key];
 		int[] bucketLabels = labels[key];
 		if (fallbackToRaw && bucketTiles.length == 0)
@@ -184,34 +227,58 @@ public final class PreparedHeuristic
 		return best;
 	}
 
+	/**
+	 * Adds a node's seed to the bucket of each of its components and, with a gate, of each of its
+	 * gated pieces.
+	 */
 	private static void addSite(IntList[] raw, GeneratorList[] reduced, ReverseLabels reverse,
-		TargetOverlay overlay, int node, int packed, int[] components, BankVisitState banked)
+		TargetOverlay overlay, WildernessGate gate, int componentCount, int node, int packed, int[] components,
+		int[] pieces, BankVisitState banked)
 	{
 		int state = SiteGraph.stateId(node, banked);
 		int distance = reverse.label(node, banked);
 		if (distance == CostArithmetic.INF)
 			return;
 		for (int component : components)
+			addSeed(raw, reduced, reverse, overlay, gate, componentKey(component, banked), node, packed, state,
+				distance, component, -1);
+		if (gate == null)
+			return;
+		for (int piece : pieces)
 		{
-			int key = key(component, banked);
-			add(raw, key, packed, distance);
-			if (!reverse.hasProvenance())
-				continue;
-			int origin = reverse.generatorOrigin(state);
-			int generatorState = validOrigin(reverse, overlay, node, packed, components, component, state, origin)
-				? origin : state;
-			int generatorNode = generatorState / 2;
-			int generatorTile = overlay.nodeTile(generatorNode);
-			int generatorLabel = reverse.label(generatorNode,
-				(generatorState & 1) != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED);
-			if (reduced[key] == null)
-				reduced[key] = new GeneratorList();
-			reduced[key].add(generatorState, generatorTile, generatorLabel);
+			if (gate.gatedPiece(piece))
+				addSeed(raw, reduced, reverse, overlay, gate, pieceKey(componentCount, piece, banked), node, packed,
+					state, distance, -1, piece);
 		}
 	}
 
-	private static boolean validOrigin(ReverseLabels reverse, TargetOverlay overlay, int node, int packed,
-		int[] components, int component, int state, int origin)
+	/** Adds one seed to bucket {@code key}, which is either {@code component}'s or {@code piece}'s. */
+	private static void addSeed(IntList[] raw, GeneratorList[] reduced, ReverseLabels reverse, TargetOverlay overlay,
+		WildernessGate gate, int key, int node, int packed, int state, int distance, int component, int piece)
+	{
+		add(raw, key, packed, distance);
+		if (!reverse.hasProvenance())
+			return;
+		int origin = reverse.generatorOrigin(state);
+		int generatorState = validOrigin(reverse, overlay, gate, packed, component, piece, state, origin)
+			? origin : state;
+		int generatorNode = generatorState / 2;
+		int generatorTile = overlay.nodeTile(generatorNode);
+		int generatorLabel = reverse.label(generatorNode,
+			(generatorState & 1) != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED);
+		if (reduced[key] == null)
+			reduced[key] = new GeneratorList();
+		reduced[key].add(generatorState, generatorTile, generatorLabel);
+	}
+
+	/**
+	 * Whether {@code origin} may stand in for the seed in its bucket: it must be in the same layer,
+	 * reach the seed along a straight Chebyshev geodesic, and be in the bucket itself, attached to
+	 * {@code component} or (for a piece bucket) in {@code piece}, so every tile that scans the
+	 * bucket can use it.
+	 */
+	private static boolean validOrigin(ReverseLabels reverse, TargetOverlay overlay, WildernessGate gate,
+		int packed, int component, int piece, int state, int origin)
 	{
 		if (origin < 0 || (origin & 1) != (state & 1))
 			return false;
@@ -225,8 +292,12 @@ public final class PreparedHeuristic
 		if (reverse.generatorWeightDoubled(state) == CostArithmetic.INF
 			|| reverse.doubledLabel(state) != CostArithmetic.add(reverse.generatorWeightDoubled(state), CostArithmetic.twice(direct)))
 			return false;
-		int[] originComponents = overlay.nodeComponents(originNode);
-		return contains(originComponents, component);
+		if (piece >= 0)
+		{
+			int target = overlay.syntheticTarget(originNode);
+			return contains(target >= 0 ? gate.outsidePieces(originTile) : gate.sitePieces(originNode), piece);
+		}
+		return contains(overlay.nodeComponents(originNode), component);
 	}
 
 	private int targetLabel(int packed, BankVisitState banked)
@@ -237,7 +308,18 @@ public final class PreparedHeuristic
 
 	private static int key(int component, BankVisitState banked)
 	{
+		return componentKey(component, banked);
+	}
+
+	private static int componentKey(int component, BankVisitState banked)
+	{
 		return component * 2 + (banked == BankVisitState.BANKED ? 1 : 0);
+	}
+
+	/** Piece buckets follow every component bucket. */
+	private static int pieceKey(int componentCount, int piece, BankVisitState banked)
+	{
+		return componentKey(componentCount + piece, banked);
 	}
 
 	private static void add(IntList[] raw, int key, int packed, int label)

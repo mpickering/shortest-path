@@ -23,6 +23,9 @@ public final class RoutingStatic
 	private final int sparseOriginalCount, sparseVertexCount, sparseSteinerCount;
 	private final int sparseUndirectedEdgeCount, sparseAdjacencyCount;
 	private final int[] sparseOffsets, sparseDestinations, sparseWeights;
+	private final SparseNetwork sparseNetwork;
+	// Built on first use by a search that avoids the Wilderness.
+	private volatile WildernessGate wildernessGate;
 
 	private RoutingStatic(int[] searchTiles, TileComponents searchComponents, byte[] walkingMasks,
 		char[] northOffsets, char[] southOffsets, int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds,
@@ -63,6 +66,8 @@ public final class RoutingStatic
 		this.sparseOffsets = sparseOffsets;
 		this.sparseDestinations = sparseDestinations;
 		this.sparseWeights = sparseWeights;
+		this.sparseNetwork = new SparseNetwork(sparseOriginalCount, sparseSteinerCount, sparseOffsets,
+			sparseDestinations, sparseWeights, null);
 	}
 
 	/**
@@ -308,6 +313,67 @@ public final class RoutingStatic
 	public int sparseWeight(int index)
 	{
 		return sparseWeights[index];
+	}
+
+	/** The sparse walking network a reverse search walks, gated or not by the Wilderness. */
+	SparseNetwork sparseNetwork(boolean avoidWilderness)
+	{
+		return avoidWilderness ? wildernessGate().network() : sparseNetwork;
+	}
+
+	/** Each site's and tile's side of the Wilderness line, built on first use. */
+	WildernessGate wildernessGate()
+	{
+		WildernessGate gate = wildernessGate;
+		if (gate == null)
+		{
+			synchronized (this)
+			{
+				gate = wildernessGate;
+				if (gate == null)
+				{
+					gate = WildernessGate.build(this);
+					wildernessGate = gate;
+				}
+			}
+		}
+		return gate;
+	}
+
+	/** Whether the site's tile is inside the Wilderness. */
+	boolean siteInWilderness(int site)
+	{
+		return wildernessGate().siteInWilderness(site);
+	}
+
+	int[] siteTilesView()
+	{
+		return siteTiles;
+	}
+	int[] siteComponentOffsetsView()
+	{
+		return siteComponentOffsets;
+	}
+	int[] siteComponentIdsView()
+	{
+		return siteComponentIds;
+	}
+
+	/** The search tile one walking step from {@code node} along mask bit {@code bit}, or a negative value. */
+	int walkSuccessor(int node, int bit)
+	{
+		int south = southNode(node), north = northNode(node);
+		switch (bit)
+		{
+			case 0: return north;
+			case 1: return north < 0 ? -1 : north + 1;
+			case 2: return node + 1;
+			case 3: return south < 0 ? -1 : south + 1;
+			case 4: return south;
+			case 5: return south < 0 ? -1 : south - 1;
+			case 6: return node - 1;
+			default: return north < 0 ? -1 : north - 1;
+		}
 	}
 
 	public int[] attachments(int packedPoint, CollisionMap collision)
