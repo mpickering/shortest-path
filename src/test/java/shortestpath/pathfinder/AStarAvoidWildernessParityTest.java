@@ -31,8 +31,12 @@ import shortestpath.pathfinder.astar.RoutingStatic;
 /**
  * A* honours {@code avoidWilderness} and the league's always-blocked region like legacy:
  * nothing may enter the gated area on foot, and a global teleport cast outside the wilderness
- * cannot land inside. The same exemptions apply in both backends: starting inside the gated area
- * may still leave it, and a target inside it lifts the gate entirely.
+ * cannot land inside. Starting inside the gated area may still leave it, and a target inside the
+ * blocked region lifts that gate, in both backends.
+ *
+ * <p>Avoid wilderness differs in A*: when no route avoids the Wilderness, A* searches again without
+ * the gate rather than giving up. That covers a target inside the Wilderness, which legacy exempts
+ * up front, and places outside it that can only be reached through it, which legacy cannot route.
  */
 public class AStarAvoidWildernessParityTest
 {
@@ -60,23 +64,32 @@ public class AStarAvoidWildernessParityTest
 	}
 
 	@Test
-	public void wildernessCannotBeEnteredOnFootWhileAvoidingIt()
+	public void onlyRouteThroughTheWildernessLiftsTheGateInAStar()
 	{
-		// Every walking route to Ferox crosses the wilderness; with no teleports enabled both
-		// backends must give up.
+		// Every walking route to Ferox crosses the wilderness. With no teleports enabled legacy
+		// gives up; A* finds no route avoiding it, so it routes through it instead.
 		PathfinderConfig config = config(true, false);
 		PathfinderResult legacy = legacy(config, LUMBRIDGE, FEROX_ENCLAVE);
 		AStarPathfinder aStar = aStar(config, LUMBRIDGE, FEROX_ENCLAVE);
 		assertFalse("legacy reached Ferox without entering the wilderness", legacy.isReached());
-		assertFalse("aStar entered the wilderness while avoiding it", aStar.getResult().isReached());
+		assertTrue("aStar gave up on a target only reachable through the wilderness", aStar.getResult().isReached());
+		assertTrue(aStar.isWildernessGateLifted());
+		int lifted = aStar.getResult().getPathCost();
+		int liftedNodes = aStar.getResult().getNodesChecked();
 
-		// Without the gate the same search walks straight through, and pays the same as legacy.
+		// Without the gate both walk straight through, and A* pays the same as with it lifted.
 		config = config(false, false);
 		legacy = legacy(config, LUMBRIDGE, FEROX_ENCLAVE);
 		aStar = aStar(config, LUMBRIDGE, FEROX_ENCLAVE);
 		assertTrue(legacy.isReached());
 		assertTrue(aStar.getResult().isReached());
+		assertFalse(aStar.isWildernessGateLifted());
 		assertEquals(legacy.getPathCost(), aStar.getResult().getPathCost());
+		assertEquals(lifted, aStar.getResult().getPathCost());
+		// The first, gated search proves there is no route avoiding the wilderness without
+		// flooding the world, so lifting the gate costs little more than the ungated search.
+		assertTrue("the gated search flooded before lifting the gate",
+			liftedNodes < aStar.getResult().getNodesChecked() + 1_000);
 
 		// The route crosses the Wilderness Ditch by transport; the landing step must report
 		// which transport produced it, not just the tile it landed on.
@@ -88,12 +101,14 @@ public class AStarAvoidWildernessParityTest
 	@Test
 	public void wildernessTargetLiftsTheGateLikeLegacy()
 	{
-		// A target inside the wilderness exempts the search: entering it is the point.
+		// A target inside the wilderness: entering it is the point. Legacy exempts the search up
+		// front; A* finds no route avoiding the wilderness and searches again without the gate.
 		PathfinderConfig config = config(true, true);
 		PathfinderResult legacy = legacy(config, LUMBRIDGE, CHAOS_TEMPLE);
 		AStarPathfinder aStar = aStar(config, LUMBRIDGE, CHAOS_TEMPLE);
 		assertTrue(legacy.isReached());
 		assertTrue(aStar.getResult().isReached());
+		assertTrue(aStar.isWildernessGateLifted());
 		assertEquals(legacy.getPathCost(), aStar.getResult().getPathCost());
 	}
 
@@ -117,6 +132,7 @@ public class AStarAvoidWildernessParityTest
 		AStarPathfinder aStar = aStar(config, LUMBRIDGE, VARROCK);
 		assertTrue(legacy.isReached());
 		assertTrue(aStar.getResult().isReached());
+		assertFalse(aStar.isWildernessGateLifted());
 		for (PathStep step : aStar.getPath())
 		{
 			assertFalse("route enters the wilderness", WildernessChecker.isInWilderness(step.getPackedPosition()));

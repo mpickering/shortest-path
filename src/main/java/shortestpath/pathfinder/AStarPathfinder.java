@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import shortestpath.leagues.LeagueModeState;
@@ -43,7 +44,10 @@ public final class AStarPathfinder implements ActiveSearch
 	private final Supplier<RoutingStatic> routingStatic;
 	private final AStarRoutingSession session;
 	private final PreparedRoutingAccount account;
+	// Avoid wilderness first, then without it if nothing outside the Wilderness reaches a target.
+	private final boolean avoidWilderness;
 	private final SearchRestrictions restrictions;
+	private final SearchRestrictions liftedRestrictions;
 	private final long cutoffMillis;
 	private final double heuristicWeight;
 	@Getter private final long accountPrepareNanos;
@@ -66,6 +70,7 @@ public final class AStarPathfinder implements ActiveSearch
 	private volatile List<Integer> keptStepIndices = List.of();
 	private volatile boolean graphReused;
 	private volatile boolean targetReused;
+	private volatile boolean wildernessGateLifted;
 
 	public AStarPathfinder(PathfinderConfig config, RoutingStatic routingStatic, int start, Set<Integer> targets,
 		Runnable completionCallback)
@@ -153,7 +158,10 @@ public final class AStarPathfinder implements ActiveSearch
 		long phaseStarted = System.nanoTime();
 		this.account = config.prepareAStarRoutingAccount(true, GoalStates.needsBank(targets, heldItems));
 		this.accountPrepareNanos = System.nanoTime() - phaseStarted;
-		this.restrictions = restrictions(config, targets.points());
+		this.avoidWilderness = config.isAvoidWilderness();
+		IntPredicate blockedRegion = blockedRegion(config, targets.points());
+		this.restrictions = SearchRestrictions.of(avoidWilderness, blockedRegion);
+		this.liftedRestrictions = SearchRestrictions.of(false, blockedRegion);
 		this.cutoffMillis = config.getCalculationCutoffMillis();
 		this.heuristicWeight = heuristicWeight;
 		this.failure = null;
@@ -167,13 +175,16 @@ public final class AStarPathfinder implements ActiveSearch
 	}
 
 	/**
-	 * The same positional gates legacy checks per edge: {@code avoidWilderness} and the league's
-	 * always-blocked region, each lifted when a target lies inside the gated area (the user asked
-	 * for that tile, so the route must be allowed to reach it).
+	 * The league's always-blocked region gate, as legacy checks it per edge, or {@code null} when
+	 * it is off: lifted when a target lies inside the region (the user asked for that tile, so the
+	 * route must be allowed to reach it).
+	 *
+	 * <p>Avoid wilderness is not lifted for a target in the Wilderness up front. The search first
+	 * avoids the Wilderness, and only if that finds no route searches again without the gate; a
+	 * target inside the Wilderness is just one case of that.
 	 */
-	private static SearchRestrictions restrictions(PathfinderConfig config, Set<Integer> targets)
+	private static IntPredicate blockedRegion(PathfinderConfig config, Set<Integer> targets)
 	{
-		boolean avoidWilderness = config.isAvoidWilderness() && !WildernessChecker.isInWilderness(targets);
 		LeagueModeState league = config.getLeagueModeState();
 		IntPredicate blockedRegion = null;
 		if (league != null && league.isSeasonal())
@@ -188,7 +199,7 @@ public final class AStarPathfinder implements ActiveSearch
 				blockedRegion = league::isInBlockedRegion;
 			}
 		}
-		return SearchRestrictions.of(avoidWilderness, blockedRegion);
+		return blockedRegion;
 	}
 
 	private AStarPathfinder(int start, Targets targets, Runnable completionCallback, String failure)
@@ -200,7 +211,9 @@ public final class AStarPathfinder implements ActiveSearch
 		this.routingStatic = null;
 		this.session = null;
 		this.account = null;
+		this.avoidWilderness = false;
 		this.restrictions = SearchRestrictions.none();
+		this.liftedRestrictions = SearchRestrictions.none();
 		this.goals = null;
 		this.collisionRule = null;
 		this.transportDestination = null;
@@ -379,6 +392,10 @@ public final class AStarPathfinder implements ActiveSearch
 		entries.put("Graph prep", isGraphReused() ? "reused"
 			: PathfinderStats.millis(getGraphPrepareNanos()));
 		entries.put("Account prep", PathfinderStats.millis(getAccountPrepareNanos()));
+		if (isWildernessGateLifted())
+		{
+			entries.put("Avoid wilderness", "lifted, no route outside it");
+		}
 		if (getRoutingStaticNanos() >= STATIC_BUILD_THRESHOLD_NANOS)
 		{
 			entries.put("Static data", PathfinderStats.millis(getRoutingStaticNanos()));
@@ -388,6 +405,14 @@ public final class AStarPathfinder implements ActiveSearch
 
 	public boolean isTargetReused()
 	{ return targetReused;
+	}
+
+	/**
+	 * Whether Avoid wilderness was on but no route avoided the Wilderness, so the search ran again
+	 * without the gate and any route it found may enter the Wilderness.
+	 */
+	public boolean isWildernessGateLifted()
+	{ return wildernessGateLifted;
 	}
 
 	@Override
@@ -413,10 +438,6 @@ public final class AStarPathfinder implements ActiveSearch
 				: collisionRule;
 			goals = GoalStates.resolve(TargetGoals.resolve(targets.points(), transportDestination, rule), targets,
 				heldItems);
-			phaseStarted = System.nanoTime();
-			AStarRoutingSession.Lookup<SiteGraph> graph = session.graph(staticData, account);
-			graphPrepareNanos = System.nanoTime() - phaseStarted;
-			graphReused = graph.reused();
 			AtomicBoolean timedOut = new AtomicBoolean();
 			// A zero cutoff means no cutoff for the A* backend.
 			SearchDeadline deadline = cutoffMillis > 0 ? new SearchDeadline(cutoffMillis) : null;
@@ -435,36 +456,30 @@ public final class AStarPathfinder implements ActiveSearch
 			// satisfy the goal set — skip the search like the legacy backend does.
 			if (!cancelled && goals.hasViableGoal() && packedTargets.length != 0)
 			{
-				// One search towards every target at once; it ends at the cheapest one to reach.
-				phaseStarted = System.nanoTime();
-				AStarRoutingSession.Lookup<PreparedTarget> prepared = session.target(graph.value(), collision,
-					packedTargets, targetLayers);
-				targetReused = prepared.reused();
-				if (targetReused)
+				BooleanSupplier stop = () ->
 				{
-					heuristicPrepareNanos = System.nanoTime() - phaseStarted;
-				}
-				else
-				{
-					reverseSearchNanos = prepared.value().reverseSearchNanos();
-					heuristicPrepareNanos = prepared.value().heuristicPrepareNanos();
-				}
-				phaseStarted = System.nanoTime();
-				AStarForwardSearch.Result current = prepared.value().search(start,
-					() ->
+					if (cancelled) return true;
+					if (deadline != null && deadline.expired())
 					{
-						if (cancelled) return true;
-						if (deadline != null && deadline.expired())
-						{
-							timedOut.set(true);
-							return true;
-						}
-						return false;
-					}, heuristicWeight, restrictions, deadline == null ? AStarForwardSearch.NO_PROGRESS : deadline::progressed,
-					goals::accepts);
-				forwardSearchNanos = System.nanoTime() - phaseStarted;
-				stats.nodesChecked += current.counters().statesPopped();
-				stats.transportsChecked += current.counters().transportCandidates();
+						timedOut.set(true);
+						return true;
+					}
+					return false;
+				};
+				// One search towards every target at once; it ends at the cheapest one to reach.
+				SearchRestrictions used = restrictions;
+				AStarForwardSearch.Result current = attempt(staticData, avoidWilderness, packedTargets, targetLayers,
+					restrictions, stop, deadline, true);
+				// Nothing outside the Wilderness reaches a target: Avoid wilderness would turn a long
+				// route into no route, so search again without it. The graph built to avoid the
+				// Wilderness makes the first search cheap when the gate is what blocks it.
+				if (avoidWilderness && !current.reached() && !cancelled && !timedOut.get())
+				{
+					wildernessGateLifted = true;
+					used = liftedRestrictions;
+					current = attempt(staticData, false, packedTargets, targetLayers, liftedRestrictions, stop,
+						deadline, false);
+				}
 				aStarStats = current.counters();
 				AStarRoute found = null;
 				if (current.reached())
@@ -485,11 +500,11 @@ public final class AStarPathfinder implements ActiveSearch
 					// into the clicks along it and the paths the game's own walking takes between them.
 					phaseStarted = System.nanoTime();
 					AStarWalkCanonicalizer.Result canonical = new AStarWalkCanonicalizer(collision, account,
-						restrictions).canonicalize(found);
+						used).canonicalize(found);
 					walkCanonicalizeNanos = System.nanoTime() - phaseStarted;
 					walkDiagnostics = canonical.diagnostics();
 					phaseStarted = System.nanoTime();
-					InGameWalkRewriter.Result walked = new InGameWalkRewriter(collision, restrictions).rewrite(canonical);
+					InGameWalkRewriter.Result walked = new InGameWalkRewriter(collision, used).rewrite(canonical);
 					walkRewriteNanos = System.nanoTime() - phaseStarted;
 					clickPoints = walked.clickPoints();
 					keptStepIndices = walked.keptStepIndices();
@@ -534,6 +549,43 @@ public final class AStarPathfinder implements ActiveSearch
 			stats.end();
 			if (completionCallback != null) completionCallback.run();
 		}
+	}
+
+	/**
+	 * Prepares the graph and target (from the session when possible) and runs one forward search,
+	 * adding its preparation times and counts to this search's.
+	 *
+	 * @param gated build the graph to avoid the Wilderness
+	 * @param first whether this is the search's first attempt, which resets the reuse flags
+	 */
+	private AStarForwardSearch.Result attempt(RoutingStatic staticData, boolean gated, int[] packedTargets,
+		int[] targetLayers, SearchRestrictions searchRestrictions, BooleanSupplier stop, SearchDeadline deadline,
+		boolean first)
+	{
+		long phaseStarted = System.nanoTime();
+		AStarRoutingSession.Lookup<SiteGraph> graph = session.graph(staticData, account, gated);
+		graphPrepareNanos += System.nanoTime() - phaseStarted;
+		graphReused = graph.reused() && (first || graphReused);
+		phaseStarted = System.nanoTime();
+		AStarRoutingSession.Lookup<PreparedTarget> prepared = session.target(graph.value(), collision,
+			packedTargets, targetLayers);
+		targetReused = prepared.reused() && (first || targetReused);
+		if (prepared.reused())
+		{
+			heuristicPrepareNanos += System.nanoTime() - phaseStarted;
+		}
+		else
+		{
+			reverseSearchNanos += prepared.value().reverseSearchNanos();
+			heuristicPrepareNanos += prepared.value().heuristicPrepareNanos();
+		}
+		phaseStarted = System.nanoTime();
+		AStarForwardSearch.Result result = prepared.value().search(start, stop, heuristicWeight, searchRestrictions,
+			deadline == null ? AStarForwardSearch.NO_PROGRESS : deadline::progressed, goals::accepts);
+		forwardSearchNanos += System.nanoTime() - phaseStarted;
+		stats.nodesChecked += result.counters().statesPopped();
+		stats.transportsChecked += result.counters().transportCandidates();
+		return result;
 	}
 
 	/** The arrival of a route that reached a goal, read from where and in which layer it ends. */

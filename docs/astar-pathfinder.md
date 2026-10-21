@@ -37,6 +37,20 @@ requirements or reads the client directly.
   targets for reuse while the graph and collision map are unchanged.
 - **Search state** (`AStarForwardSearch`) belongs to one active search.
 
+## Avoid wilderness
+
+With Avoid wilderness on, A* first searches for a route that never enters the Wilderness from
+outside it, using a heuristic built for that rule (see
+[the heuristic](astar-heuristic.md#7-avoiding-the-wilderness-wildernessgate)). If that search
+finds nothing, and was neither cancelled nor cut off, A* searches again without the gate, so a
+place only reachable through the Wilderness still gets a route. This covers targets inside the
+Wilderness and places outside it whose only way in starts there, such as the Abyss or Ferox
+Enclave without teleports. `AStarPathfinder.isWildernessGateLifted()` reports it, and the debug
+panel shows it.
+
+Legacy behaves differently: it lifts the gate only for a target inside the Wilderness, and
+otherwise reports no route.
+
 ## Routing cuts
 
 Large walking areas are split into routing components along separator cut
