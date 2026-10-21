@@ -78,6 +78,15 @@ public final class SparseWalkingNetworkBuilder
 	 */
 	public static Result build(int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds)
 	{
+		return build(siteTiles, siteComponentOffsets, siteComponentIds, null);
+	}
+
+	/**
+	 * As {@link #build(int[], int[], int[])}, but each {@link ExactWalks#isExact exact} component's
+	 * sites are joined by its exact walking edges instead of a tree.
+	 */
+	static Result build(int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds, ExactWalks exactWalks)
+	{
 		int originalCount = siteTiles.length;
 		int maxComponentId = -1;
 		for (int cid : siteComponentIds)
@@ -88,8 +97,10 @@ public final class SparseWalkingNetworkBuilder
 			}
 		}
 		EdgeList edges = new EdgeList();
+		boolean[] trees = treeGroups(maxComponentId + 1, exactWalks, null);
 		int vertexCount = buildGroups(originalCount, siteTiles, siteComponentOffsets, siteComponentIds,
-			maxComponentId + 1, null, null, null, edges);
+			maxComponentId + 1, trees, null, null, edges);
+		addExactEdges(trees, exactWalks, edges);
 		int steinerCount = vertexCount - originalCount;
 		return undirectedAdjacency(originalCount, vertexCount, steinerCount, edges, false);
 	}
@@ -119,12 +130,49 @@ public final class SparseWalkingNetworkBuilder
 		boolean[] gatedComponents, boolean[] siteInWilderness, int[] sitePieceOffsets, int[] sitePieceIds,
 		boolean[] pieceTrees)
 	{
+		return buildWildernessGated(siteTiles, siteComponentOffsets, siteComponentIds, gatedComponents,
+			siteInWilderness, sitePieceOffsets, sitePieceIds, pieceTrees, null);
+	}
+
+	/** As above; exact components that are not gated keep their exact edges instead of a tree. */
+	static Result buildWildernessGated(int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds,
+		boolean[] gatedComponents, boolean[] siteInWilderness, int[] sitePieceOffsets, int[] sitePieceIds,
+		boolean[] pieceTrees, ExactWalks exactWalks)
+	{
 		EdgeList edges = new EdgeList();
+		boolean[] trees = treeGroups(gatedComponents.length, exactWalks, gatedComponents);
 		int next = buildGroups(siteTiles.length, siteTiles, siteComponentOffsets, siteComponentIds,
-			gatedComponents.length, null, gatedComponents, siteInWilderness, edges);
+			gatedComponents.length, trees, gatedComponents, siteInWilderness, edges);
+		addExactEdges(trees, exactWalks, edges);
 		next = buildGroups(next, siteTiles, sitePieceOffsets, sitePieceIds, pieceTrees.length, pieceTrees, null,
 			null, edges);
 		return undirectedAdjacency(siteTiles.length, next, next - siteTiles.length, edges, true);
+	}
+
+	/**
+	 * Which components get a tree: every one without exact walks, and every gated one (its walks
+	 * may cross the Wilderness). {@code null}, meaning all of them, without exact walks.
+	 */
+	private static boolean[] treeGroups(int groupCount, ExactWalks exactWalks, boolean[] gated)
+	{
+		if (exactWalks == null) return null;
+		boolean[] trees = new boolean[groupCount];
+		for (int g = 0; g < groupCount; g++)
+			trees[g] = !exactWalks.isExact(g) || gated != null && gated[g];
+		return trees;
+	}
+
+	/** The exact edges of every component without a tree, doubled like every other weight. */
+	private static void addExactEdges(boolean[] trees, ExactWalks exactWalks, EdgeList edges)
+	{
+		if (trees == null) return;
+		for (int g = 0; g < trees.length; g++)
+		{
+			if (trees[g]) continue;
+			int[] triples = exactWalks.edges(g);
+			for (int i = 0; i < triples.length; i += 3)
+				edges.add(triples[i], triples[i + 1], CostArithmetic.twice(triples[i + 2]), false);
+		}
 	}
 
 	/**
