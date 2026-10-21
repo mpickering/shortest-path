@@ -150,7 +150,7 @@ final class WildernessGate
 
 		SparseWalkingNetworkBuilder.Result sparse = SparseWalkingNetworkBuilder.buildWildernessGated(
 			stat.siteTilesView(), stat.siteComponentOffsetsView(), stat.siteComponentIdsView(), gatedComponents,
-			siteInWilderness, sitePieceOffsets, sitePieceIds, pieceTrees);
+			siteInWilderness, sitePieceOffsets, sitePieceIds, pieceTrees, stat.exactWalks());
 		SparseNetwork network = new SparseNetwork(sparse.originalCount, sparse.steinerCount, sparse.offsets,
 			sparse.destinations, sparse.weights, sparse.gatedEntries);
 		return new WildernessGate(stat, siteInWilderness, tileInWilderness, tilePieces, pieceCount,
