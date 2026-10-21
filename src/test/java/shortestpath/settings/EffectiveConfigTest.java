@@ -15,6 +15,7 @@ import java.util.Set;
 import org.junit.Test;
 
 import net.runelite.client.config.Keybind;
+import shortestpath.DebugLayer;
 import shortestpath.ShortestPathConfig;
 import shortestpath.TestShortestPathConfig;
 import shortestpath.TileCounter;
@@ -42,6 +43,26 @@ public class EffectiveConfigTest
 		Settings settings = Settings.wrap(base());
 		settings.applyOverrides(overrides);
 		return settings.effective();
+	}
+
+	@Test
+	public void debugLayersDriveDisplayAndPanelWhileLegacyOverridesStillApply()
+	{
+		Settings settings = Settings.wrap(new TestShortestPathConfig()
+		{
+			@Override
+			public Set<DebugLayer> debugLayers()
+			{
+				return EnumSet.of(DebugLayer.PANEL, DebugLayer.TRANSPORTS);
+			}
+		});
+		assertTrue(settings.display().drawTransports());
+		assertTrue(settings.lifecycle().drawDebugPanel());
+		assertFalse(settings.display().drawCollisionMap());
+		settings.applyOverrides(Map.of("drawTransports", false, "drawCollisionMap", true));
+		assertFalse(settings.display().drawTransports());
+		assertTrue(settings.display().drawCollisionMap());
+		assertEquals(EnumSet.of(DebugLayer.PANEL, DebugLayer.TRANSPORTS), settings.effective().debugLayers());
 	}
 
 	@Test

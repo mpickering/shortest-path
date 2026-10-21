@@ -22,6 +22,7 @@ import shortestpath.scheduler.PathScheduler;
 import shortestpath.settings.Settings;
 
 import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.ActiveSearch;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.AStarPathfinder;
 import shortestpath.pathfinder.PathStep;
@@ -85,9 +86,10 @@ public class DebugSceneOverlay extends Overlay
 
 		// Click points without the path are floating marks, so they follow the same drawTiles
 		// gate and POH skip as the path tiles.
-		if (settings.display().drawTiles() && settings.display().drawClickPoints() && scheduler.getActiveSearch() instanceof AStarPathfinder)
+		ActiveSearch search = scheduler.getActiveSearch();
+		if (settings.display().drawTiles() && settings.display().drawClickPoints() && search instanceof AStarPathfinder)
 		{
-			renderClickPoints(graphics, (AStarPathfinder) scheduler.getActiveSearch());
+			renderClickPoints(graphics, (AStarPathfinder) search);
 		}
 
 		return null;

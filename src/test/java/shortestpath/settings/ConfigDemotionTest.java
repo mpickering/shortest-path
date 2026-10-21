@@ -159,10 +159,10 @@ public class ConfigDemotionTest
 		assertEquals("the pinned boundary is 61 keyNames", 61, PANEL_OWNED_KEYS.size());
 
 		// The hidden-key surface lives in the keyed registry, not on the
-		// interface: no @ConfigItem may carry hidden=true any more, and every
-		// panel-owned key resolves to a keyed registry row with metadata.
+		// interface; only the four legacy debug toggles remain hidden migration
+		// inputs. Every panel-owned key resolves to a keyed row with metadata.
 		Set<String> annotatedKeys = new TreeSet<>();
-		List<String> boundaryViolations = new ArrayList<>();
+		Set<String> hiddenKeys = new TreeSet<>();
 		for (Method method : ShortestPathConfig.class.getMethods())
 		{
 			ConfigItem item = method.getAnnotation(ConfigItem.class);
@@ -173,11 +173,11 @@ public class ConfigDemotionTest
 			annotatedKeys.add(item.keyName());
 			if (item.hidden())
 			{
-				boundaryViolations.add(method.getName() + " (keyName=" + item.keyName() + ")");
+				hiddenKeys.add(item.keyName());
 			}
 		}
-		assertTrue("@ConfigItems still carrying hidden=true: " + boundaryViolations,
-			boundaryViolations.isEmpty());
+		assertEquals(Set.of("drawClickPoints", "drawCollisionMap", "drawDebugPanel", "drawTransports"),
+			hiddenKeys);
 
 		Set<String> missing = new TreeSet<>(PANEL_OWNED_KEYS);
 		missing.removeIf(key ->
