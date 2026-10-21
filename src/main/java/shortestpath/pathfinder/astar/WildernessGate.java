@@ -7,7 +7,7 @@ import shortestpath.pathfinder.WildernessChecker;
 
 /**
  * Static data for searches that may not enter the Wilderness from outside it, built from a
- * {@link RoutingStatic} on first use.
+ * {@link RoutingStatic} by {@link RoutingStaticBuilder} with the rest of the static data.
  *
  * <p>A <em>piece</em> is a maximal set of non-Wilderness search tiles of one routing component that
  * walk to each other without entering the Wilderness. Walking out of a piece within its component

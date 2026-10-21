@@ -43,6 +43,7 @@ public class RoutingStaticBuilderRealDataTest
 		assertTrue("site count should be substantial", mine.siteCount() > 1_000);
 		assertTrue("at least one reachable bank", mine.reachableBankCount() > 0);
 		assertTrue("routing component count should exceed 1", mine.routingComponentCount() > 1);
+		assertTrue("the Wilderness gate is built with the static data", mine.wildernessGateBuilt());
 	}
 
 	@Test

@@ -350,7 +350,10 @@ public final class RoutingStatic
 		return avoidWilderness ? wildernessGate().network() : sparseNetwork;
 	}
 
-	/** Each site's and tile's side of the Wilderness line, built on first use. */
+	/**
+	 * Each site's and tile's side of the Wilderness line. {@link RoutingStaticBuilder} builds it with
+	 * the rest of the static data; other instances (test fixtures) build it on first use.
+	 */
 	WildernessGate wildernessGate()
 	{
 		WildernessGate gate = wildernessGate;
@@ -367,6 +370,11 @@ public final class RoutingStatic
 			}
 		}
 		return gate;
+	}
+
+	boolean wildernessGateBuilt()
+	{
+		return wildernessGate != null;
 	}
 
 	/** Whether the site's tile is inside the Wilderness. */

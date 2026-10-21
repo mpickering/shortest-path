@@ -62,6 +62,7 @@ public final class RoutingStaticBuilder
 		public final long exactWalksNanos;
 		public final long sparseNetworkNanos;
 		public final long validateNanos;
+		public final long wildernessGateNanos;
 		public final long totalNanos;
 
 		/** Tiles considered after removing land with no seed, transport endpoint or cut endpoint. */
@@ -87,13 +88,14 @@ public final class RoutingStaticBuilder
 		Diagnostics(long enumerateWalkableNanos, long naturalComponentsNanos, long cutValidationNanos,
 			long routingComponentsNanos, long reachabilityNanos, long searchTilesNanos,
 			long sitesAndAttachmentsNanos, long exactWalksNanos, long sparseNetworkNanos, long validateNanos,
-			long totalNanos,
+			long wildernessGateNanos, long totalNanos,
 			int walkableTileCount, int naturalComponentCount, int routingComponentCount,
 			int largestRoutingComponentSize, int reachableNaturalComponentCount, int inputCutCount,
 			int duplicateCutCount, int invalidCutCount, int nonSeparatingCutCount, int crossingCount,
 			int searchTileCount, int siteCount, int reachableBankCount, int exactComponentCount, int exactEdgeCount)
 		{
 			this.exactWalksNanos = exactWalksNanos;
+			this.wildernessGateNanos = wildernessGateNanos;
 			this.exactComponentCount = exactComponentCount;
 			this.exactEdgeCount = exactEdgeCount;
 			this.enumerateWalkableNanos = enumerateWalkableNanos;
@@ -135,6 +137,7 @@ public final class RoutingStaticBuilder
 				+ ", exactWalksMs=" + (exactWalksNanos / 1_000_000)
 				+ ", sparseNetworkMs=" + (sparseNetworkNanos / 1_000_000)
 				+ ", validateMs=" + (validateNanos / 1_000_000)
+				+ ", wildernessGateMs=" + (wildernessGateNanos / 1_000_000)
 				+ ", walkableTileCount=" + walkableTileCount + ", naturalComponentCount=" + naturalComponentCount
 				+ ", routingComponentCount=" + routingComponentCount
 				+ ", largestRoutingComponentSize=" + largestRoutingComponentSize
@@ -281,10 +284,16 @@ public final class RoutingStaticBuilder
 			sparse.adjacencyCount(), sparse.offsets, sparse.destinations, sparse.weights, exactWalks);
 		validateNanos += System.nanoTime() - stepStarted;
 
+		// Built here rather than on the first search that avoids the Wilderness, so that search
+		// does not pay for it.
+		stepStarted = System.nanoTime();
+		result.wildernessGate();
+		long wildernessGateNanos = System.nanoTime() - stepStarted;
+
 		long totalNanos = System.nanoTime() - totalStarted;
 		Diagnostics diagnostics = new Diagnostics(enumerateWalkableNanos, naturalComponentsNanos, cutValidationNanos,
 			routingComponentsNanos, reachabilityNanos, searchTilesNanos, sitesAndAttachmentsNanos, exactWalksNanos,
-			sparseNetworkNanos, validateNanos, totalNanos, walkableTileCount, naturalComponentCount, maxRoutingComponentId,
+			sparseNetworkNanos, validateNanos, wildernessGateNanos, totalNanos, walkableTileCount, naturalComponentCount, maxRoutingComponentId,
 			largestRoutingComponentSize, reachableNaturalCount, cuts.length / 2, cutSet.duplicateCount,
 			cutSet.invalidCount, nonSeparating, crossings.size(), search.tiles.length, sites.siteTiles.length,
 			sites.reachableBankTiles.length, exactWalks.exactComponentCount(), exactWalks.edgeCount());
