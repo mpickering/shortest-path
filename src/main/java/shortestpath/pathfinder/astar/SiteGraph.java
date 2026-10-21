@@ -5,7 +5,16 @@ import shortestpath.pathfinder.BankVisitState;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
-/** Immutable two-layer account-specific site graph with reverse CSR edges. */
+/**
+ * Immutable two-layer account-specific site graph with reverse CSR edges.
+ *
+ * <p>A graph built to avoid the Wilderness leaves out every edge that enters it from outside: a
+ * local transport or separator crossing from a site outside the Wilderness to one inside, and the
+ * banked global hub's Wilderness destinations when every bank the account may use is outside it
+ * (a global cast outside the Wilderness cannot land inside, see {@link SearchRestrictions}). The
+ * same flag gates the same-component walking of the target overlay and reverse search, so labels
+ * computed over it bound the distances of a search that may not enter the Wilderness.
+ */
 public final class SiteGraph
 {
 	public enum EdgeKind
@@ -19,6 +28,7 @@ public final class SiteGraph
 
 	private final RoutingStatic stat;
 	private final PreparedRoutingAccount account;
+	private final boolean avoidWilderness;
 	@Getter @Accessors(fluent = true) private final int nodeCount;
 	@Getter @Accessors(fluent = true) private final boolean hasBankedGlobalHub;
 	private final int[] reverseOffsets;
@@ -29,19 +39,28 @@ public final class SiteGraph
 
 	public SiteGraph(RoutingStatic stat, PreparedRoutingAccount account)
 	{
+		this(stat, account, false);
+	}
+
+	/** @param avoidWilderness leave out every edge that enters the Wilderness from outside it */
+	public SiteGraph(RoutingStatic stat, PreparedRoutingAccount account, boolean avoidWilderness)
+	{
 		this.stat = stat;
 		this.account = account;
+		this.avoidWilderness = avoidWilderness;
 		int spatialCount = stat.siteCount();
 		validateEndpoints(account, stat);
 		int[] bankSites = bankSites(stat, account);
 		int[] globalDestinations = globalDestinations(account, stat);
+		if (avoidWilderness && !anyInWilderness(stat, bankSites))
+			globalDestinations = outsideWilderness(stat, globalDestinations);
 		hasBankedGlobalHub = account.allowTransports() && account.bankPathEnabled() && bankSites.length != 0
 			&& globalDestinations.length != 0;
 		nodeCount = spatialCount + (hasBankedGlobalHub ? 1 : 0);
 
 		EdgeBuilder edges = new EdgeBuilder();
-		addLocalEdges(edges, account.localView(BankVisitState.CARRIED), BankVisitState.CARRIED, stat);
-		addLocalEdges(edges, account.localView(BankVisitState.BANKED), BankVisitState.BANKED, stat);
+		addLocalEdges(edges, account.localView(BankVisitState.CARRIED), BankVisitState.CARRIED, stat, avoidWilderness);
+		addLocalEdges(edges, account.localView(BankVisitState.BANKED), BankVisitState.BANKED, stat, avoidWilderness);
 		if (account.bankPathEnabled())
 		{
 			for (int bankSite : bankSites)
@@ -73,10 +92,14 @@ public final class SiteGraph
 			int from = stat.crossingFromSite(i);
 			int to = stat.crossingToSite(i);
 			int cost = CostArithmetic.validate(stat.crossingCost(i));
+			boolean forward = !avoidWilderness || entersWildernessAllowed(stat, from, to);
+			boolean backward = !avoidWilderness || entersWildernessAllowed(stat, to, from);
 			for (BankVisitState banked : BankVisitState.values())
 			{
-				edges.add(stateId(from, banked), stateId(to, banked), cost, true, EdgeKind.SEPARATOR);
-				edges.add(stateId(to, banked), stateId(from, banked), cost, true, EdgeKind.SEPARATOR);
+				if (forward)
+					edges.add(stateId(from, banked), stateId(to, banked), cost, true, EdgeKind.SEPARATOR);
+				if (backward)
+					edges.add(stateId(to, banked), stateId(from, banked), cost, true, EdgeKind.SEPARATOR);
 			}
 		}
 		Csr csr = edges.build(nodeCount * 2);
@@ -99,6 +122,11 @@ public final class SiteGraph
 	public PreparedRoutingAccount preparedAccount()
 	{
 		return account;
+	}
+	/** Whether this graph leaves out every edge entering the Wilderness from outside it. */
+	public boolean avoidsWilderness()
+	{
+		return avoidWilderness;
 	}
 	public int spatialNodeCount()
 	{
@@ -159,18 +187,42 @@ public final class SiteGraph
 		return node * 2 + (banked == BankVisitState.BANKED ? 1 : 0);
 	}
 
-	private static void addLocalEdges(
-		EdgeBuilder edges, PreparedRoutingAccount.View view, BankVisitState banked, RoutingStatic stat)
+	private static void addLocalEdges(EdgeBuilder edges, PreparedRoutingAccount.View view, BankVisitState banked,
+		RoutingStatic stat, boolean avoidWilderness)
 	{
 		for (int i = 0; i < view.count; i++)
 		{
 			int from = stat.siteIndex(view.origins[i]);
 			int to = stat.siteIndex(view.destinations[i]);
-			if (view.costs[i] != CostArithmetic.INF)
+			if (view.costs[i] != CostArithmetic.INF && (!avoidWilderness || entersWildernessAllowed(stat, from, to)))
 			{
 				edges.add(stateId(from, banked), stateId(to, banked), view.costs[i], true, EdgeKind.LOCAL);
 			}
 		}
+	}
+
+	/** Whether moving from site {@code from} to site {@code to} does not enter the Wilderness. */
+	private static boolean entersWildernessAllowed(RoutingStatic stat, int from, int to)
+	{
+		return stat.siteInWilderness(from) || !stat.siteInWilderness(to);
+	}
+
+	private static boolean anyInWilderness(RoutingStatic stat, int[] sites)
+	{
+		for (int site : sites)
+			if (stat.siteInWilderness(site))
+				return true;
+		return false;
+	}
+
+	private static int[] outsideWilderness(RoutingStatic stat, int[] destinations)
+	{
+		int[] result = new int[destinations.length];
+		int count = 0;
+		for (int destination : destinations)
+			if (!stat.siteInWilderness(stat.siteIndex(destination)))
+				result[count++] = destination;
+		return Arrays.copyOf(result, count);
 	}
 
 	private static void validateEndpoints(PreparedRoutingAccount account, RoutingStatic stat)

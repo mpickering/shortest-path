@@ -23,15 +23,17 @@ import shortestpath.pathfinder.CollisionMap;
  *
  * <p>Prepared targets keep the collision map they were built with and the forward search reads
  * it, so they are only reused with that same collision map instance.
+ *
+ * <p>A search that avoids the Wilderness uses a graph built to avoid it, and may fall back to the
+ * ungated graph, so the session keeps one graph and target cache for each and switching between
+ * them drops neither.
  */
 public final class AStarRoutingSession
 {
 	public static final int DEFAULT_TARGET_CAPACITY = 16;
 
 	private final int targetCapacity;
-	private final LinkedHashMap<TargetKey, PreparedTarget> targets;
-	private SiteGraph graph;
-	private CollisionMap targetCollision;
+	private final Slot ungated, avoidingWilderness;
 
 	public AStarRoutingSession()
 	{
@@ -42,22 +44,35 @@ public final class AStarRoutingSession
 	{
 		if (targetCapacity < 1) throw new IllegalArgumentException("target capacity must be positive");
 		this.targetCapacity = targetCapacity;
-		this.targets = new LinkedHashMap<>(targetCapacity * 2, 0.75f, true);
+		this.ungated = new Slot(targetCapacity);
+		this.avoidingWilderness = new Slot(targetCapacity);
 	}
 
 	/** The account-lifetime graph for {@code account}, rebuilt only when its fingerprint changes. */
-	public synchronized Lookup<SiteGraph> graph(RoutingStatic stat, PreparedRoutingAccount account)
+	public Lookup<SiteGraph> graph(RoutingStatic stat, PreparedRoutingAccount account)
+	{
+		return graph(stat, account, false);
+	}
+
+	/**
+	 * The account-lifetime graph for {@code account}, built to avoid the Wilderness or not, and
+	 * rebuilt only when its fingerprint changes.
+	 */
+	public synchronized Lookup<SiteGraph> graph(RoutingStatic stat, PreparedRoutingAccount account,
+		boolean avoidWilderness)
 	{
 		if (stat == null || account == null) throw new NullPointerException();
+		Slot slot = avoidWilderness ? avoidingWilderness : ungated;
+		SiteGraph graph = slot.graph;
 		if (graph != null && graph.routingStatic() == stat
 			&& graph.preparedAccount().fingerprint() == account.fingerprint())
 		{
 			return new Lookup<>(graph, true);
 		}
-		graph = new SiteGraph(stat, account);
-		targets.clear();
-		targetCollision = null;
-		return new Lookup<>(graph, false);
+		slot.graph = new SiteGraph(stat, account, avoidWilderness);
+		slot.targets.clear();
+		slot.targetCollision = null;
+		return new Lookup<>(slot.graph, false);
 	}
 
 	/** The prepared target for {@code packed}, reused while {@code graph} is the session's graph. */
@@ -85,12 +100,14 @@ public final class AStarRoutingSession
 	private Lookup<PreparedTarget> target(SiteGraph graph, CollisionMap collision, TargetKey key)
 	{
 		if (graph == null || collision == null) throw new NullPointerException();
-		if (graph != this.graph)
+		Slot slot = graph == ungated.graph ? ungated : graph == avoidingWilderness.graph ? avoidingWilderness : null;
+		if (slot == null)
 			return new Lookup<>(PreparedTarget.prepare(graph, collision, key.states), false);
-		if (collision != targetCollision)
+		LinkedHashMap<TargetKey, PreparedTarget> targets = slot.targets;
+		if (collision != slot.targetCollision)
 		{
 			targets.clear();
-			targetCollision = collision;
+			slot.targetCollision = collision;
 		}
 		PreparedTarget cached = targets.get(key);
 		if (cached != null) return new Lookup<>(cached, true);
@@ -105,23 +122,43 @@ public final class AStarRoutingSession
 		return new Lookup<>(prepared, false);
 	}
 
-	/** Drops the prepared targets but keeps the account graph. */
+	/** Drops the prepared targets but keeps the account graphs. */
 	public synchronized void clearTargets()
 	{
-		targets.clear();
+		ungated.targets.clear();
+		avoidingWilderness.targets.clear();
 	}
 
 	/** Drops every cached stage, e.g. when the static routing data is replaced. */
 	public synchronized void clear()
 	{
-		graph = null;
-		targets.clear();
-		targetCollision = null;
+		ungated.clear();
+		avoidingWilderness.clear();
 	}
 
 	public synchronized int cachedTargetCount()
 	{
-		return targets.size();
+		return ungated.targets.size() + avoidingWilderness.targets.size();
+	}
+
+	/** One graph and its prepared targets. */
+	private static final class Slot
+	{
+		final LinkedHashMap<TargetKey, PreparedTarget> targets;
+		SiteGraph graph;
+		CollisionMap targetCollision;
+
+		Slot(int targetCapacity)
+		{
+			targets = new LinkedHashMap<>(targetCapacity * 2, 0.75f, true);
+		}
+
+		void clear()
+		{
+			graph = null;
+			targets.clear();
+			targetCollision = null;
+		}
 	}
 
 	/** Unsigned tile coordinates and their two terminal-layer bits, sorted and duplicate-free. */

@@ -3,6 +3,7 @@ package shortestpath.pathfinder.astar;
 import java.util.Arrays;
 import shortestpath.WorldPointUtil;
 import lombok.AllArgsConstructor;
+import shortestpath.pathfinder.WildernessChecker;
 
 /**
  * Lower bounds on the walking cost from a target's attachment sites to the target, from a bounded
@@ -15,6 +16,11 @@ import lombok.AllArgsConstructor;
  * components, and costs at least the distance found here. A site never reached gets the distance
  * of the search's frontier when it stopped (no closer tile was left unvisited), and every bound
  * is at least the Chebyshev distance the overlay used before.
+ *
+ * <p>Avoiding the Wilderness, the search follows only steps that do not enter it from outside.
+ * Then a finished search proves that a site it never reached cannot walk to the target without
+ * entering the Wilderness, and {@link #bound} returns {@link CostArithmetic#INF} for it. (Without
+ * the gate every tile of a routing component reaches every other, so that never happens.)
  */
 @AllArgsConstructor
 final class TargetWalkDistances
@@ -30,11 +36,19 @@ final class TargetWalkDistances
 	private final int[] components;
 	private final NodeDistances distances;
 	private final int frontier;
+	/** Whether a site the search never reached cannot walk to the target (gated, finished search). */
+	private final boolean unreachedIsUnreachable;
 
 
 
 	/** Null when the target is not a static search tile (its attachments keep Chebyshev costs). */
 	static TargetWalkDistances search(RoutingStatic stat, int target, int[] components)
+	{
+		return search(stat, target, components, false);
+	}
+
+	/** @param avoidWilderness follow only steps that do not enter the Wilderness from outside it */
+	static TargetWalkDistances search(RoutingStatic stat, int target, int[] components, boolean avoidWilderness)
 	{
 		int start = stat.searchIndex(target);
 		if (start < 0) return null;
@@ -57,6 +71,7 @@ final class TargetWalkDistances
 				if (from < 0 || from >= stat.searchTileCount()) continue;
 				if ((stat.walkingMask(from) & (1 << bit)) == 0 || successor(stat, from, bit) != node) continue;
 				if (distances.get(from) >= 0 || !inComponents(stat.routingComponent(from), components)) continue;
+				if (avoidWilderness && entersWilderness(stat.searchTile(from), stat.searchTile(node))) continue;
 				if (tail == TILE_BUDGET)
 				{
 					exhausted = false;
@@ -73,7 +88,12 @@ final class TargetWalkDistances
 			}
 			frontier = distance + 1;
 		}
-		return new TargetWalkDistances(stat, components, distances, frontier);
+		return new TargetWalkDistances(stat, components, distances, frontier, avoidWilderness && exhausted);
+	}
+
+	private static boolean entersWilderness(int from, int to)
+	{
+		return !WildernessChecker.isInWilderness(from) && WildernessChecker.isInWilderness(to);
 	}
 
 	/**
@@ -83,22 +103,33 @@ final class TargetWalkDistances
 	int bound(int site, int chebyshev)
 	{
 		int node = stat.searchIndex(site);
-		if (node >= 0) return Math.max(chebyshev, distance(node));
+		if (node >= 0)
+		{
+			int distance = distance(node);
+			return distance == CostArithmetic.INF ? distance : Math.max(chebyshev, distance);
+		}
 		int x = WorldPointUtil.unpackWorldX(site), y = WorldPointUtil.unpackWorldY(site);
 		int plane = WorldPointUtil.unpackWorldPlane(site);
 		int best = Integer.MAX_VALUE;
+		boolean anyNeighbour = false;
 		for (int bit = 0; bit < 8; bit++)
 		{
-			int neighbour = stat.searchIndex(WorldPointUtil.packWorldPoint(x + DX[bit], y + DY[bit], plane));
-			if (neighbour >= 0) best = Math.min(best, distance(neighbour));
+			int neighbourTile = WorldPointUtil.packWorldPoint(x + DX[bit], y + DY[bit], plane);
+			int neighbour = stat.searchIndex(neighbourTile);
+			if (neighbour < 0) continue;
+			anyNeighbour = true;
+			if (unreachedIsUnreachable && entersWilderness(site, neighbourTile)) continue;
+			int distance = distance(neighbour);
+			if (distance != CostArithmetic.INF) best = Math.min(best, distance);
 		}
-		return best == Integer.MAX_VALUE ? chebyshev : Math.max(chebyshev, 1 + best);
+		if (best != Integer.MAX_VALUE) return Math.max(chebyshev, 1 + best);
+		return anyNeighbour && unreachedIsUnreachable ? CostArithmetic.INF : chebyshev;
 	}
 
 	private int distance(int node)
 	{
 		int known = distances.get(node);
-		return known >= 0 ? known : frontier;
+		return known >= 0 ? known : unreachedIsUnreachable ? CostArithmetic.INF : frontier;
 	}
 
 	private static int successor(RoutingStatic stat, int node, int bit)

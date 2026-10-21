@@ -36,6 +36,7 @@ bucket empty, so it is pruned without being expanded.
 | Reverse search | target set | `ReverseLabels` | `label(node, banked)` and generator provenance |
 | Seed and generator tables | target set | `PreparedHeuristic` | per-`(component, banked)` buckets |
 | Lookup | search | `AStarForwardSearch.effectiveHeuristic` | `h` for each pushed state |
+| Wilderness gate | plugin session, first use | `WildernessGate` | pieces and the gated sparse network ([section 7](#7-avoiding-the-wilderness-wildernessgate)) |
 
 `AStarRoutingSession` caches the graph by account fingerprint, and
 `PreparedTarget` holds the overlay, labels and heuristic. Its cache identity includes each
@@ -239,6 +240,44 @@ twin of a bank-dominated state.
   loose for states deep in the Wilderness.
 - **Weight:** the priority is `g + round(weight · h)`. A weight of 1 is exact,
   and anything greater is an explicitly inexact mode.
+
+## 7. Avoiding the Wilderness (`WildernessGate`)
+
+With Avoid wilderness on, the forward search may not enter the Wilderness from outside it: no
+walking step, local transport or global cast outside it may land inside (`SearchRestrictions`).
+Leaving it is allowed. A heuristic over the ungated graph is still admissible, but it does not
+know about the gate. A target the gate makes unreachable then gets a finite estimate, and the
+search floods everything it can reach before giving up (about 1.15M states). A detour around the
+Wilderness looks as cheap as walking through it.
+
+So the A* pathfinder searches with a graph built to avoid the Wilderness (`new SiteGraph(stat,
+account, true)`), with labels that bound the restricted search:
+
+- **Explicit edges.** `LOCAL` and `SEPARATOR` edges from a site outside the Wilderness to one
+  inside are left out. The banked hub loses its Wilderness destinations unless a bank the account
+  may use is itself inside the Wilderness.
+- **Pieces.** A routing component can straddle the Wilderness line, and two parts of it outside
+  the Wilderness may only be joined through it (Ferox Enclave and Edgeville, say). A *piece* is a
+  maximal set of non-Wilderness tiles of one component that walk to each other without entering
+  it. From outside the Wilderness, walking within a component only reaches the own piece; from
+  inside, the whole component (an over-approximation, so still a lower bound). A component is
+  *gated* when it has a tile or site inside the Wilderness, or several pieces. `WildernessGate`
+  holds each tile's piece, each site's pieces (a blocked site takes the pieces of its neighbouring
+  search tiles) and which components are gated. It is built once per `RoutingStatic`, the first
+  time a search avoids the Wilderness.
+- **Sparse network.** Gated components keep their full tree, but its spokes into non-Wilderness
+  sites are marked gated, and the reverse search never relaxes them, so those sites never walk out
+  through it. Each piece of a gated component gets a tree of its own over its sites. Other
+  components are unchanged. `computeClique` applies the same rule pair by pair
+  (`WildernessGate.walkAllowed`), so clique and sparse labels stay equal.
+- **Target attachments** keep only sites that may walk to the target under that rule, and
+  `TargetWalkDistances` walks only steps that do not enter the Wilderness. A finished gated walk
+  that never reaches a site proves the site cannot walk to the target, and its attachment is `INF`.
+- **Lookup.** Seeds are also bucketed by gated piece. A tile outside the Wilderness in a gated
+  component scans its piece's bucket; every other tile scans its component's bucket. A generator
+  stands in for a seed only if it is in the same bucket, so the generator and raw scans stay equal.
+
+The session keeps the gated and ungated graphs, and their prepared targets, side by side.
 
 ## Invariants to preserve
 
