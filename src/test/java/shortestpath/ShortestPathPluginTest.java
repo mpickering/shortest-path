@@ -8,7 +8,8 @@ public class ShortestPathPluginTest
 {
 	public static void main(String[] args) throws Exception
 	{
-		ExternalPluginManager.loadBuiltin(ShortestPathPlugin.class, PluginMessageTestPlugin.class);
+		ExternalPluginManager.loadBuiltin(ShortestPathPlugin.class, PluginMessageTestPlugin.class,
+			shortestpath.transportlogger.TransportLoggerPlugin.class);
 		RuneLite.main(args);
 	}
 }
