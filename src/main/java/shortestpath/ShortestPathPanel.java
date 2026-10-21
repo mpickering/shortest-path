@@ -128,6 +128,7 @@ public class ShortestPathPanel extends PluginPanel
 	private static final String DISCORD_URL = "https://discord.gg/uX47xg8u3M";
 	private static final ImageIcon GITHUB_ICON = footerIcon("github_icon.png");
 	private static final ImageIcon DISCORD_ICON = footerIcon("discord_icon.png");
+	private static final String OWNED_FILTER_KEY = "restrictionsOwnedOnly";
 	private static final String OWNED_FILTER_TOOLTIP =
 		"Only show teleports for items in your inventory, equipment or bank";
 	static final String OWNED_EMPTY_LINE_1 =
@@ -360,13 +361,18 @@ public class ShortestPathPanel extends PluginPanel
 
 		JCheckBox owned = new JCheckBox("Owned");
 		owned.setOpaque(false);
-		owned.setForeground(Color.WHITE);
 		owned.setToolTipText(html(OWNED_FILTER_TOOLTIP));
-		owned.addActionListener(e ->
+		// Saved like the other settings, so the filter stays on after a restart. A click writes
+		// the key, and the write's listener echo applies it.
+		Runnable applyOwned = () ->
 		{
+			owned.setSelected(settings.configuredBool(OWNED_FILTER_KEY));
 			owned.setForeground(owned.isSelected() ? ColorScheme.BRAND_ORANGE : Color.WHITE);
 			restrictionListPanel.setOwnedOnly(owned.isSelected());
-		});
+		};
+		owned.addActionListener(e -> settings.write(OWNED_FILTER_KEY, owned.isSelected()));
+		registerConfigListener(OWNED_FILTER_KEY, applyOwned);
+		applyOwned.run();
 		restrictionsCategory.setTrailing(owned);
 	}
 
