@@ -36,7 +36,7 @@ bucket empty, so it is pruned without being expanded.
 | Reverse search | target set | `ReverseLabels` | `label(node, banked)` and generator provenance |
 | Seed and generator tables | target set | `PreparedHeuristic` | per-`(component, banked)` buckets |
 | Lookup | search | `AStarForwardSearch.effectiveHeuristic` | `h` for each pushed state |
-| Wilderness gate | plugin session, first use | `WildernessGate` | pieces and the gated sparse network ([section 7](#7-avoiding-the-wilderness-wildernessgate)) |
+| Wilderness gate | plugin session, built with the static data | `WildernessGate` | pieces and the gated sparse network ([section 7](#7-avoiding-the-wilderness-wildernessgate)) |
 
 `AStarRoutingSession` caches the graph by account fingerprint, and
 `PreparedTarget` holds the overlay, labels and heuristic. Its cache identity includes each
