@@ -37,6 +37,8 @@ bucket empty, so it is pruned without being expanded.
 | Seed and generator tables | target set | `PreparedHeuristic` | per-`(component, banked)` buckets |
 | Lookup | search | `AStarForwardSearch.effectiveHeuristic` | `h` for each pushed state |
 | Wilderness gate | plugin session, built with the static data | `WildernessGate` | pieces and the gated sparse network ([section 7](#7-avoiding-the-wilderness-wildernessgate)) |
+| Wilderness escapes | layout: plugin session, built with the static data; tables: per Wilderness transport set, cached | `WildernessEscape` | per-tile walks to each teleport band ([section 8](#8-wilderness-starts-wildernessheuristic)) |
+| Wilderness cap | search | `WildernessHeuristic` | the cap for searches starting in the Wilderness |
 
 `AStarRoutingSession` caches the graph by account fingerprint, and
 `PreparedTarget` holds the overlay, labels and heuristic. Its cache identity includes each
@@ -82,7 +84,7 @@ anywhere, so using it later is never cheaper than using it at the start, and
 the forward search seeds carried global destinations at the start instead.
 Banked globals are only reachable through a bank, hence the hub. For
 Wilderness starts, where globals are not usable at the start, see
-[the restricted cap](#4-lookup-in-the-forward-search).
+[section 8](#8-wilderness-starts-wildernessheuristic).
 
 Which globals a tile can cast follows legacy's global-teleport abstract nodes:
 `TeleportCapability` is `OVER_30` above level 30, `OVER_20` at levels 21–30,
@@ -266,14 +268,10 @@ twin of a bank-dominated state.
   own future bank/global opportunity is dominated. The search uses `max(h(x,
   false), h(x, true))`, ignoring the second term if it is `INF`. A popped state
   whose key has risen is re-queued (rekey).
-- **Restricted cap:** in Wilderness-restricted queries, until all globals are
-  activated, `h = min(h, globalBound[layer])`. Here `globalBound` is
-  `min(globalCost + h(destination))` over that layer's `ALL` globals, computed once
-  per search by `globalBounds`. This restores admissibility, because the
-  relaxed graph assumes globals are usable sooner than the restricted state
-  allows. The cap ignores the walk to a band where globals can be cast, so it is
-  loose for states deep in the Wilderness. When the capped value is `INF`, no route
-  reaches a target from the state, casting or not, and it is pruned.
+- **Restricted cap:** in searches starting in the Wilderness, until all globals are
+  activated, `h = min(h, cap(state))` from `WildernessHeuristic`, which counts the
+  walk to the band a global needs ([section 8](#8-wilderness-starts-wildernessheuristic)).
+  When both are `INF` the state is pruned.
 - **Weight:** the priority is `g + round(weight · h)`. A weight of 1 is exact,
   and anything greater is an explicitly inexact mode.
 
@@ -314,6 +312,64 @@ account, true)`), with labels that bound the restricted search:
   stands in for a seed only if it is in the same bucket, so the generator and raw scans stay equal.
 
 The session keeps the gated and ungated graphs, and their prepared targets, side by side.
+
+## 8. Wilderness starts (`WildernessHeuristic`)
+
+The relaxed graph has no "cast a carried global here" edges, and no "cast a banked global here"
+edges after banking: from a start outside the Wilderness the forward search casts them at the
+start or at the bank, and casting later never beats that. From a start in the Wilderness only some
+globals are castable, so a route may walk to a lower band and cast there, and `h` alone could
+overestimate. The search therefore caps `h` while the `ALL` hub of the state's layer is closed.
+
+**The cap.** For a state `s` and a route from it that casts at least one global of `s`'s layer,
+take the route's *last* such cast, made from a tile of band `c`. After it the route casts no global
+of the layer, so `h` bounds what is left after landing: the cast and the rest cost at least
+`last[c] = min(globalCost + h(destination))` over the layer's globals castable in band `c`. Before
+it the route reaches a tile of band `c`: at least `escape_c(s)` if it gets there without a global,
+or else at least `escape_c'(s) + cheapest[c']` for its first cast's band `c'`. So
+
+```
+cap(s) = min( min_c escape_c(s) + last[c],
+              min_c' (escape_c'(s) + cheapest[c']) + min_c last[c] )
+```
+
+is a lower bound on every route that casts, and `min(h(s), cap(s))` on every route. The second term
+covers routes that cast more than once and teleports that land in the Wilderness, deeper or not: it
+assumes nothing about the landing tile. A route that never casts is bounded by `h` itself, so a
+direct Wilderness walk is never forced through a band. `h(destination)` bounds the remaining cost
+for every target at once, so multiple targets and accepted bank layers need nothing extra.
+
+When `h(s)` and `cap(s)` are both `INF`, no route from `s` reaches a target, casting or not, and
+the state is pruned like any other. (This used to return 0, which flooded the reachable Wilderness
+for every unreachable target.)
+
+**Escapes.** `escape_c(s)` is the cheapest walk, with local transports, from `s` to a tile allowing
+band `c`; `OVER_30`'s is 0 everywhere. `WildernessEscape` holds them for every search tile and site
+in the Wilderness boxes (one tile wider than `TeleportCapability`'s areas, so every tile outside
+them allows every band):
+
+- **Layout** (static, ~0.4 MB): ids for the boxes' search tiles row by row, then the sites in the
+  boxes that are not search tiles; each tile's band and walking predecessors; and, per band, the
+  tiles next to a tile of a stricter band.
+- **Table** (per account class, ~1.1 MB): one multi-source reverse search per band, from every tile
+  allowing it, over walking, the account's local transports from inside the boxes in either bank
+  layer, and moves into and out of the extra sites from all eight neighbours. These are a superset
+  of the forward search's moves, so the escapes are lower bounds. Bank visits are left out, which
+  only lowers them.
+- **Caching.** A table depends only on the account's local transports from inside the boxes, so it
+  is cached by that set, at most four: accounts that differ elsewhere, and later fingerprints of the
+  same account, reuse it. A table takes ~17 ms to build on a Ryzen 9 7900, once per transport set;
+  rebuilding it per query would cost more than the search saves.
+
+**Avoid wilderness.** The escapes ignore the gate, so they bound the gated search too, and `h`
+comes from whichever graph the search uses. The fallback search without the gate prepares its own
+cap.
+
+**What is not done.** Carried globals the start's band can cast could be left out of `last` and
+`cheapest` (the search seeds them at the start, so some optimal route casts them only there), but
+on the corpus that saves 0.2% of the states. A target-specific reverse search over the Wilderness
+would also bound winding walks inside it; the remaining slow Wilderness starts are dominated by
+that, not by the cap.
 
 ## Invariants to preserve
 

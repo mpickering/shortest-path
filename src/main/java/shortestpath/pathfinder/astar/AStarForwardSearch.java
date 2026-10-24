@@ -109,7 +109,13 @@ public final class AStarForwardSearch
 		boolean restrictedHeuristic = capability != TeleportCapability.ALL && hasGlobals(target.account());
 		MutableCounters counters = new MutableCounters(capability, !restrictedHeuristic);
 		int[] bestBankCost = {CostArithmetic.INF};
-		int[] globalBounds = restrictedHeuristic ? globalBounds(target, heuristic, space, counters) : null;
+		WildernessHeuristic wilderness = restrictedHeuristic
+			? wildernessHeuristic(target, heuristic, space, counters) : null;
+		if (wilderness != null && wilderness.table().takeBuilt())
+		{
+			counters.wildernessTableBuilds++;
+			counters.wildernessTableBuildMicros += (int) Math.min(Integer.MAX_VALUE, wilderness.table().buildNanos() / 1000);
+		}
 		AStarRoute startPath = AStarRoute.of(List.of(new PathStep(start, BankVisitState.CARRIED)), new int[1]);
 		Closest closest = new Closest(target);
 		if (cancelled.getAsBoolean()) return Result.cancelled(counters.snapshot(bestBankCost[0]), startPath);
@@ -117,7 +123,7 @@ public final class AStarForwardSearch
 		AStarMinHeap queue = new AStarMinHeap(Math.min(stateCount, 32_768));
 		int startState = space.state(start, BankVisitState.CARRIED);
 		updateBestBank(space, startState, 0, optimized, bestBankCost, counters);
-		int startH = effectiveHeuristic(heuristic, space, startState, 0, best, restrictedHeuristic, globalBounds,
+		int startH = effectiveHeuristic(heuristic, space, startState, 0, best, restrictedHeuristic, wilderness,
 			optimized, bestBankCost[0], counters);
 		if (startH != CostArithmetic.INF)
 		{
@@ -135,7 +141,7 @@ public final class AStarForwardSearch
 			push(queue, hub, 0, 0, counters, true, PUSH_GLOBAL);
 		}
 		seedGlobals(target, capability, best, previous, transportWins, queue, counters, startState, space,
-			restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+			restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 
 		while (queue.poll())
 		{
@@ -156,7 +162,7 @@ public final class AStarForwardSearch
 			int tile = space.tile(node);
 			if (capability != TeleportCapability.ALL)
 				activateGlobal(target.account(), tile, state, banked, tileStates, cost, best, previous, transportWins, queue, counters);
-			int currentH = effectiveHeuristic(heuristic, space, state, cost, best, restrictedHeuristic, globalBounds,
+			int currentH = effectiveHeuristic(heuristic, space, state, cost, best, restrictedHeuristic, wilderness,
 				optimized, bestBankCost[0], counters);
 			if (currentH == CostArithmetic.INF) continue;
 			int currentPriority = priority(cost, currentH, heuristicWeight);
@@ -173,17 +179,17 @@ public final class AStarForwardSearch
 				progressed.run();
 			if (space.isBase(node))
 			{
-				walkBase(space, node, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-				addBlockedOrigins(target, space, tile, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+				walkBase(space, node, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+				addBlockedOrigins(target, space, tile, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 			}
 			else
 			{
 				for (int next : target.collision().ordinaryWalkingNeighbors(tile))
-					relaxWalking(space, next, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-				addBlockedOrigins(target, space, tile, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+					relaxWalking(space, next, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+				addBlockedOrigins(target, space, tile, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 			}
-			relaxBank(target, space, node, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, capability, bestBankCost);
-			relaxLocalTransports(target, space, tile, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+			relaxBank(target, space, node, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, capability, bestBankCost);
+			relaxLocalTransports(target, space, tile, banked, state, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 		}
 		return Result.unreachable(counters.snapshot(bestBankCost[0]), startPath,
 			closest.path(space, startState, previous, transportWins, best, startPath), closest.cost());
@@ -284,33 +290,33 @@ public final class AStarForwardSearch
 	}
 
 	private static void walkBase(SearchSpace space, int node, BankVisitState banked, int from, int cost, int[] best,
-		int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic, int[] globalBounds,
+		int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic, WildernessHeuristic wilderness,
 		boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
 	{
 		int mask = space.stat.walkingMask(node);
-		emit(space, banked, from, mask, 6, node - 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-		emit(space, banked, from, mask, 2, node + 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-		emit(space, banked, from, mask, 4, space.stat.southNode(node), cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-		emit(space, banked, from, mask, 0, space.stat.northNode(node), cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 6, node - 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 2, node + 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 4, space.stat.southNode(node), cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 0, space.stat.northNode(node), cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 		int south = space.stat.southNode(node), north = space.stat.northNode(node);
-		emit(space, banked, from, mask, 5, south < 0 ? -1 : south - 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-		emit(space, banked, from, mask, 3, south < 0 ? -1 : south + 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-		emit(space, banked, from, mask, 7, north < 0 ? -1 : north - 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
-		emit(space, banked, from, mask, 1, north < 0 ? -1 : north + 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 5, south < 0 ? -1 : south - 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 3, south < 0 ? -1 : south + 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 7, north < 0 ? -1 : north - 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
+		emit(space, banked, from, mask, 1, north < 0 ? -1 : north + 1, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 	}
 
 	private static void emit(SearchSpace space, BankVisitState banked, int from, int mask, int bit, int next, int cost,
 		int[] best, int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic,
-		int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
+		WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
 	{
 		if ((mask & (1 << bit)) != 0 && next >= 0 && next < space.baseCount && space.stepAllowed(from / 2, next))
 			relaxState(space, from, stateForNode(next, banked), cost, 1, null, best, previous, transportWins, queue, counters,
-				restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_WALKING);
+				restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_WALKING);
 	}
 
 	private static void addBlockedOrigins(TargetOverlay target, SearchSpace space, int tile, BankVisitState banked, int from, int cost,
 		int[] best, int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic,
-		int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
+		WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
 	{
 		CollisionMap collision = target.collision();
 		if (collision.isBlocked(WorldPointUtil.unpackWorldX(tile), WorldPointUtil.unpackWorldY(tile), WorldPointUtil.unpackWorldPlane(tile))) return;
@@ -320,23 +326,23 @@ public final class AStarForwardSearch
 			int next = WorldPointUtil.packWorldPoint(x + GameWalkOrder.ORDER_DX[direction],
 				y + GameWalkOrder.ORDER_DY[direction], plane);
 			if (collision.isBlocked(WorldPointUtil.unpackWorldX(next), WorldPointUtil.unpackWorldY(next), WorldPointUtil.unpackWorldPlane(next)) && space.hasLocalOrigin(next, banked))
-				relaxWalking(space, next, banked, from, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost);
+				relaxWalking(space, next, banked, from, cost, best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost);
 		}
 	}
 
 	private static void relaxWalking(SearchSpace space, int tile, BankVisitState banked, int from, int cost,
 		int[] best, int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic,
-		int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
+		WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
 	{
 		int node = space.node(tile);
 		if (node >= 0 && space.stepAllowed(from / 2, node))
 			relaxState(space, from, stateForNode(node, banked), cost, 1, null, best, previous, transportWins, queue, counters,
-				restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_WALKING);
+				restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_WALKING);
 	}
 
 	private static void relaxBank(TargetOverlay target, SearchSpace space, int node, BankVisitState banked, int from, int cost,
 		int[] best, int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic,
-		int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight,
+		WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight,
 		TeleportCapability capability, int[] bestBankCost)
 	{
 		if (banked == BankVisitState.BANKED || !target.account().bankPathEnabled() || !space.isUsableBankNode(node)) return;
@@ -345,7 +351,7 @@ public final class AStarForwardSearch
 		int bankedCost = CostArithmetic.add(cost, target.account().bankVisitCost());
 		if (bankedCost == CostArithmetic.INF) return;
 		relaxState(space, from, stateForNode(node, BankVisitState.BANKED), bankedCost, 0, null, best, previous, transportWins, queue, counters,
-			restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_BANKING);
+			restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_BANKING);
 		// With hubs (a start without every global castable) the banked hub of this tile's
 		// capability casts them. Without, they are cast here, as far as this bank tile's own
 		// wilderness level allows.
@@ -357,7 +363,7 @@ public final class AStarForwardSearch
 				int destination = target.account().globalDestination(here, BankVisitState.BANKED, i);
 				if (!space.globalAllowed(here, destination)) continue;
 				if (!optimized || cost <= bestBankCost[0])
-					relaxTransport(space, from, BankVisitState.BANKED, bankedCost, destination, target.account().globalCost(here, BankVisitState.BANKED, i), target.account().globalTransport(here, BankVisitState.BANKED, i), best, previous, transportWins, queue, counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_GLOBAL);
+					relaxTransport(space, from, BankVisitState.BANKED, bankedCost, destination, target.account().globalCost(here, BankVisitState.BANKED, i), target.account().globalTransport(here, BankVisitState.BANKED, i), best, previous, transportWins, queue, counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_GLOBAL);
 				else if (space.node(destination) >= 0)
 					counters.bankGlobalSuppressed++;
 			}
@@ -366,7 +372,7 @@ public final class AStarForwardSearch
 
 	private static void relaxLocalTransports(TargetOverlay target, SearchSpace space, int tile, BankVisitState banked, int from, int cost,
 		int[] best, int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic,
-		int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
+		WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
 	{
 		PreparedRoutingAccount.View view = target.account().localView(banked);
 		int start = lowerBound(view.origins, tile);
@@ -378,23 +384,23 @@ public final class AStarForwardSearch
 			// the avoid-wilderness gate), so apply them to the jump's landing tile.
 			if (node < 0 || !space.stepAllowed(from / 2, node)) continue;
 			relaxTransport(space, from, banked, cost, view.destinations[i], view.costs[i], view.transports[i], best, previous, transportWins, queue,
-				counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_LOCAL);
+				counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost, PUSH_LOCAL);
 		}
 	}
 
 	private static void relaxTransport(SearchSpace space, int from, BankVisitState banked, int cost, int destination, int stepCost,
 		Transport transport, int[] best, int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters,
-		boolean restrictedHeuristic, int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight,
+		boolean restrictedHeuristic, WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight,
 		int[] bestBankCost, int pushKind)
 	{
 		counters.transportCandidates++;
 		int node = space.node(destination);
 		if (node >= 0) relaxState(space, from, stateForNode(node, banked), cost, stepCost, transport, best, previous, transportWins, queue,
-			counters, restrictedHeuristic, globalBounds, optimized, heuristic, heuristicWeight, bestBankCost, pushKind);
+			counters, restrictedHeuristic, wilderness, optimized, heuristic, heuristicWeight, bestBankCost, pushKind);
 	}
 
 	private static void relaxState(SearchSpace space, int from, int state, int cost, int stepCost, Transport transport, int[] best,
-		int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic, int[] globalBounds,
+		int[] previous, TransportWins transportWins, AStarMinHeap queue, MutableCounters counters, boolean restrictedHeuristic, WildernessHeuristic wilderness,
 		boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost, int pushKind)
 	{
 		int candidate = CostArithmetic.add(cost, stepCost);
@@ -402,7 +408,7 @@ public final class AStarForwardSearch
 		if (pushKind == PUSH_WALKING) counters.walkingRelaxations++; else counters.transportRelaxations++;
 		if (candidate >= best[state]) return;
 		updateBestBank(space, state, candidate, optimized, bestBankCost, counters);
-		int h = effectiveHeuristic(heuristic, space, state, candidate, best, restrictedHeuristic, globalBounds,
+		int h = effectiveHeuristic(heuristic, space, state, candidate, best, restrictedHeuristic, wilderness,
 			optimized, bestBankCost[0], counters);
 		if (h == CostArithmetic.INF)
 	{ counters.heuristicUnreachable++; return;
@@ -415,7 +421,7 @@ public final class AStarForwardSearch
 
 	private static void seedGlobals(TargetOverlay target, TeleportCapability capability, int[] best, int[] previous, TransportWins transportWins,
 		AStarMinHeap queue, MutableCounters counters, int startState, SearchSpace space, boolean restrictedHeuristic,
-		int[] globalBounds, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
+		WildernessHeuristic wilderness, boolean optimized, PreparedHeuristic heuristic, double heuristicWeight, int[] bestBankCost)
 	{
 		int count = target.account().globalCount(capability, BankVisitState.CARRIED);
 		for (int i = 0; i < count; i++)
@@ -432,7 +438,7 @@ public final class AStarForwardSearch
 			if (cost < best[state])
 			{
 				updateBestBank(space, state, cost, optimized, bestBankCost, counters);
-				int h = effectiveHeuristic(heuristic, space, state, cost, best, restrictedHeuristic, globalBounds,
+				int h = effectiveHeuristic(heuristic, space, state, cost, best, restrictedHeuristic, wilderness,
 					optimized, bestBankCost[0], counters);
 				if (h == CostArithmetic.INF)
 				{
@@ -557,7 +563,7 @@ public final class AStarForwardSearch
 	}
 
 	private static int effectiveHeuristic(PreparedHeuristic heuristic, SearchSpace space, int state, int cost,
-		int[] best, boolean restrictedHeuristic, int[] globalBounds, boolean optimized, int bestBankCost,
+		int[] best, boolean restrictedHeuristic, WildernessHeuristic wilderness, boolean optimized, int bestBankCost,
 		MutableCounters counters)
 	{
 		BankVisitState banked = (state & 1) != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED;
@@ -587,12 +593,12 @@ public final class AStarForwardSearch
 			|| !allGlobalsActivated))
 		{
 			counters.restrictedHeuristicStates++;
-			int restricted = Math.min(resolved, globalBounds[banked == BankVisitState.BANKED ? 1 : 0]);
-			// Both infinite: no route from here reaches a target without a global teleport of this
-			// layer (h), nor with one (every cast lands where h is infinite), so the state is pruned
-			// like any other.
-			if (restricted == CostArithmetic.INF) counters.restrictedHeuristicZeroes++;
-			return restricted;
+			int node = state / 2;
+			int cap = wilderness.cap(space.isBase(node) ? node : -1, space.isBase(node) ? -1 : space.site(node), banked);
+			// Both infinite: no route from here reaches a target, with or without a global teleport
+			// of this layer (WildernessHeuristic), so the state is pruned like any other.
+			if (resolved == CostArithmetic.INF && cap == CostArithmetic.INF) counters.restrictedHeuristicZeroes++;
+			return Math.min(resolved, cap);
 		}
 		counters.normalHeuristicStates++;
 		return resolved;
@@ -635,22 +641,14 @@ public final class AStarForwardSearch
 			|| account.globalCount(BankVisitState.BANKED) != 0);
 	}
 
-	private static int[] globalBounds(TargetOverlay target, PreparedHeuristic heuristic, SearchSpace space,
-		MutableCounters counters)
+	private static WildernessHeuristic wildernessHeuristic(TargetOverlay target, PreparedHeuristic heuristic,
+		SearchSpace space, MutableCounters counters)
 	{
-		int[] result = {CostArithmetic.INF, CostArithmetic.INF};
-		for (int layer = 0; layer < 2; layer++)
+		return WildernessHeuristic.prepare(space.stat, target.account(), (destination, banked) ->
 		{
-			BankVisitState banked = layer != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED;
-			for (int i = 0; i < target.account().globalCount(banked); i++)
-			{
-				int node = space.node(target.account().globalDestination(banked, i));
-				if (node >= 0)
-					result[layer] = Math.min(result[layer], CostArithmetic.add(target.account().globalCost(banked, i),
-						heuristic(heuristic, space, stateForNode(node, banked), counters)));
-			}
-		}
-		return result;
+			int node = space.node(destination);
+			return node < 0 ? CostArithmetic.INF : heuristic(heuristic, space, stateForNode(node, banked), counters);
+		});
 	}
 
 	private static final int PUSH_INITIAL = 0;
@@ -751,7 +749,8 @@ public final class AStarForwardSearch
 			heuristicEvaluations, heuristicUnreachable, bestBankUpdates, bankDominated, bankGlobalSuppressed, rekeys,
 			finalBestBankCost, maxQueueSize, walkingPqPushes, localTransportPqPushes, globalPqPushes,
 			bankingPqPushes, transportCandidates, successfulTransportRelaxations, restrictedHeuristicStates,
-			normalHeuristicStates, restrictedHeuristicZeroes, heuristicCacheHits;
+			normalHeuristicStates, restrictedHeuristicZeroes, heuristicCacheHits, wildernessTableBuilds,
+			wildernessTableBuildMicros;
 		private final String initialCapability;
 		private final boolean normalHeuristicEnabledAtStart;
 		private Counters(int statesPopped, int staleEntries, int pqPushes, int uniqueStatesReached, int walkingRelaxations,
@@ -759,10 +758,13 @@ public final class AStarForwardSearch
 			int bankDominated, int bankGlobalSuppressed, int rekeys, int finalBestBankCost, int maxQueueSize,
 			int walkingPqPushes, int localTransportPqPushes, int globalPqPushes, int bankingPqPushes,
 			int transportCandidates, int successfulTransportRelaxations, int restrictedHeuristicStates,
-			int normalHeuristicStates, int restrictedHeuristicZeroes, int heuristicCacheHits, String initialCapability,
+			int normalHeuristicStates, int restrictedHeuristicZeroes, int heuristicCacheHits,
+			int wildernessTableBuilds, int wildernessTableBuildMicros, String initialCapability,
 			boolean normalHeuristicEnabledAtStart)
 		{
 			this.heuristicCacheHits = heuristicCacheHits;
+			this.wildernessTableBuilds = wildernessTableBuilds;
+			this.wildernessTableBuildMicros = wildernessTableBuildMicros;
 			this.statesPopped = statesPopped; this.staleEntries = staleEntries; this.pqPushes = pqPushes; this.uniqueStatesReached = uniqueStatesReached; this.walkingRelaxations = walkingRelaxations; this.transportRelaxations = transportRelaxations; this.heuristicEvaluations = heuristicEvaluations; this.heuristicUnreachable = heuristicUnreachable; this.bestBankUpdates = bestBankUpdates; this.bankDominated = bankDominated; this.bankGlobalSuppressed = bankGlobalSuppressed; this.rekeys = rekeys; this.finalBestBankCost = finalBestBankCost;
 			this.maxQueueSize = maxQueueSize; this.walkingPqPushes = walkingPqPushes;
 			this.localTransportPqPushes = localTransportPqPushes; this.globalPqPushes = globalPqPushes;
@@ -775,7 +777,7 @@ public final class AStarForwardSearch
 		}
 		public static Counters empty()
 		{ return new Counters(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, CostArithmetic.INF,
-			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "UNKNOWN", false);
+			0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, "UNKNOWN", false);
 		}
 		public Counters plus(Counters other)
 		{
@@ -795,6 +797,8 @@ public final class AStarForwardSearch
 				normalHeuristicStates + other.normalHeuristicStates,
 				restrictedHeuristicZeroes + other.restrictedHeuristicZeroes,
 				heuristicCacheHits + other.heuristicCacheHits,
+				wildernessTableBuilds + other.wildernessTableBuilds,
+				wildernessTableBuildMicros + other.wildernessTableBuildMicros,
 				initialCapability.equals(other.initialCapability) ? initialCapability : "MIXED",
 				normalHeuristicEnabledAtStart && other.normalHeuristicEnabledAtStart);
 		}
@@ -872,6 +876,13 @@ public final class AStarForwardSearch
 		public int restrictedHeuristicZeroes()
 	{ return restrictedHeuristicZeroes;
 	}
+		/** Wilderness escape tables this search built (0 or 1), and how long that took. */
+		public int wildernessTableBuilds()
+	{ return wildernessTableBuilds;
+	}
+		public int wildernessTableBuildMicros()
+	{ return wildernessTableBuildMicros;
+	}
 		public String initialCapability()
 	{ return initialCapability;
 	}
@@ -885,7 +896,7 @@ public final class AStarForwardSearch
 			heuristicEvaluations, heuristicUnreachable, bestBankUpdates, bankDominated, bankGlobalSuppressed, rekeys,
 			maxQueueSize, walkingPqPushes, localTransportPqPushes, globalPqPushes, bankingPqPushes,
 			transportCandidates, successfulTransportRelaxations, restrictedHeuristicStates, normalHeuristicStates;
-		int restrictedHeuristicZeroes, heuristicCacheHits;
+		int restrictedHeuristicZeroes, heuristicCacheHits, wildernessTableBuilds, wildernessTableBuildMicros;
 		final String initialCapability;
 		final boolean normalHeuristicEnabledAtStart;
 		MutableCounters(TeleportCapability initialCapability, boolean normalHeuristicEnabledAtStart)
@@ -898,7 +909,8 @@ public final class AStarForwardSearch
 		heuristicEvaluations, heuristicUnreachable, bestBankUpdates, bankDominated, bankGlobalSuppressed, rekeys,
 		finalBestBankCost, maxQueueSize, walkingPqPushes, localTransportPqPushes, globalPqPushes, bankingPqPushes,
 		transportCandidates, successfulTransportRelaxations, restrictedHeuristicStates, normalHeuristicStates,
-		restrictedHeuristicZeroes, heuristicCacheHits, initialCapability, normalHeuristicEnabledAtStart);
+		restrictedHeuristicZeroes, heuristicCacheHits, wildernessTableBuilds, wildernessTableBuildMicros,
+		initialCapability, normalHeuristicEnabledAtStart);
 	}
 	}
 
@@ -971,6 +983,10 @@ public final class AStarForwardSearch
 	}
 		int[] components(int node)
 	{ return extraComponents[node - baseCount];
+	}
+		/** The site of extra node {@code node}, or -1 when it is not a site. */
+		int site(int node)
+	{ return extraSites[node - baseCount];
 	}
 		int[] heuristicPage(int state)
 		{

@@ -28,6 +28,8 @@ public final class RoutingStatic
 	private final ExactWalks exactWalks;
 	// Built on first use by a search that avoids the Wilderness.
 	private volatile WildernessGate wildernessGate;
+	// Built with the static data by RoutingStaticBuilder; on first use for other instances.
+	private volatile WildernessEscape wildernessEscape;
 
 	private RoutingStatic(int[] searchTiles, TileComponents searchComponents, byte[] walkingMasks,
 		char[] northOffsets, char[] southOffsets, int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds,
@@ -370,6 +372,29 @@ public final class RoutingStatic
 			}
 		}
 		return gate;
+	}
+
+	/**
+	 * Which tiles around the Wilderness have escapes to each global-teleport band, and the escape
+	 * tables built so far. {@link RoutingStaticBuilder} builds it with the rest of the static data;
+	 * other instances (test fixtures) build it on first use.
+	 */
+	WildernessEscape wildernessEscape()
+	{
+		WildernessEscape escape = wildernessEscape;
+		if (escape == null)
+		{
+			synchronized (this)
+			{
+				escape = wildernessEscape;
+				if (escape == null)
+				{
+					escape = WildernessEscape.build(this);
+					wildernessEscape = escape;
+				}
+			}
+		}
+		return escape;
 	}
 
 	boolean wildernessGateBuilt()

@@ -63,6 +63,7 @@ public final class RoutingStaticBuilder
 		public final long sparseNetworkNanos;
 		public final long validateNanos;
 		public final long wildernessGateNanos;
+		public final long wildernessEscapeNanos;
 		public final long totalNanos;
 
 		/** Tiles considered after removing land with no seed, transport endpoint or cut endpoint. */
@@ -84,16 +85,23 @@ public final class RoutingStaticBuilder
 		/** Components whose sites the network joins by exact walks, and the edges it keeps for them. */
 		public final int exactComponentCount;
 		public final int exactEdgeCount;
+		/** Tiles and sites around the Wilderness with escapes, and the bytes their layout keeps. */
+		public final int wildernessEscapeIdCount;
+		public final long wildernessEscapeBytes;
 
 		Diagnostics(long enumerateWalkableNanos, long naturalComponentsNanos, long cutValidationNanos,
 			long routingComponentsNanos, long reachabilityNanos, long searchTilesNanos,
 			long sitesAndAttachmentsNanos, long exactWalksNanos, long sparseNetworkNanos, long validateNanos,
-			long wildernessGateNanos, long totalNanos,
+			long wildernessGateNanos, long wildernessEscapeNanos, long totalNanos,
 			int walkableTileCount, int naturalComponentCount, int routingComponentCount,
 			int largestRoutingComponentSize, int reachableNaturalComponentCount, int inputCutCount,
 			int duplicateCutCount, int invalidCutCount, int nonSeparatingCutCount, int crossingCount,
-			int searchTileCount, int siteCount, int reachableBankCount, int exactComponentCount, int exactEdgeCount)
+			int searchTileCount, int siteCount, int reachableBankCount, int exactComponentCount, int exactEdgeCount,
+			int wildernessEscapeIdCount, long wildernessEscapeBytes)
 		{
+			this.wildernessEscapeNanos = wildernessEscapeNanos;
+			this.wildernessEscapeIdCount = wildernessEscapeIdCount;
+			this.wildernessEscapeBytes = wildernessEscapeBytes;
 			this.exactWalksNanos = exactWalksNanos;
 			this.wildernessGateNanos = wildernessGateNanos;
 			this.exactComponentCount = exactComponentCount;
@@ -138,6 +146,7 @@ public final class RoutingStaticBuilder
 				+ ", sparseNetworkMs=" + (sparseNetworkNanos / 1_000_000)
 				+ ", validateMs=" + (validateNanos / 1_000_000)
 				+ ", wildernessGateMs=" + (wildernessGateNanos / 1_000_000)
+				+ ", wildernessEscapeMs=" + (wildernessEscapeNanos / 1_000_000)
 				+ ", walkableTileCount=" + walkableTileCount + ", naturalComponentCount=" + naturalComponentCount
 				+ ", routingComponentCount=" + routingComponentCount
 				+ ", largestRoutingComponentSize=" + largestRoutingComponentSize
@@ -146,7 +155,9 @@ public final class RoutingStaticBuilder
 				+ ", invalidCutCount=" + invalidCutCount + ", nonSeparatingCutCount=" + nonSeparatingCutCount
 				+ ", crossingCount=" + crossingCount + ", searchTileCount=" + searchTileCount
 				+ ", siteCount=" + siteCount + ", reachableBankCount=" + reachableBankCount
-				+ ", exactComponentCount=" + exactComponentCount + ", exactEdgeCount=" + exactEdgeCount + "}";
+				+ ", exactComponentCount=" + exactComponentCount + ", exactEdgeCount=" + exactEdgeCount
+				+ ", wildernessEscapeIdCount=" + wildernessEscapeIdCount + ", wildernessEscapeBytes=" + wildernessEscapeBytes
+				+ "}";
 		}
 	}
 
@@ -290,13 +301,18 @@ public final class RoutingStaticBuilder
 		result.wildernessGate();
 		long wildernessGateNanos = System.nanoTime() - stepStarted;
 
+		stepStarted = System.nanoTime();
+		WildernessEscape escape = result.wildernessEscape();
+		long wildernessEscapeNanos = System.nanoTime() - stepStarted;
+
 		long totalNanos = System.nanoTime() - totalStarted;
 		Diagnostics diagnostics = new Diagnostics(enumerateWalkableNanos, naturalComponentsNanos, cutValidationNanos,
 			routingComponentsNanos, reachabilityNanos, searchTilesNanos, sitesAndAttachmentsNanos, exactWalksNanos,
-			sparseNetworkNanos, validateNanos, wildernessGateNanos, totalNanos, walkableTileCount, naturalComponentCount, maxRoutingComponentId,
+			sparseNetworkNanos, validateNanos, wildernessGateNanos, wildernessEscapeNanos, totalNanos, walkableTileCount, naturalComponentCount, maxRoutingComponentId,
 			largestRoutingComponentSize, reachableNaturalCount, cuts.length / 2, cutSet.duplicateCount,
 			cutSet.invalidCount, nonSeparating, crossings.size(), search.tiles.length, sites.siteTiles.length,
-			sites.reachableBankTiles.length, exactWalks.exactComponentCount(), exactWalks.edgeCount());
+			sites.reachableBankTiles.length, exactWalks.exactComponentCount(), exactWalks.edgeCount(),
+			escape.idCount(), escape.layoutBytes());
 		return new Result(result, diagnostics);
 	}
 
