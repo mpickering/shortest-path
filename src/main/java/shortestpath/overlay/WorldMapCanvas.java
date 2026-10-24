@@ -68,13 +68,13 @@ public class WorldMapCanvas
 	/** The canvas x of a tile's centre, or {@link Integer#MIN_VALUE} when the map is closed. */
 	public int x(int point)
 	{
-		return plugin.mapWorldPointToGraphicsPointX(point);
+		return plugin.mapWorldPointToGraphicsPointX(plugin.drawnMapPoint(point));
 	}
 
 	/** The canvas y of a tile's centre, or {@link Integer#MIN_VALUE} when the map is closed. */
 	public int y(int point)
 	{
-		return plugin.mapWorldPointToGraphicsPointY(point);
+		return plugin.mapWorldPointToGraphicsPointY(plugin.drawnMapPoint(point));
 	}
 
 	public float pixelsPerTile()
@@ -85,11 +85,12 @@ public class WorldMapCanvas
 	/** The square a tile covers on the map, or null when the map is closed. */
 	public Rectangle tileRect(int point)
 	{
+		point = plugin.drawnMapPoint(point);
 		int offsetPoint = WorldPointUtil.dxdy(point, 1, -1);
-		int startX = x(point);
-		int startY = y(point);
-		int endX = x(offsetPoint);
-		int endY = y(offsetPoint);
+		int startX = plugin.mapWorldPointToGraphicsPointX(point);
+		int startY = plugin.mapWorldPointToGraphicsPointY(point);
+		int endX = plugin.mapWorldPointToGraphicsPointX(offsetPoint);
+		int endY = plugin.mapWorldPointToGraphicsPointY(offsetPoint);
 		if (startX == Integer.MIN_VALUE || startY == Integer.MIN_VALUE
 			|| endX == Integer.MIN_VALUE || endY == Integer.MIN_VALUE)
 		{
