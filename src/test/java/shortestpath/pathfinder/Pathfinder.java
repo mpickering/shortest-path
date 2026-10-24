@@ -359,7 +359,7 @@ public class Pathfinder implements ActiveSearch
 	@Override
 	public TargetGoals getTargetGoals()
 	{
-		return goals.targetTiles();
+		return goals == null ? null : goals.targetTiles();
 	}
 
 	@Override

@@ -1,5 +1,8 @@
 package shortestpath;
 
+import java.util.EnumSet;
+import java.util.Set;
+
 import java.awt.Color;
 import net.runelite.client.config.Alpha;
 import net.runelite.client.config.Config;

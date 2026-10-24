@@ -132,6 +132,10 @@ public class DebugOverlayPanel extends OverlayPanel
 	private void renderTargets(List<LayoutableRenderableEntity> components, ActiveSearch search)
 	{
 		TargetGoals tiles = search.getTargetGoals();
+		if (tiles == null)
+		{
+			return;
+		}
 		int blocked = 0;
 		int unreachable = 0;
 		int goals = 0;

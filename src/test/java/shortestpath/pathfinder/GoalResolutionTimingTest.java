@@ -1,6 +1,8 @@
 package shortestpath.pathfinder;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -69,7 +71,9 @@ public class GoalResolutionTimingTest
 	private void assertResolvesGoalsWhenItRuns(ActiveSearch search)
 	{
 		assertEquals("creating a search must not resolve its goals", 0, transportDestinationChecks);
+		assertNull("debug goals are unavailable before the search runs", search.getTargetGoals());
 		search.run();
+		assertNotNull("debug goals are published after resolution", search.getTargetGoals());
 		assertTrue("running it resolves them", transportDestinationChecks > 0);
 	}
 }

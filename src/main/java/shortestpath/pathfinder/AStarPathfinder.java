@@ -231,7 +231,7 @@ public final class AStarPathfinder implements ActiveSearch
 	@Override
 	public TargetGoals getTargetGoals()
 	{
-		return goals.targetTiles();
+		return goals == null ? null : goals.targetTiles();
 	}
 
 	@Override

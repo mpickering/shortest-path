@@ -57,7 +57,7 @@ final class TargetMarkers
 	{
 		List<Marker> markers = new ArrayList<>();
 		Map<Integer, List<Integer>> goalOwners = new LinkedHashMap<>();
-		if (search != null)
+		if (search != null && search.getTargetGoals() != null)
 		{
 			TargetGoals tiles = search.getTargetGoals();
 			GoalStates states = search.getGoalStates();
