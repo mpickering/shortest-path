@@ -53,7 +53,7 @@ public final class SearchRestrictions
 		return avoidWilderness || blockedRegion != null;
 	}
 
-	boolean avoidsWilderness()
+	public boolean avoidsWilderness()
 	{
 		return avoidWilderness;
 	}

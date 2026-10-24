@@ -414,7 +414,11 @@ public final class AStarPathfinder implements ActiveSearch
 			goals = GoalStates.resolve(TargetGoals.resolve(targets.points(), transportDestination, rule), targets,
 				heldItems);
 			phaseStarted = System.nanoTime();
-			AStarRoutingSession.Lookup<SiteGraph> graph = session.graph(staticData, account);
+			// A search that may not enter the Wilderness uses the graph built to avoid it, whose
+			// heuristic bounds the gated search more tightly and proves a target cut off by the gate
+			// unreachable without searching.
+			AStarRoutingSession.Lookup<SiteGraph> graph = session.graph(staticData, account,
+				restrictions.avoidsWilderness());
 			graphPrepareNanos = System.nanoTime() - phaseStarted;
 			graphReused = graph.reused();
 			AtomicBoolean timedOut = new AtomicBoolean();

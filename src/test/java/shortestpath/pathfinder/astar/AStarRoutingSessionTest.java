@@ -95,6 +95,28 @@ public class AStarRoutingSessionTest
 	}
 
 	@Test
+	public void wildernessGatedAndUngatedGraphsAreKeptSideBySide() throws Exception
+	{
+		// Searches avoid the Wilderness or not depending on the setting and on whether a target is
+		// inside it; switching between the two must not drop either graph or its prepared targets.
+		RoutingStatic stat = RoutingStaticTestFixture.create();
+		CollisionMap collision = emptyCollision();
+		AStarRoutingSession session = new AStarRoutingSession();
+		SiteGraph gated = session.graph(stat, account(global(D, 2)), true).value();
+		SiteGraph ungated = session.graph(stat, account(global(D, 2)), false).value();
+		assertTrue(gated.avoidsWilderness());
+		assertFalse(ungated.avoidsWilderness());
+		assertNotSame(gated, ungated);
+		session.target(gated, collision, D);
+		session.target(ungated, collision, D);
+
+		assertTrue(session.graph(stat, account(global(D, 2)), true).reused());
+		assertTrue(session.target(gated, collision, D).reused());
+		assertTrue(session.target(ungated, collision, D).reused());
+		assertEquals(2, session.cachedTargetCount());
+	}
+
+	@Test
 	public void changedAccountRebuildsTheGraphAndDropsPreparedTargets() throws Exception
 	{
 		RoutingStatic stat = RoutingStaticTestFixture.create();
