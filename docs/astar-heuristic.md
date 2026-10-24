@@ -315,6 +315,37 @@ account, true)`), with labels that bound the restricted search:
 
 The session keeps the gated and ungated graphs, and their prepared targets, side by side.
 
+### Costs and open questions (2026-10-24)
+
+This branch is kept apart from the landing stack while these are weighed.
+
+What it buys, on the full corpus (cold, 1 repetition):
+- **Targets cut off by the gate.** The seven targets only the Wilderness reaches with Avoid
+  wilderness on (six clue locations in the Abyss and similar places, plus the #744 Abyss case)
+  are rejected before any expansion: about 0.5 s and 1.15M states each → about 10 ms and 0.
+- **Overall:** p99 38 → 34 ms and maximum 563 → 120 ms against the landing stack. Route costs and
+  reachability are unchanged, with the same failing checks.
+
+What it costs:
+- **Static memory, the main cost.** `WildernessGate` retains about 7.6 MB, a quarter of the
+  routing static data (31.7 MB with it). About 5.8 MB of that is `tilePieces`, one `int` for every
+  search tile (1.45M), though it only matters for tiles in components that touch the Wilderness.
+  Since it is built with the static data, everyone pays it, including players who never avoid the
+  Wilderness. A sparse layout would bring it under 1 MB: one array per gated component, or
+  `char` ids.
+- **Startup:** about 0.1–0.2 s for the gate.
+- **Session memory.** The session keeps gated and ungated graphs (0.3 MB each) and their prepared
+  targets (about 0.7 MB each, up to 16 per slot). A player who switches between the two can hold
+  twice the cached targets: about 22 MB at worst, against 11 MB.
+- **Exact walks lose some reach.** Components touching the Wilderness keep their Steiner trees in
+  the gated network, so on gated searches they get no exact walks.
+
+Open questions:
+- Whether Avoid wilderness should fall back to a route through the Wilderness when nothing avoids
+  it. That is the old commit "Lift Avoid wilderness in A* when no route avoids it" (`250e2eea`, on
+  `exact-site-walks`); see `exact-site-walks-handoff.md`. This branch keeps master's semantics.
+- Whether to make the gate sparse before landing, and whether to cap the target cache per slot.
+
 ## Invariants to preserve
 
 1. The relaxed graph must contain every real edge, or a cheaper equivalent.
