@@ -23,13 +23,21 @@ import shortestpath.transport.Transport;
 public final class AStarRoutingStaticProvider implements Supplier<RoutingStatic>
 {
 	private final Supplier<CollisionMap> collision;
+	private final RoutingStaticBuilder.Options options;
 	private RoutingStatic routingStatic;
 	private RuntimeException failure;
 	private RoutingStaticBuilder.Diagnostics diagnostics;
 
 	public AStarRoutingStaticProvider(Supplier<CollisionMap> collision)
 	{
+		this(collision, RoutingStaticBuilder.Options.PLUGIN);
+	}
+
+	/** @param options the build's size limits; a server can afford {@link RoutingStaticBuilder.Options#SERVER} */
+	public AStarRoutingStaticProvider(Supplier<CollisionMap> collision, RoutingStaticBuilder.Options options)
+	{
 		this.collision = Objects.requireNonNull(collision, "collision");
+		this.options = Objects.requireNonNull(options, "options");
 	}
 
 	@Override
@@ -48,7 +56,7 @@ public final class AStarRoutingStaticProvider implements Supplier<RoutingStatic>
 					RoutingCuts.RESOURCE);
 			}
 			RoutingStaticBuilder.Result result = RoutingStaticBuilder.build(collision.get(), transports,
-				banks == null ? Set.of() : banks, cuts.pairs());
+				banks == null ? Set.of() : banks, cuts.pairs(), options);
 			diagnostics = result.diagnostics;
 			routingStatic = result.routingStatic;
 			log.debug("Built A* routing data with cuts for collision map {}: {}",

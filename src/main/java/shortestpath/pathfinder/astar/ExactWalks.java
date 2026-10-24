@@ -25,8 +25,8 @@ import shortestpath.WorldPointUtil;
  */
 final class ExactWalks
 {
-	/** The most sites a component may have for its sites to be joined by exact walks. */
-	static final int MAX_SITES = 256;
+	/** The most sites a component may have for its sites to be joined by exact walks, by default. */
+	static final int MAX_SITES = RoutingStaticBuilder.Options.PLUGIN.exactWalkMaxSites;
 	private static final int[] DX = {0, 1, 1, 1, 0, -1, -1, -1};
 	private static final int[] DY = {1, 1, 0, -1, -1, -1, 0, 1};
 

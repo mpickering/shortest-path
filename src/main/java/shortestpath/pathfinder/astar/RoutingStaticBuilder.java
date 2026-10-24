@@ -49,6 +49,58 @@ public final class RoutingStaticBuilder
 	{
 	}
 
+	/**
+	 * Size limits that trade build time and memory for a tighter heuristic. They change how fast
+	 * searches are, never what they find: every limit only decides how much of a lower bound is
+	 * exact. The plugin uses {@link #PLUGIN}; a server with a longer startup and more memory to spare
+	 * (the planner) can use {@link #SERVER}.
+	 */
+	public static final class Options
+	{
+		/** The plugin's limits: a startup of a couple of seconds and a few MB of tables. */
+		public static final Options PLUGIN = new Options(256, 1 << 16, 4);
+		/**
+		 * Exact walks for every routing component (the largest, the Wilderness surface, has 488
+		 * sites), and an escape table for every Wilderness transport set a busy server sees. The walk
+		 * from each target keeps the plugin's budget: its tables are allocated in full per target.
+		 */
+		public static final Options SERVER = new Options(1024, 1 << 16, 64);
+
+		/** {@code "plugin"}, {@code "server"} or {@code "SITES,BUDGET,TABLES"}. */
+		public static Options parse(String value)
+		{
+			if (value == null || value.isEmpty() || value.equalsIgnoreCase("plugin")) return PLUGIN;
+			if (value.equalsIgnoreCase("server")) return SERVER;
+			String[] parts = value.split(",");
+			if (parts.length != 3) throw new IllegalArgumentException("routing options: " + value);
+			return new Options(Integer.parseInt(parts[0].trim()), Integer.parseInt(parts[1].trim()),
+				Integer.parseInt(parts[2].trim()));
+		}
+
+		/** The most sites a routing component may have for its sites to be joined by exact walks. */
+		public final int exactWalkMaxSites;
+		/** Tiles the walk from each target may visit before it bounds the rest by its frontier. */
+		public final int targetWalkTileBudget;
+		/** Wilderness escape tables kept, one per Wilderness transport set. */
+		public final int wildernessTableCapacity;
+
+		public Options(int exactWalkMaxSites, int targetWalkTileBudget, int wildernessTableCapacity)
+		{
+			if (exactWalkMaxSites < 0 || targetWalkTileBudget < 1 || wildernessTableCapacity < 1)
+				throw new IllegalArgumentException("routing options must be positive");
+			this.exactWalkMaxSites = exactWalkMaxSites;
+			this.targetWalkTileBudget = targetWalkTileBudget;
+			this.wildernessTableCapacity = wildernessTableCapacity;
+		}
+
+		@Override
+		public String toString()
+		{
+			return "Options{exactWalkMaxSites=" + exactWalkMaxSites + ", targetWalkTileBudget=" + targetWalkTileBudget
+				+ ", wildernessTableCapacity=" + wildernessTableCapacity + "}";
+		}
+	}
+
 	/** Per-step timings and derivation counts, for the plugin's build diagnostics. */
 	public static final class Diagnostics
 	{
@@ -191,7 +243,14 @@ public final class RoutingStaticBuilder
 	public static Result build(CollisionMap collision, Map<Integer, Set<Transport>> rawTransports,
 		Set<Integer> bankTiles, int[] cuts) throws IOException
 	{
-		return build(collision, rawTransports, bankTiles, cuts, SEED_TILE);
+		return build(collision, rawTransports, bankTiles, cuts, Options.PLUGIN);
+	}
+
+	/** As {@link #build(CollisionMap, Map, Set, int[])}, with the given size limits. */
+	public static Result build(CollisionMap collision, Map<Integer, Set<Transport>> rawTransports,
+		Set<Integer> bankTiles, int[] cuts, Options options) throws IOException
+	{
+		return build(collision, rawTransports, bankTiles, cuts, SEED_TILE, options);
 	}
 
 	/**
@@ -204,6 +263,13 @@ public final class RoutingStaticBuilder
 	public static Result build(CollisionMap collision, Map<Integer, Set<Transport>> rawTransports,
 		Set<Integer> bankTiles, int[] cuts, int seedTile) throws IOException
 	{
+		return build(collision, rawTransports, bankTiles, cuts, seedTile, Options.PLUGIN);
+	}
+
+	static Result build(CollisionMap collision, Map<Integer, Set<Transport>> rawTransports,
+		Set<Integer> bankTiles, int[] cuts, int seedTile, Options options) throws IOException
+	{
+		if (options == null) throw new NullPointerException("options");
 		long totalStarted = System.nanoTime();
 
 		long stepStarted = System.nanoTime();
@@ -279,7 +345,7 @@ public final class RoutingStaticBuilder
 		long validateNanos = System.nanoTime() - stepStarted;
 
 		stepStarted = System.nanoTime();
-		ExactWalks exactWalks = ExactWalks.build(walking);
+		ExactWalks exactWalks = ExactWalks.build(walking, options.exactWalkMaxSites);
 		long exactWalksNanos = System.nanoTime() - stepStarted;
 
 		stepStarted = System.nanoTime();
@@ -293,6 +359,7 @@ public final class RoutingStaticBuilder
 			sites.componentSiteOffsets, sites.componentSiteIds, sites.reachableBankTiles, crossingFrom, crossingTo,
 			crossingCost, sparse.originalCount, sparse.vertexCount, sparse.steinerCount, sparse.undirectedEdgeCount,
 			sparse.adjacencyCount(), sparse.offsets, sparse.destinations, sparse.weights, exactWalks);
+		result.options(options);
 		validateNanos += System.nanoTime() - stepStarted;
 
 		// Built here rather than on the first search that avoids the Wilderness, so that search

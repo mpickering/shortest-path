@@ -30,6 +30,8 @@ public final class RoutingStatic
 	private volatile WildernessGate wildernessGate;
 	// Built with the static data by RoutingStaticBuilder; on first use for other instances.
 	private volatile WildernessEscape wildernessEscape;
+	// Set by RoutingStaticBuilder before the instance is published; the plugin's otherwise.
+	private volatile RoutingStaticBuilder.Options options = RoutingStaticBuilder.Options.PLUGIN;
 
 	private RoutingStatic(int[] searchTiles, TileComponents searchComponents, byte[] walkingMasks,
 		char[] northOffsets, char[] southOffsets, int[] siteTiles, int[] siteComponentOffsets, int[] siteComponentIds,
@@ -372,6 +374,19 @@ public final class RoutingStatic
 			}
 		}
 		return gate;
+	}
+
+	/** The size limits this data was built with ({@link RoutingStaticBuilder.Options}). */
+	public RoutingStaticBuilder.Options options()
+	{
+		return options;
+	}
+
+	/** Called by the builder only, before anything reads the data. */
+	void options(RoutingStaticBuilder.Options options)
+	{
+		if (options == null) throw new NullPointerException();
+		this.options = options;
 	}
 
 	/**

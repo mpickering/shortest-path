@@ -25,8 +25,11 @@ import shortestpath.pathfinder.WildernessChecker;
 @AllArgsConstructor
 final class TargetWalkDistances
 {
-	/** Tiles the search may visit per target; larger components get frontier bounds beyond it. */
-	static final int TILE_BUDGET = 1 << 16;
+	/**
+	 * Tiles the search may visit per target by default ({@link RoutingStaticBuilder.Options}); larger
+	 * components get frontier bounds beyond it.
+	 */
+	static final int TILE_BUDGET = RoutingStaticBuilder.Options.PLUGIN.targetWalkTileBudget;
 
 	// Bit b of a walking mask steps by (DX[b], DY[b]), as in AStarForwardSearch.walkBase.
 	private static final int[] DX = {0, 1, 1, 1, 0, -1, -1, -1};
@@ -52,8 +55,9 @@ final class TargetWalkDistances
 	{
 		int start = stat.searchIndex(target);
 		if (start < 0) return null;
-		NodeDistances distances = new NodeDistances(TILE_BUDGET);
-		int[] queue = new int[TILE_BUDGET];
+		int budget = stat.options().targetWalkTileBudget;
+		NodeDistances distances = new NodeDistances(budget);
+		int[] queue = new int[budget];
 		int head = 0, tail = 0;
 		distances.put(start, 0);
 		queue[tail++] = start;
@@ -72,7 +76,7 @@ final class TargetWalkDistances
 				if ((stat.walkingMask(from) & (1 << bit)) == 0 || successor(stat, from, bit) != node) continue;
 				if (distances.get(from) >= 0 || !inComponents(stat.routingComponent(from), components)) continue;
 				if (avoidWilderness && entersWilderness(stat.searchTile(from), stat.searchTile(node))) continue;
-				if (tail == TILE_BUDGET)
+				if (tail == budget)
 				{
 					exhausted = false;
 					break;

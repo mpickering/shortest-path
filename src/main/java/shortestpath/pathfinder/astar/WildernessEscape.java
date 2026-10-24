@@ -18,7 +18,8 @@ import shortestpath.pathfinder.BankVisitState;
  * rest of the static data. The escapes themselves follow an account's local transports, so a
  * {@link Table} is built from the local transports the account may take from inside the boxes, in
  * either bank layer, by one multi-source reverse search per band. Tables are cached here by that
- * transport set rather than by account, since it changes far less often: a session whose account
+ * transport set rather than by account (as many as {@link RoutingStaticBuilder.Options} keeps),
+ * since it changes far less often: a session whose account
  * fingerprint changes for any other reason, and accounts of other sessions with the same Wilderness
  * transports, reuse the table.
  *
@@ -32,7 +33,6 @@ final class WildernessEscape
 	private static final TeleportCapability[] BANDS = {TeleportCapability.OVER_20, TeleportCapability.OVER_0,
 		TeleportCapability.ALL};
 	private static final char UNREACHED = Character.MAX_VALUE;
-	private static final int TABLE_CAPACITY = 4;
 	private static final int[] DX = {0, 1, 1, 1, 0, -1, -1, -1};
 	private static final int[] DY = {1, 1, 0, -1, -1, -1, 0, 1};
 	private static final int PLANES = 4;
@@ -57,12 +57,15 @@ final class WildernessEscape
 	private final int[][] boundaries;
 	/** Per search id, its band, and the walking-mask bits along which a predecessor steps onto it. */
 	private final byte[] bands, predecessors;
-	private final LinkedHashMap<TransportSet, Table> tables = new LinkedHashMap<>(TABLE_CAPACITY * 2, 0.75f, true);
+	private final int tableCapacity;
+	private final LinkedHashMap<TransportSet, Table> tables;
 
 	private WildernessEscape(RoutingStatic stat, int[][] firstRow, int[] rowNodes, int[] rowIds, int[] extraSites,
 		int[][] boundaries, byte[] bands, byte[] predecessors)
 	{
 		this.boundaries = boundaries;
+		this.tableCapacity = stat.options().wildernessTableCapacity;
+		this.tables = new LinkedHashMap<>(Math.min(tableCapacity, 64) * 2, 0.75f, true);
 		this.bands = bands;
 		this.predecessors = predecessors;
 		this.stat = stat;
@@ -190,7 +193,7 @@ final class WildernessEscape
 			if (existing != null) return existing;
 			tables.put(transports, table);
 			Iterator<Map.Entry<TransportSet, Table>> eldest = tables.entrySet().iterator();
-			while (tables.size() > TABLE_CAPACITY)
+			while (tables.size() > tableCapacity)
 			{
 				eldest.next();
 				eldest.remove();
