@@ -27,7 +27,7 @@ public class SkillRequirementParser implements FieldParser<int[]>
 	@Override
 	public int[] parse(String value)
 	{
-		int[] skillLevels = new int[Skill.values().length + 3];
+		int[] skillLevels = new int[Skill.values().length + 4];
 
 		if (value == null)
 		{
@@ -76,6 +76,11 @@ public class SkillRequirementParser implements FieldParser<int[]>
 				}
 				i++;
 				if (skillName.toLowerCase().startsWith("quest"))
+				{
+					skillLevels[i] = level;
+				}
+				i++;
+				if (skillName.toLowerCase().startsWith("music"))
 				{
 					skillLevels[i] = level;
 				}

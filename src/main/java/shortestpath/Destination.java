@@ -221,7 +221,7 @@ public class Destination
 					String varbitsStr = fieldAt(fields, varbitsCol);
 					String varPlayersStr = fieldAt(fields, varPlayersCol);
 
-					int[] skillLevels = skillsCol >= 0 ? SKILL_PARSER.parse(blankToNull(skillsStr)) : new int[Skill.values().length + 3];
+					int[] skillLevels = skillsCol >= 0 ? SKILL_PARSER.parse(blankToNull(skillsStr)) : new int[Skill.values().length + 4];
 					Set<Quest> quests = questsCol >= 0 ? QUEST_PARSER.parse(blankToNull(questsStr)) : Set.of();
 					Set<VarRequirement> varbits = varbitsCol >= 0 ? VARBIT_PARSER.parse(blankToNull(varbitsStr)) : Set.of();
 					Set<VarRequirement> varPlayers = varPlayersCol >= 0 ? VARPLAYER_PARSER.parse(blankToNull(varPlayersStr)) : Set.of();

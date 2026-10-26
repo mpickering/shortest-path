@@ -26,6 +26,7 @@ import net.runelite.api.gameval.DBTableID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.VarPlayerID;
 import shortestpath.Destination;
 import shortestpath.DestinationRequirements;
 import shortestpath.ItemVariations;
@@ -60,6 +61,19 @@ import shortestpath.transport.requirement.Unlock;
 public class PathfinderConfig
 {
 	private static final int MAX_SKILL_LEVEL = 99;
+	// Music database variables use a one-based MUSICMULTI index, not a varplayer ID.
+	private static final int[] MUSIC_VARPS = {
+		VarPlayerID.MUSICMULTI_1, VarPlayerID.MUSICMULTI_2, VarPlayerID.MUSICMULTI_3,
+		VarPlayerID.MUSICMULTI_4, VarPlayerID.MUSICMULTI_5, VarPlayerID.MUSICMULTI_6,
+		VarPlayerID.MUSICMULTI_7, VarPlayerID.MUSICMULTI_8, VarPlayerID.MUSICMULTI_9,
+		VarPlayerID.MUSICMULTI_10, VarPlayerID.MUSICMULTI_11, VarPlayerID.MUSICMULTI_12,
+		VarPlayerID.MUSICMULTI_13, VarPlayerID.MUSICMULTI_14, VarPlayerID.MUSICMULTI_15,
+		VarPlayerID.MUSICMULTI_16, VarPlayerID.MUSICMULTI_17, VarPlayerID.MUSICMULTI_18,
+		VarPlayerID.MUSICMULTI_19, VarPlayerID.MUSICMULTI_20, VarPlayerID.MUSICMULTI_21,
+		VarPlayerID.MUSICMULTI_22, VarPlayerID.MUSICMULTI_23, VarPlayerID.MUSICMULTI_24,
+		VarPlayerID.MUSICMULTI_25, VarPlayerID.MUSICMULTI_26, VarPlayerID.MUSICMULTI_27
+	};
+
 	public static final List<Integer> RUNE_POUCHES = Arrays.asList(
 		ItemID.BH_RUNE_POUCH, ItemID.BH_RUNE_POUCH_TROUVER,
 		ItemID.DIVINE_RUNE_POUCH, ItemID.DIVINE_RUNE_POUCH_TROUVER
@@ -133,8 +147,9 @@ public class PathfinderConfig
 	private final ShortestPathConfig config;
 	// Centralized transport type enable/disable config
 	private final TransportTypeConfig transportTypeConfig;
-	private final int[] boostedSkillLevelsAndMore = new int[Skill.values().length + 3];
+	private final int[] boostedSkillLevelsAndMore = new int[Skill.values().length + 4];
 	private int currentMaxQuestPoints;
+	private int currentMaxMusicTracks;
 	private final Map<Quest, QuestState> questStates = new HashMap<>();
 	private final Map<Integer, Integer> varbitValues = new HashMap<>();
 	private final Map<Integer, Integer> varPlayerValues = new HashMap<>();
@@ -438,7 +453,8 @@ public class PathfinderConfig
 			}
 			boostedSkillLevelsAndMore[i++] = client.getTotalLevel(); // skill total level
 			boostedSkillLevelsAndMore[i++] = getCombatLevel(); // combat level
-			boostedSkillLevelsAndMore[i] = client.getVarpValue(VarPlayer.QUEST_POINTS); // quest points
+			boostedSkillLevelsAndMore[i++] = client.getVarpValue(VarPlayer.QUEST_POINTS); // quest points
+			refreshMusicTracks(i);
 
 			refreshTransports(evaluationTimeMinutes);
 		}
@@ -1341,7 +1357,44 @@ public class PathfinderConfig
 		{
 			return currentMaxQuestPoints;
 		}
+		if (index == Skill.values().length + 3)
+		{
+			return currentMaxMusicTracks;
+		}
 		return SkillRequirementParser.MAX_LEVEL;
+	}
+
+	private void refreshMusicTracks(int index)
+	{
+		boostedSkillLevelsAndMore[index] = 0;
+		currentMaxMusicTracks = 0;
+		for (int row : client.getDBTableRows(DBTableID.Music.ID))
+		{
+			if ((Integer) client.getDBTableField(row, DBTableID.Music.COL_RELEASE_TYPE, 0)[0] == 0 ||
+				(Integer) client.getDBTableField(row, DBTableID.Music.COL_HIDDEN, 0)[0] != 0 ||
+				(Integer) client.getDBTableField(row, DBTableID.Music.COL_HOLIDAY, 0)[0] != 0)
+			{
+				continue;
+			}
+			currentMaxMusicTracks++;
+			if ((Integer) client.getDBTableField(row, DBTableID.Music.COL_AUTOMATIC_UNLOCK, 0)[0] != 0)
+			{
+				boostedSkillLevelsAndMore[index]++;
+				continue;
+			}
+			Object[] variable = client.getDBTableField(row, DBTableID.Music.COL_VARIABLE, 0);
+			int varpIndex = (Integer) variable[0] - 1;
+			int bit = (Integer) variable[1];
+			if (varpIndex >= 0 && varpIndex < MUSIC_VARPS.length && bit >= 0 && bit < Integer.SIZE &&
+				(client.getVarpValue(MUSIC_VARPS[varpIndex]) & (1 << bit)) != 0)
+			{
+				boostedSkillLevelsAndMore[index]++;
+			}
+		}
+		if (currentMaxMusicTracks == 0)
+		{
+			currentMaxMusicTracks = SkillRequirementParser.MAX_LEVEL;
+		}
 	}
 
 	private int maximumQuestPoints()

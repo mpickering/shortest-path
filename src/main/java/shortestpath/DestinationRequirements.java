@@ -30,7 +30,7 @@ public final class DestinationRequirements
 
 	private DestinationRequirements()
 	{
-		this.skillLevels = new int[Skill.values().length + 3];
+		this.skillLevels = new int[Skill.values().length + 4];
 		this.quests = Collections.emptySet();
 		this.varbits = Collections.emptySet();
 		this.varPlayers = Collections.emptySet();
@@ -42,7 +42,7 @@ public final class DestinationRequirements
 		Set<VarRequirement> varbits,
 		Set<VarRequirement> varPlayers)
 	{
-		this.skillLevels = skillLevels != null ? skillLevels : new int[Skill.values().length + 3];
+		this.skillLevels = skillLevels != null ? skillLevels : new int[Skill.values().length + 4];
 		this.quests = quests != null ? quests : Collections.emptySet();
 		this.varbits = varbits != null ? varbits : Collections.emptySet();
 		this.varPlayers = varPlayers != null ? varPlayers : Collections.emptySet();
@@ -61,7 +61,7 @@ public final class DestinationRequirements
 		{
 			return a;
 		}
-		int[] skills = new int[Skill.values().length + 3];
+		int[] skills = new int[Skill.values().length + 4];
 		for (int i = 0; i < skills.length; i++)
 		{
 			skills[i] = Math.max(a.skillLevels[i], b.skillLevels[i]);

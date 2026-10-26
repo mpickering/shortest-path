@@ -292,7 +292,7 @@ public class TransportLoaderTest
 	public void testSpecialSkillRequirements()
 	{
 		String contents = "# Origin\tDestination\tSkills\n" +
-			"3200 3200 0\t3300 3300 0\t1500 Total;100 Combat;200 Quest\n";
+			"3200 3200 0\t3300 3300 0\t1500 Total;100 Combat;200 Quest;700 Music\n";
 
 		TransportLoader.addTransportsFromContents(transports, contents, TransportType.TRANSPORT, 0);
 
@@ -307,13 +307,14 @@ public class TransportLoaderTest
 		Assert.assertEquals("Total level should be 1500", 1500, skillLevels[totalLevelIndex]);
 		Assert.assertEquals("Combat level should be 100", 100, skillLevels[combatLevelIndex]);
 		Assert.assertEquals("Quest points should be 200", 200, skillLevels[questPointsIndex]);
+		Assert.assertEquals(700, skillLevels[questPointsIndex + 1]);
 	}
 
 	@Test
 	public void testMaximumSkillRequirements()
 	{
 		String contents = "# Origin\tDestination\tSkills\n" +
-			"3200 3200 0\t3300 3300 0\tMax Agility;Max Total;Max Combat;Max Quest\n";
+			"3200 3200 0\t3300 3300 0\tMax Agility;Max Total;Max Combat;Max Quest;Max Music\n";
 
 		TransportLoader.addTransportsFromContents(transports, contents, TransportType.TRANSPORT, 0);
 
@@ -325,6 +326,7 @@ public class TransportLoaderTest
 		Assert.assertEquals(SkillRequirementParser.MAX_LEVEL, skillLevels[totalLevelIndex]);
 		Assert.assertEquals(SkillRequirementParser.MAX_LEVEL, skillLevels[totalLevelIndex + 1]);
 		Assert.assertEquals(SkillRequirementParser.MAX_LEVEL, skillLevels[totalLevelIndex + 2]);
+		Assert.assertEquals(SkillRequirementParser.MAX_LEVEL, skillLevels[totalLevelIndex + 3]);
 	}
 
 	@Test

@@ -38,9 +38,9 @@ public class Transport
 	 * Shared, never-mutated all-zero skill array. Most transports require no skills, so they point
 	 * at this singleton instead of each allocating their own {@code int[]} (issue #491).
 	 */
-	private static final int[] NO_SKILLS = new int[Skill.values().length + 3];
+	private static final int[] NO_SKILLS = new int[Skill.values().length + 4];
 	/**
-	 * The skill levels, total level, combat level and quest points required to use
+	 * The skill levels, total level, combat level, quest points and music unlocks required to use
 	 * this transport. Defaults to {@link #NO_SKILLS} until real requirements are set.
 	 */
 	@Getter
@@ -403,7 +403,7 @@ public class Transport
 
 	public static class TransportBuilder
 	{
-		private final int[] skillLevels = new int[Skill.values().length + 3];
+		private final int[] skillLevels = new int[Skill.values().length + 4];
 		private final Set<VarRequirement> varRequirements = new HashSet<>();
 		private final FieldParser<int[]> skillParser = new SkillRequirementParser();
 		private final FieldParser<TransportItems> itemParser = new ItemRequirementParser();
