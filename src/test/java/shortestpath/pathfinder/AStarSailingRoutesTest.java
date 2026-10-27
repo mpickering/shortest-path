@@ -205,6 +205,34 @@ public class AStarSailingRoutesTest
 		assertFalse(search(unknown, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE).getResult().isReached());
 	}
 
+	@Test
+	public void theWalksEitherSideOfASailingLegAreRewrittenAndTheLegKept()
+	{
+		// Walk to Port Sarim's dock, sail, then walk from the berth on the far side; and from aboard, dock and walk
+		for (AStarPathfinder search : List.of(search(RAFT_EVERYWHERE, 99, WYDINS, GREAT_CONCH_CLUE),
+			search(ABOARD_IN_THE_BAY, 99, PORT_SARIM_BAY, WYDINS),
+			search(RAFT_EVERYWHERE, 99, WYDINS, MUDSKIPPER_DIVE)))
+		{
+			assertTrue(search.getResult().getMessage(), search.getResult().isReached());
+			List<PathStep> path = search.getPath();
+			assertTrue("every leg canonicalised: " + search.getWalkDiagnostics(), search.getWalkDiagnostics().isEmpty());
+			assertFalse("the walks become clicks", search.getClickPoints().isEmpty());
+			int sailing = 0;
+			for (int i = 1; i < path.size(); i++)
+			{
+				PathStep from = path.get(i - 1), to = path.get(i);
+				if (to.getTraversal() == Traversal.SAILING) sailing++;
+				// A walking step is one tile from the last: the rewrite never walks across the sea
+				if (to.getTraversal() == Traversal.WALK && from.getTraversal() == Traversal.WALK)
+					assertTrue(i + ": " + from.getPackedPosition() + " -> " + to.getPackedPosition(),
+						WorldPointUtil.distanceBetween(from.getPackedPosition(), to.getPackedPosition()) <= 1);
+			}
+			assertTrue("the leg is kept", sailing > 2);
+			for (int kept : search.getKeptStepIndices())
+				assertEquals(Traversal.WALK, path.get(kept).getTraversal());
+		}
+	}
+
 	private static List<Integer> positions(List<PathStep> path)
 	{
 		return path.stream().map(PathStep::getPackedPosition).collect(java.util.stream.Collectors.toList());
