@@ -165,8 +165,8 @@ public final class SailingWaters
 		return bodies.length;
 	}
 
-	/** Visits every sea tile. */
-	void forEachTile(java.util.function.IntConsumer action)
+	/** Visits every sea tile: for tools that draw or count the sea, such as the routing layers' sailing tiles. */
+	public void forEachTile(java.util.function.IntConsumer action)
 	{
 		for (int region = 0; region < bodies.length; region++)
 		{
