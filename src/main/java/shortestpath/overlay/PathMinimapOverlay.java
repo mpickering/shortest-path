@@ -89,20 +89,18 @@ public class PathMinimapOverlay extends Overlay
 		if (settings.display().drawMinimap() && search != null)
 		{
 			java.util.List<PathStep> pathPoints = search.getPath();
-			// On a boat the path sails the boat's headings, with a point a few tiles apart at the end of each move: half-size
-			// blue dots
-			boolean sailing = renderState.isSailing();
-			Color pathColor = sailing && !renderState.isPathUnreachable()
-				? PathRenderState.SAILING_PATH_COLOUR : renderState.getPathColor();
-			for (PathStep point : pathPoints)
+			Color walkingColor = renderState.getPathColor();
+			Color sailingColor = renderState.isPathUnreachable() ? walkingColor : PathRenderState.SAILING_PATH_COLOUR;
+			for (int i = 0; i < pathPoints.size(); i++)
 			{
-				int pathPoint = point.getPackedPosition();
+				int pathPoint = pathPoints.get(i).getPackedPosition();
 				if (WorldPointUtil.unpackWorldPlane(pathPoint) != client.getTopLevelWorldView().getPlane())
 				{
 					continue;
 				}
 
-				drawOnMinimap(graphics, pathPoint, pathColor, sailing ? 0.5 : 1.0);
+				boolean sailing = renderState.isSailingPoint(pathPoints, i);
+				drawOnMinimap(graphics, pathPoint, sailing ? sailingColor : walkingColor, sailing ? 0.5 : 1.0);
 			}
 			for (int target : search.getTargets().points())
 			{

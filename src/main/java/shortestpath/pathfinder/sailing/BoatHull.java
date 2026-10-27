@@ -128,6 +128,43 @@ public final class BoatHull
 	}
 
 	/**
+	 * The tiles the hull covers facing every heading, as offsets from the boat's tile: {dx0, dy0, dx1, dy1, ...}. A boat
+	 * can only end a move on a tile none of whose core tiles blocks it.
+	 */
+	public int[] coreOffsets()
+	{
+		int radius = (int) Math.ceil(reach);
+		int[] offsets = new int[8];
+		int count = 0;
+		for (int dy = -radius; dy <= radius; dy++)
+		{
+			for (int dx = -radius; dx <= radius; dx++)
+			{
+				boolean everyHeading = true;
+				for (int heading = 0; heading < HEADINGS && everyHeading; heading++)
+				{
+					everyHeading = covers(heading, dx, dy);
+				}
+				if (!everyHeading) continue;
+				if (count + 2 > offsets.length) offsets = Arrays.copyOf(offsets, offsets.length * 2);
+				offsets[count++] = dx;
+				offsets[count++] = dy;
+			}
+		}
+		return Arrays.copyOf(offsets, count);
+	}
+
+	/**
+	 * Whether tile (x, y, z) blocks a boat: it is blocked, or a side of it can't be crossed into the open tile beyond.
+	 */
+	public static boolean blocksBoat(CollisionMap map, int x, int y, int z)
+	{
+		if (map.isBlocked(x, y, z)) return true;
+		return (!map.n(x, y, z) && !map.isBlocked(x, y + 1, z)) || (!map.s(x, y, z) && !map.isBlocked(x, y - 1, z))
+			|| (!map.e(x, y, z) && !map.isBlocked(x + 1, y, z)) || (!map.w(x, y, z) && !map.isBlocked(x - 1, y, z));
+	}
+
+	/**
 	 * Whether the hull, facing {@code heading}, can sail (dx, dy) tiles from tile (x, y, z) without overlapping a tile
 	 * that blocks it anywhere along the way, where it starts and ends included.
 	 */

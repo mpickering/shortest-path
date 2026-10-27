@@ -92,6 +92,13 @@ tasks.register('run', JavaExec) {
     args "--developer-mode", "--debug"
 }
 
+// Regenerates the sailing times between moorings (src/main/resources/sailing/sailing-times.tsv)
+tasks.register('sailingTimes', JavaExec) {
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = 'shortestpath.pathfinder.sailing.SailingTimesGenerator'
+    maxHeapSize = '4g'
+}
+
 tasks.register('shadowJar', Jar) {
     dependsOn configurations.testRuntimeClasspath
     manifest {

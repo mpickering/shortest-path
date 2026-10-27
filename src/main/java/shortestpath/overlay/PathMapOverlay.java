@@ -87,15 +87,39 @@ public class PathMapOverlay extends Overlay
 					drawSmallSquareOnMap(graphics, point);
 				}
 			}
-			else if (TileStyle.ARROW_LINE.equals(settings.display().pathStyle()))
+			else
+			{
+				// A route's sailing legs are drawn like a sailing route; the walking style skips them
+				for (int i = 1; i < path.size(); i++)
+				{
+					if (renderState.isSailedSegment(path, i))
+					{
+						graphics.setColor(renderState.isPathUnreachable() ? renderState.getPathColor() : PathRenderState.SAILING_PATH_COLOUR);
+						drawSolidLineOnMap(graphics, path.get(i - 1).getPackedPosition(), path.get(i).getPackedPosition());
+						drawSmallSquareOnMap(graphics, path.get(i).getPackedPosition());
+					}
+				}
+			}
+			if (!renderState.isSailing() && TileStyle.ARROW_LINE.equals(settings.display().pathStyle()))
 			{
 				graphics.setColor(colour);
-				drawArrowPath(graphics, path);
+				// Each walking run between sailing legs on its own, so no arrow crosses a leg
+				int runStart = 0;
+				for (int i = 1; i <= path.size(); i++)
+				{
+					if (i < path.size() && !renderState.isSailedSegment(path, i)) continue;
+					if (i - 1 > runStart) drawArrowPath(graphics, path.subList(runStart, i));
+					runStart = i;
+				}
 			}
-			else
+			else if (!renderState.isSailing())
 			{
 				for (int i = 0; i < path.size(); i++)
 				{
+					if (renderState.isSailingPoint(path, i))
+					{
+						continue;
+					}
 					graphics.setColor(colour);
 					int point = path.get(i).getPackedPosition();
 					int lastPoint = (i > 0) ? path.get(i - 1).getPackedPosition() : point;

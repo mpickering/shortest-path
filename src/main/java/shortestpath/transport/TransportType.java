@@ -59,6 +59,34 @@ public enum TransportType
 				return "costQuetzalWhistle";
 			}
 		},
+	/*
+	 * Sailing the player's own boat between moorings, one type per boat kind; generated from the sea by
+	 * SailingTimesGenerator. Which boats the player has, and where, is checked by PathfinderConfig, not by config keys.
+	 */
+	SAILING_RAFT("/transports/sailing_raft.tsv", null, null)
+		{
+			@Override
+			public boolean isSailing()
+			{
+				return true;
+			}
+		},
+	SAILING_SKIFF("/transports/sailing_skiff.tsv", null, null)
+		{
+			@Override
+			public boolean isSailing()
+			{
+				return true;
+			}
+		},
+	SAILING_SLOOP("/transports/sailing_sloop.tsv", null, null)
+		{
+			@Override
+			public boolean isSailing()
+			{
+				return true;
+			}
+		},
 	SEASONAL_TRANSPORTS("/transports/seasonal_transports.tsv", "useSeasonalTransports", "costSeasonalTransports"),
 	SPIRIT_TREE("/transports/spirit_trees.tsv", "useSpiritTrees", "costSpiritTrees", 5),
 	TELEPORTATION_BOX("/transports/teleportation_boxes.tsv", null, "costTeleportationBoxes"),
@@ -156,6 +184,12 @@ public enum TransportType
 		return false;
 	}
 
+
+	/** Whether this is sailing the player's own boat from one mooring to another. */
+	public boolean isSailing()
+	{
+		return false;
+	}
 
 	/**
 	 * Stores which transport type this transport shares destinations with, if any.
