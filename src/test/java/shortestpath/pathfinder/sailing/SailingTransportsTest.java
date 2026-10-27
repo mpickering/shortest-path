@@ -29,6 +29,18 @@ public class SailingTransportsTest
 			assertEquals(SailingTransports.resource(kind) + " is stale: run ./gradlew sailingTimes", expected,
 				SailingTransports.fingerprintOf(contents));
 		}
+		assertEquals(SailingReach.RESOURCE + " is stale: run ./gradlew sailingTimes", expected,
+			SailingReach.load().fingerprint());
+	}
+
+	@Test
+	public void theRaftReachesFurtherThanTheSloop()
+	{
+		// Lum Lagoon, behind a channel the sloop's hull can't get through
+		int lagoon = shortestpath.WorldPointUtil.packWorldPoint(3277, 3135, 0);
+		SailingReach reach = SailingReach.load();
+		assertTrue(reach.reachesNear(SailingVessel.Kind.RAFT, lagoon, 3));
+		assertFalse(reach.reachesNear(SailingVessel.Kind.SLOOP, lagoon, 3));
 	}
 
 	@Test

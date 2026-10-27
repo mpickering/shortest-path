@@ -41,6 +41,12 @@ public class AStarSailingRoutesTest
 	// Port Sarim's food shop, a short walk from the dock
 	private static final int WYDINS = point(3014, 3206);
 	private static final int SUMMER_SHORE = point(3173, 2368);
+	// Open water in the bay south of Port Sarim
+	private static final int PORT_SARIM_BAY = point(3045, 3180);
+	// The Mudskipper Point dive site, a sea-charting spot
+	private static final int MUDSKIPPER_DIVE = point(2979, 3085);
+	private static final SailingFleet ABOARD_IN_THE_BAY = new SailingFleet(List.of(), SailingFleet.BoatLocations.UNKNOWN,
+		new SailingFleet.Aboard(PORT_SARIM_BAY, 8, SailingVessel.of(SailingVessel.Kind.RAFT, 2.0), 0, 0));
 
 	private static final SailingFleet RAFT_EVERYWHERE = new SailingFleet(
 		List.of(SailingVessel.of(SailingVessel.Kind.RAFT, 2.0)), SailingFleet.BoatLocations.EVERY_MOORING, null);
@@ -142,6 +148,61 @@ public class AStarSailingRoutesTest
 		assertEquals(SailingVessel.Kind.SLOOP,
 			SailingTransports.kind(search.getPath().get(landing).getTransport().getType()));
 		assertNotNull(search.debugStats().get("Sailing legs"));
+	}
+
+	@Test
+	public void landToATargetAtSeaBoardsAndSailsThere()
+	{
+		AStarPathfinder walking = search(SailingFleet.NONE, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE);
+		assertFalse("walking alone cannot reach the sea", walking.getResult().isReached());
+		AStarPathfinder sailing = search(RAFT_EVERYWHERE, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE);
+		PathfinderResult result = sailing.getResult();
+		assertTrue(result.getMessage(), result.isReached());
+		assertEquals("the requested target, not the boat's tile", MUDSKIPPER_DIVE, result.getTarget());
+		assertEquals(MUDSKIPPER_DIVE, sailing.getSeaTarget());
+		List<PathStep> path = sailing.getPath();
+		assertEquals(PORT_SARIM_DOCK, path.get(0).getPackedPosition());
+		assertEquals(Traversal.SAILING, path.get(path.size() - 1).getTraversal());
+		assertNotNull(sailing.debugStats().get("Sea ends"));
+	}
+
+	@Test
+	public void aboardToATargetAtSeaSailsStraightThere()
+	{
+		AStarPathfinder search = search(ABOARD_IN_THE_BAY, 99, PORT_SARIM_BAY, MUDSKIPPER_DIVE);
+		PathfinderResult result = search.getResult();
+		assertTrue(result.getMessage(), result.isReached());
+		List<PathStep> path = search.getPath();
+		assertEquals(PORT_SARIM_BAY, path.get(0).getPackedPosition());
+		// No walking from the boat's tile: the route is the leg alone
+		for (PathStep step : path) assertEquals(Traversal.SAILING, step.getTraversal());
+		assertEquals(MUDSKIPPER_DIVE, search.getSeaTarget());
+	}
+
+	@Test
+	public void aboardToLandDocksAndWalks()
+	{
+		AStarPathfinder search = search(ABOARD_IN_THE_BAY, 99, PORT_SARIM_BAY, WYDINS);
+		PathfinderResult result = search.getResult();
+		assertTrue(result.getMessage(), result.isReached());
+		List<PathStep> path = search.getPath();
+		assertEquals(PORT_SARIM_BAY, path.get(0).getPackedPosition());
+		assertEquals(WYDINS, path.get(path.size() - 1).getPackedPosition());
+		int lastSailing = lastIndexOf(path, Traversal.SAILING);
+		assertTrue("docks, then walks", lastSailing > 0 && lastSailing < path.size() - 1);
+		assertEquals(Traversal.WALK, path.get(path.size() - 1).getTraversal());
+		// The leg's cost is the boat's ticks to docking range plus stepping off; the walk carries on from there
+		int ashore = path.get(lastSailing).getPackedPosition();
+		assertTrue(shortestpath.pathfinder.sailing.SailingMoorings.all().stream()
+			.anyMatch(mooring -> mooring.landTile() == ashore));
+	}
+
+	@Test
+	public void aMooringWithoutABoatIsNotBoardedForATargetAtSea()
+	{
+		SailingFleet unknown = new SailingFleet(List.of(SailingVessel.of(SailingVessel.Kind.RAFT, 2.0)),
+			SailingFleet.BoatLocations.UNKNOWN, null);
+		assertFalse(search(unknown, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE).getResult().isReached());
 	}
 
 	private static List<Integer> positions(List<PathStep> path)

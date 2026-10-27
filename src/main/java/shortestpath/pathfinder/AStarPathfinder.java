@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
+import shortestpath.WorldPointUtil;
 import shortestpath.leagues.LeagueModeState;
 import shortestpath.pathfinder.astar.AStarForwardSearch;
 import shortestpath.pathfinder.astar.AStarRoute;
@@ -16,9 +17,18 @@ import shortestpath.pathfinder.astar.InGameWalkRewriter;
 import shortestpath.pathfinder.astar.PreparedRoutingAccount;
 import shortestpath.pathfinder.astar.PreparedTarget;
 import shortestpath.pathfinder.astar.RoutingStatic;
+import shortestpath.pathfinder.astar.CostArithmetic;
 import shortestpath.pathfinder.astar.SearchRestrictions;
+import shortestpath.pathfinder.astar.SeaEnds;
 import shortestpath.pathfinder.astar.SiteGraph;
+import shortestpath.pathfinder.sailing.BoatHull;
+import shortestpath.pathfinder.sailing.PreparedSailingCapability;
+import shortestpath.pathfinder.sailing.SailingFleet;
+import shortestpath.pathfinder.sailing.SailingMoorings;
+import shortestpath.pathfinder.sailing.SailingPathfinder;
 import shortestpath.pathfinder.sailing.SailingRoutes;
+import shortestpath.pathfinder.sailing.SailingSeaEnds;
+import shortestpath.pathfinder.sailing.SailingWaters;
 import lombok.Getter;
 
 /** ActiveSearch adapter for the A* core. */
@@ -64,6 +74,12 @@ public final class AStarPathfinder implements ActiveSearch
 	private volatile List<AStarWalkCanonicalizer.Diagnostic> walkDiagnostics = List.of();
 	// Time filling in the sea on the route's sailing legs
 	private volatile long sailingLegNanos;
+	// The account's boats and moorings, prepared with the account: a start aboard and targets at sea come from it
+	private final PreparedSailingCapability sailing;
+	// The target at sea the route ends aboard at, or UNDEFINED
+	private volatile int seaTarget = WorldPointUtil.UNDEFINED;
+	private volatile int seaLegsSailed;
+	private volatile long seaLegNanos;
 	private volatile long walkRewriteNanos;
 	private volatile List<Integer> clickPoints = List.of();
 	private volatile List<Integer> keptStepIndices = List.of();
@@ -139,6 +155,17 @@ public final class AStarPathfinder implements ActiveSearch
 		AStarRoutingSession session, int start, Targets targets, Runnable completionCallback,
 		double heuristicWeight)
 	{
+		this(config, routingStatic, session, start, targets, completionCallback, heuristicWeight, null);
+	}
+
+	/**
+	 * As above, sailing with {@code sailing} rather than the account's own capability (null for that): a start
+	 * aboard sails from the boat, and targets at sea are sailed to.
+	 */
+	public AStarPathfinder(PathfinderConfig config, Supplier<RoutingStatic> routingStatic,
+		AStarRoutingSession session, int start, Targets targets, Runnable completionCallback,
+		double heuristicWeight, PreparedSailingCapability sailing)
+	{
 		if (config == null || routingStatic == null || targets == null) throw new NullPointerException();
 		if (!(heuristicWeight > 0) || !Double.isFinite(heuristicWeight))
 			throw new IllegalArgumentException("heuristic weight must be positive and finite");
@@ -156,11 +183,19 @@ public final class AStarPathfinder implements ActiveSearch
 		long phaseStarted = System.nanoTime();
 		this.account = config.prepareAStarRoutingAccount(true, GoalStates.needsBank(targets, heldItems));
 		this.accountPrepareNanos = System.nanoTime() - phaseStarted;
+		this.sailing = sailing != null ? sailing : sailingOf(config);
 		this.restrictions = restrictions(config, targets.points());
 		this.cutoffMillis = config.getCalculationCutoffMillis();
 		this.heuristicWeight = heuristicWeight;
 		this.failure = null;
 		this.path = List.of(new PathStep(start, BankVisitState.CARRIED));
+	}
+
+	// The account's own sailing capability; NONE when the config has none to give (a mock)
+	private static PreparedSailingCapability sailingOf(PathfinderConfig config)
+	{
+		PreparedSailingCapability capability = config.prepareSailingCapability();
+		return capability == null ? PreparedSailingCapability.NONE : capability;
 	}
 
 	private static Supplier<RoutingStatic> constant(RoutingStatic routingStatic)
@@ -203,6 +238,7 @@ public final class AStarPathfinder implements ActiveSearch
 		this.routingStatic = null;
 		this.session = null;
 		this.account = null;
+		this.sailing = PreparedSailingCapability.NONE;
 		this.restrictions = SearchRestrictions.none();
 		this.goals = null;
 		this.collisionRule = null;
@@ -278,6 +314,26 @@ public final class AStarPathfinder implements ActiveSearch
 	public boolean isSailing()
 	{
 		return false;
+	}
+
+	/**
+	 * For a route that ends aboard at a target at sea, that target if a boat on {@code boatTile} facing
+	 * {@code heading} has arrived at it — its hull covers it — by the boat the player is aboard.
+	 */
+	@Override
+	public int sailingArrivedTarget(int boatTile, int heading)
+	{
+		int target = seaTarget;
+		SailingFleet.Aboard aboard = sailing.fleet().aboard();
+		if (target == WorldPointUtil.UNDEFINED || aboard == null) return WorldPointUtil.UNDEFINED;
+		BoatHull hull = aboard.vessel().hull(aboard.pivotX(), aboard.pivotY());
+		return SailingPathfinder.arrivedTarget(hull, target, boatTile, heading);
+	}
+
+	/** The target at sea a route found ends aboard at, or {@link WorldPointUtil#UNDEFINED}. */
+	public int getSeaTarget()
+	{
+		return seaTarget;
 	}
 
 	@Override
@@ -381,6 +437,10 @@ public final class AStarPathfinder implements ActiveSearch
 		{
 			entries.put("Sailing legs", PathfinderStats.millis(sailingLegNanos));
 		}
+		if (seaLegNanos > 0)
+		{
+			entries.put("Sea ends", PathfinderStats.millis(seaLegNanos) + ", " + seaLegsSailed + " legs sailed");
+		}
 		entries.put("Target prep", isTargetReused() ? "reused"
 			: PathfinderStats.millis(getReverseSearchNanos() + getHeuristicPrepareNanos()));
 		entries.put("Graph prep", isGraphReused() ? "reused"
@@ -418,7 +478,30 @@ public final class AStarPathfinder implements ActiveSearch
 				? new ReachableGoalRule(collision, transportDestination, packed -> staticData.searchIndex(packed) >= 0,
 					start, unreachableTargetDistance)
 				: collisionRule;
-			goals = GoalStates.resolve(TargetGoals.resolve(targets.points(), transportDestination, rule), targets,
+			// With a boat aboard or moored where a route can board it, a start at sea and targets at sea are sailed
+			// from and to (SailingSeaEnds); targets at sea are then reached aboard, never snapped to the shore
+			SailingSeaEnds sea = null;
+			Set<Integer> landPoints = targets.points();
+			if (sailing.active())
+			{
+				phaseStarted = System.nanoTime();
+				SailingWaters waters = SailingWaters.of(collision, SailingMoorings.all());
+				int[] seaTargets = targets.points().stream().filter(waters::contains).mapToInt(Integer::intValue)
+					.toArray();
+				SailingSeaEnds ends = new SailingSeaEnds(collision, sailing, start, seaTargets,
+					restrictions::stepAllowed);
+				seaLegNanos = System.nanoTime() - phaseStarted;
+				if (ends.active())
+				{
+					sea = ends;
+					if (seaTargets.length > 0)
+					{
+						landPoints = new java.util.HashSet<>(targets.points());
+						for (int target : seaTargets) landPoints.remove(target);
+					}
+				}
+			}
+			goals = GoalStates.resolve(TargetGoals.resolve(landPoints, transportDestination, rule), targets,
 				heldItems);
 			phaseStarted = System.nanoTime();
 			AStarRoutingSession.Lookup<SiteGraph> graph = session.graph(staticData, account);
@@ -441,12 +524,41 @@ public final class AStarPathfinder implements ActiveSearch
 			// When every target is a blocked tile that no transport lands on and
 			// no walkable tile exists within the unreachable distance, no state can
 			// satisfy the goal set — skip the search like the legacy backend does.
-			if (!cancelled && goals.hasViableGoal() && packedTargets.length != 0)
+			// Targets at sea are approached through the moorings a boat can be boarded at: each is a target of the
+			// heuristic, seeded with a bound on boarding and sailing from it
+			int[][] seeds = sea == null ? new int[2][0] : sea.boardingSeeds();
+			boolean landGoals = goals.hasViableGoal() && packedTargets.length != 0;
+			if (!cancelled && (landGoals || sea != null))
 			{
 				// One search towards every target at once; it ends at the cheapest one to reach.
 				phaseStarted = System.nanoTime();
-				AStarRoutingSession.Lookup<PreparedTarget> prepared = session.target(graph.value(), collision,
-					packedTargets, targetLayers);
+				AStarRoutingSession.Lookup<PreparedTarget> prepared;
+				if (sea == null)
+				{
+					prepared = session.target(graph.value(), collision, packedTargets, targetLayers);
+				}
+				else
+				{
+					int[] land = landGoals ? packedTargets : new int[0];
+					int[] layers = landGoals ? targetLayers : new int[0];
+					int[] heuristicTargets = java.util.Arrays.copyOf(land, land.length + seeds[0].length);
+					int[] heuristicLayers = java.util.Arrays.copyOf(layers, heuristicTargets.length);
+					int[] seedCosts = new int[heuristicTargets.length];
+					for (int i = 0; i < seeds[0].length; i++)
+					{
+						heuristicTargets[land.length + i] = seeds[0][i];
+						heuristicLayers[land.length + i] = 3;
+						seedCosts[land.length + i] = seeds[1][i];
+					}
+					if (heuristicTargets.length == 0)
+					{
+						// Aboard, to targets at sea only reached straight from the boat: no walk leads anywhere
+						heuristicTargets = new int[] {start};
+						heuristicLayers = new int[] {3};
+						seedCosts = new int[] {CostArithmetic.INF};
+					}
+					prepared = session.target(graph.value(), collision, heuristicTargets, heuristicLayers, seedCosts);
+				}
 				targetReused = prepared.reused();
 				if (targetReused)
 				{
@@ -469,7 +581,12 @@ public final class AStarPathfinder implements ActiveSearch
 						}
 						return false;
 					}, heuristicWeight, restrictions, deadline::progressed,
-					goals::accepts);
+					goals::accepts, sea == null ? SeaEnds.NONE : sea);
+				if (sea != null)
+				{
+					seaLegsSailed = sea.legsSailed();
+					seaLegNanos += sea.sailingNanos();
+				}
 				forwardSearchNanos = System.nanoTime() - phaseStarted;
 				stats.nodesChecked += current.counters().statesPopped();
 				stats.transportsChecked += current.counters().transportCandidates();
@@ -509,7 +626,11 @@ public final class AStarPathfinder implements ActiveSearch
 						keptStepIndices = shiftPastLegs(path, keptStepIndices);
 						sailingLegNanos = System.nanoTime() - phaseStarted;
 					}
-					if (best != null) bestTarget = last(path);
+					if (best != null)
+					{
+						seaTarget = best.seaTarget();
+						bestTarget = seaTarget != WorldPointUtil.UNDEFINED ? seaTarget : last(path);
+					}
 				}
 			}
 
