@@ -53,3 +53,27 @@ The file is generated with KaHIP by the `routingCuts` task in
 [shortest-path-tooling](https://github.com/osrs-pathfinding/shortest-path-tooling).
 The `ExtractCollisionMap` workflow regenerates it whenever it dumps a new
 collision map and commits both files together.
+
+## Sailing
+
+Sailing the player's own boat between moorings is an ordinary transport, one
+type per boat kind (`SAILING_RAFT`, `SAILING_SKIFF`, `SAILING_SLOOP`). A boat
+leaving a berth always sets out the same way, so each leg's time doesn't depend
+on how the player got there: `SailingTimesGenerator` (the `sailingTimes` task,
+about 10 s) times every pair of moorings once, with a search by cost over the
+whole sea from each berth, and writes them to `transports/sailing_*.tsv`. The
+same searches give `sailing/sea-reach.bin`, the sea each boat kind can reach.
+`SailingTransportsTest` fails when either is stale. `PathfinderConfig` keeps a
+sailing transport only when the account has a boat of its kind moored where it
+boards; the live plugin assumes none on foot. Once a route is found,
+`SailingRoutes` fills in each leg's moves for drawing.
+
+A start aboard a boat, and targets at sea, attach to the search through
+`SeaEnds` links: from the start to each mooring the boat can dock at, from each
+mooring with a boat to the targets, and from the start straight to them.
+Targets at sea join the heuristic as seeded targets at those moorings
+(`TargetOverlay.withSeedCosts`). A link waits in its own queue at a lower bound
+on its cost, which `SailingSeaEnds` raises step by step (a distance field from
+the targets, then the leg's own search, whose frontier also bounds the leg)
+until the leg is sailed, so only legs that could end up on the route are
+searched, and only as far as cheaper routes leave room for.
