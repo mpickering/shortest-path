@@ -225,6 +225,9 @@ public class OverlayTranscriptTest
 			protected void configure()
 			{
 				bind(Client.class).toInstance(client);
+				bind(shortestpath.ShortestPathPlugin.class).toProvider(() -> mock(shortestpath.ShortestPathPlugin.class));
+				bind(net.runelite.client.ui.overlay.tooltip.TooltipManager.class)
+					.toProvider(() -> mock(net.runelite.client.ui.overlay.tooltip.TooltipManager.class));
 				bind(Settings.class).toInstance(settings);
 				bind(PathRenderState.class).toInstance(renderState);
 				bind(PathScheduler.class).toInstance(scheduler);
@@ -246,12 +249,15 @@ public class OverlayTranscriptTest
 		settings.applyOverrides(Map.of(key, value));
 	}
 
-	private void check(String scenario, net.runelite.client.ui.overlay.Overlay overlay)
+	private void check(String scenario, net.runelite.client.ui.overlay.Overlay... overlays)
 	{
 		List<String> transcript = new ArrayList<>();
 		BufferedImage image = new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB);
 		Graphics2D g = new RecordingGraphics2D(image.createGraphics(), transcript);
-		overlay.render(g);
+		for (net.runelite.client.ui.overlay.Overlay overlay : overlays)
+		{
+			overlay.render(g);
+		}
 		TranscriptGolden.compareOrRegen(scenario, transcript);
 	}
 
@@ -391,6 +397,11 @@ public class OverlayTranscriptTest
 	@Test
 	public void infoBankPickup()
 	{
+		List<PathStep> path = defaultPath();
+		when(search.getPath()).thenReturn(java.util.stream.IntStream.range(0, path.size())
+			.mapToObj(i -> new PathStep(path.get(i).getPackedPosition(), i == 0
+				? shortestpath.pathfinder.BankVisitState.CARRIED : shortestpath.pathfinder.BankVisitState.BANKED))
+			.collect(java.util.stream.Collectors.toList()));
 		BankPickupRequirements.BankPickupResult pickup = BankPickupRequirements.BankPickupResult.format(
 			client, new BankPickupAnalysis(List.of(List.of(Map.of(4151, 2L))), Set.of(4151)));
 		when(annotator.getBankPickup(any(), anyInt(), any())).thenReturn(pickup);
@@ -464,7 +475,7 @@ public class OverlayTranscriptTest
 		available.put(packed(BASE + 20, BASE + 20), new Transport[]{shuttle});
 		when(annotator.getAllDisplayTransports()).thenReturn(all);
 		when(annotator.getTransports()).thenReturn(available);
-		checkTileOverlay("render-transports");
+		check("render-transports", tileOverlay, injector.getInstance(DebugSceneOverlay.class));
 	}
 
 	@Test
@@ -516,7 +527,8 @@ public class OverlayTranscriptTest
 		available.put(packed(BASE + 28, BASE + 21), new Transport[]{shuttle});
 		when(annotator.getAllDisplayTransports()).thenReturn(all);
 		when(annotator.getTransports()).thenReturn(available);
-		check("map-overlay-transports", injector.getInstance(PathMapOverlay.class));
+		check("map-overlay-transports", injector.getInstance(PathMapOverlay.class),
+			injector.getInstance(DebugMapOverlay.class));
 	}
 
 	@Test
