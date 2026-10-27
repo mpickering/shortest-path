@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.ActiveSearch;
 import shortestpath.pathfinder.PathStep;
+import shortestpath.pathfinder.Traversal;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.sailing.SailingService;
 import shortestpath.settings.Settings;
@@ -38,14 +39,37 @@ public final class PathRenderState
 	private final Settings settings;
 
 	/**
-	 * Whether the active search sails a boat's headings rather than walking
-	 * (see {@link ActiveSearch#isSailing}), so it has a point at the end of
-	 * each move and is drawn as lines along its headings.
+	 * Whether the active route is sailing throughout (see
+	 * {@link ActiveSearch#isSailing}): the standalone sailing search. A route
+	 * with a sailing leg among walking answers {@code false}; its sailing
+	 * steps are found with {@link #isSailedSegment} and {@link #isSailingPoint}.
 	 */
 	public boolean isSailing()
 	{
 		ActiveSearch search = scheduler.getActiveSearch();
 		return search != null && search.isSailing();
+	}
+
+	/**
+	 * Whether the segment from step {@code index - 1} to step {@code index}
+	 * is sailed, so it is drawn as a sailing line rather than walking tiles:
+	 * the whole route sails, or both steps are points of a sailing leg (see
+	 * {@link shortestpath.pathfinder.Traversal#SAILING}).
+	 */
+	public boolean isSailedSegment(List<PathStep> path, int index)
+	{
+		if (index <= 0 || index >= path.size()) return false;
+		return isSailing() || (path.get(index - 1).getTraversal() == Traversal.SAILING
+			&& path.get(index).getTraversal() == Traversal.SAILING);
+	}
+
+	/**
+	 * Whether step {@code index} is a point of a sailing leg, or the whole
+	 * route sails: such a step is drawn as a sailing point.
+	 */
+	public boolean isSailingPoint(List<PathStep> path, int index)
+	{
+		return isSailing() || (index >= 0 && index < path.size() && path.get(index).getTraversal() == Traversal.SAILING);
 	}
 
 	/**
@@ -99,8 +123,9 @@ public final class PathRenderState
 		}
 
 		// A sailing path arrives once the boat's hull covers the target, with the boat's own tile up to a boat length
-		// from it, so the search says whether it got there
-		if (pathfinder.isSailing())
+		// from it, so the search says whether it got there; so does a route that ends with a sailing leg
+		if (pathfinder.isSailing()
+			|| (!path.isEmpty() && path.get(path.size() - 1).getTraversal() == Traversal.SAILING))
 		{
 			PathfinderResult result = pathfinder.getResult();
 			return result != null && !result.isReached();

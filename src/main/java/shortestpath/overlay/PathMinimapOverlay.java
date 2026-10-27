@@ -85,20 +85,20 @@ public class PathMinimapOverlay extends Overlay
 		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 
 		java.util.List<PathStep> pathPoints = search.getPath();
-		// On a boat the path sails the boat's headings, with a point a few tiles apart at the end of each move: half-size
-		// blue dots
-		boolean sailing = renderState.isSailing();
-		Color pathColor = sailing && !renderState.isPathUnreachable()
-			? PathRenderState.SAILING_PATH_COLOUR : renderState.getPathColor();
-		for (PathStep point : pathPoints)
+		// A sailing leg has a point a few tiles apart at the end of each move: half-size blue dots
+		Color walkingColor = renderState.getPathColor();
+		Color sailingColor = renderState.isPathUnreachable() ? walkingColor : PathRenderState.SAILING_PATH_COLOUR;
+		for (int i = 0; i < pathPoints.size(); i++)
 		{
-			int pathPoint = point.getPackedPosition();
+			int pathPoint = pathPoints.get(i).getPackedPosition();
 			if (WorldPointUtil.unpackWorldPlane(pathPoint) != client.getTopLevelWorldView().getPlane())
 			{
 				continue;
 			}
 
-			drawOnMinimap(graphics, pathPoint, pathColor, sailing ? 0.5 : 1.0);
+			// Points of a sailing leg are half-size blue dots, the rest the walking colour
+			boolean sailing = renderState.isSailingPoint(pathPoints, i);
+			drawOnMinimap(graphics, pathPoint, sailing ? sailingColor : walkingColor, sailing ? 0.5 : 1.0);
 		}
 		OverlayDrawing.forEachUnreachedTarget(search, pathPoints,
 			target -> drawOnMinimap(graphics, target, settings.display().colourPathCalculating()));

@@ -26,11 +26,25 @@ public interface ActiveSearch extends Runnable
 	String backendName();
 
 	/**
-	 * Whether this search sails a boat's headings rather than walking (see
-	 * {@code Pathfinder#isSailing}); the render side reads it for the sailing
-	 * draw and reached verdict instead of casting to {@code Pathfinder}.
+	 * Whether the whole route is sailing: the search is the standalone
+	 * {@code SailingPathfinder}, and every step after the first is a sailing
+	 * move. A route that mixes walking and sailing answers {@code false}; its
+	 * sailing steps say so themselves through {@link PathStep#getTraversal()},
+	 * which is what drawing goes by.
 	 */
 	boolean isSailing();
+
+	/**
+	 * The requested target a boat on {@code boatTile} facing {@code heading}
+	 * (one of the 16 headings, -1 unknown) has arrived at by the route's sailing
+	 * arrival rule — its hull covers the target — or
+	 * {@link shortestpath.WorldPointUtil#UNDEFINED} if none, or if the route
+	 * does not end at sea.
+	 */
+	default int sailingArrivedTarget(int boatTile, int heading)
+	{
+		return shortestpath.WorldPointUtil.UNDEFINED;
+	}
 
 	/**
 	 * Whether {@link #getPath()} is still the previous route shown while the

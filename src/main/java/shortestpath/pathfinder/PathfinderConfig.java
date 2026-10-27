@@ -31,7 +31,14 @@ import shortestpath.settings.TeleportationItem;
 import shortestpath.items.ItemStateService;
 import shortestpath.leagues.LeagueModeState;
 import shortestpath.pathfinder.astar.PreparedRoutingAccount;
+import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.sailing.PreparedSailingCapability;
+import shortestpath.pathfinder.sailing.SailingFleet;
+import shortestpath.pathfinder.sailing.SailingMooring;
+import shortestpath.pathfinder.sailing.SailingMoorings;
 import shortestpath.pathfinder.sailing.SailingMoves;
+import shortestpath.pathfinder.sailing.SailingTransports;
+import shortestpath.pathfinder.sailing.SailingVessel;
 import shortestpath.poh.PohService;
 import shortestpath.requirement.ClientPlayerStateSource;
 import shortestpath.requirement.PlayerStateSource;
@@ -407,6 +414,70 @@ public class PathfinderConfig
 		return PreparedRoutingAccount.compile(
 			getTransportAvailability(BankVisitState.CARRIED), getTransportAvailability(BankVisitState.BANKED), includeBankPath || targetsNeedBank,
 			accessibleBankTiles, bankVisitCost, allowTransports, this::getAdditionalTransportCost);
+	}
+
+	/**
+	 * This query's sailing capability: the account's boats ({@link #sailingFleet}) and the moorings whose
+	 * requirements it meets. {@link PreparedSailingCapability#NONE} unless a boat can be sailed. Client thread
+	 * only, like {@link #prepareAStarRoutingAccount}: requirements read this refresh's account state.
+	 */
+	public PreparedSailingCapability prepareSailingCapability()
+	{
+		SailingFleet fleet = sailingFleet();
+		if (fleet == null || (fleet.aboard() == null && fleet.vessels().isEmpty()))
+		{
+			return PreparedSailingCapability.NONE;
+		}
+		Requirements requirements = this.requirements;
+		List<SailingMooring> usable = new ArrayList<>();
+		for (SailingMooring mooring : SailingMoorings.all())
+		{
+			if (requirements != null && !requirements.satisfied(mooring.requirements()))
+			{
+				continue;
+			}
+			boolean started = true;
+			for (Quest quest : mooring.questsStarted())
+			{
+				started &= getQuestState(quest) != QuestState.NOT_STARTED;
+			}
+			if (started)
+			{
+				usable.add(mooring);
+			}
+		}
+		return new PreparedSailingCapability(fleet, usable);
+	}
+
+	/**
+	 * The player's boats as far as the game shows them. On a boat with sailing moves on, the boat aboard, from the
+	 * sailing snapshot. The boats the player owns and where they are moored are not read yet, so on foot this is
+	 * {@link SailingFleet#NONE}: no boat is assumed to be waiting at any mooring. An account model that knows its boats
+	 * overrides this.
+	 */
+	protected SailingFleet sailingFleet()
+	{
+		SailingState state = sailing.getState();
+		if (!sailingMoves || !state.hasBoat() || !state.hasBounds() || state.getBoatPoint() == WorldPointUtil.UNDEFINED)
+		{
+			return SailingFleet.NONE;
+		}
+		SailingVessel.Kind kind = null;
+		for (SailingVessel.Kind candidate : SailingVessel.Kind.values())
+		{
+			SailingVessel standard = SailingVessel.of(candidate, sailingSpeed);
+			if (standard.boundsX() == state.getBoundsX() && standard.boundsY() == state.getBoundsY()
+				&& standard.boundsWidth() == state.getBoundsWidth() && standard.boundsHeight() == state.getBoundsHeight())
+			{
+				kind = candidate;
+			}
+		}
+		SailingVessel vessel = new SailingVessel(kind, state.getBoundsX(), state.getBoundsY(), state.getBoundsWidth(),
+			state.getBoundsHeight(), sailingSpeed);
+		// One of the 16 headings 128 angle units apart, from the boat's target orientation
+		int heading = state.getHeading() < 0 ? -1 : Math.floorMod((state.getHeading() + 64) / 128, 16);
+		return new SailingFleet(List.of(), SailingFleet.BoatLocations.UNKNOWN,
+			new SailingFleet.Aboard(state.getBoatPoint(), heading, vessel, state.getPivotX(), state.getPivotY()));
 	}
 
 	public boolean hasDestination(String destinationType)
@@ -795,6 +866,8 @@ public class PathfinderConfig
 		varbitValues = context.getVarbitValues();
 		varPlayerValues = context.getVarPlayerValues();
 		requirements = new Requirements(context, policy, requirementHooks);
+		// Sailing between moorings needs a boat of the transport's kind moored where it boards
+		SailingFleet fleet = sailingFleet();
 		TransportAvailability.Builder withoutBank = new TransportAvailability.Builder(allTransports.length);
 		TransportAvailability.Builder withBank = new TransportAvailability.Builder(allTransports.length);
 		for (Transport transport : allTransports)
@@ -804,6 +877,12 @@ public class PathfinderConfig
 			// instance goes through every gate and into both availability
 			// views, so downstream consumers share one identity.
 			Transport offered = eligibility.wrapFairyRingStaff(transport);
+
+			if (offered.getType().isSailing() && !SailingTransports.usable(offered, fleet,
+				quest -> getQuestState(quest) != QuestState.NOT_STARTED))
+			{
+				continue;
+			}
 
 			// The named gates run first; a transport failing any of them is
 			// dropped before either item pool is consulted.

@@ -18,6 +18,15 @@ public class CollisionMap
 		return SplitFlagMap.getRegionExtents();
 	}
 
+	/**
+	 * What identifies the collision data behind this map: maps over the same data (each thread has its own) answer the
+	 * same object, so data derived from it once can be shared between them.
+	 */
+	public Object dataIdentity()
+	{
+		return collisionData != null ? collisionData : this;
+	}
+
 	public byte getRegionPlaneCounts(int regionIndex)
 	{
 		return collisionData.getRegionPlaneCounts(regionIndex);

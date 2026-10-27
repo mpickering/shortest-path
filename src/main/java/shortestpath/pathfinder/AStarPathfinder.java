@@ -18,6 +18,7 @@ import shortestpath.pathfinder.astar.PreparedTarget;
 import shortestpath.pathfinder.astar.RoutingStatic;
 import shortestpath.pathfinder.astar.SearchRestrictions;
 import shortestpath.pathfinder.astar.SiteGraph;
+import shortestpath.pathfinder.sailing.SailingRoutes;
 import lombok.Getter;
 
 /** ActiveSearch adapter for the A* core. */
@@ -61,6 +62,8 @@ public final class AStarPathfinder implements ActiveSearch
 	private volatile long forwardSearchNanos;
 	private volatile long walkCanonicalizeNanos;
 	private volatile List<AStarWalkCanonicalizer.Diagnostic> walkDiagnostics = List.of();
+	// Time filling in the sea on the route's sailing legs
+	private volatile long sailingLegNanos;
 	private volatile long walkRewriteNanos;
 	private volatile List<Integer> clickPoints = List.of();
 	private volatile List<Integer> keptStepIndices = List.of();
@@ -374,6 +377,10 @@ public final class AStarPathfinder implements ActiveSearch
 		int keptSteps = getKeptStepIndices().size();
 		entries.put("Walk rewrite", PathfinderStats.millis(getWalkRewriteNanos())
 			+ (keptSteps > 0 ? ", " + keptSteps + " kept" : ""));
+		if (sailingLegNanos > 0)
+		{
+			entries.put("Sailing legs", PathfinderStats.millis(sailingLegNanos));
+		}
 		entries.put("Target prep", isTargetReused() ? "reused"
 			: PathfinderStats.millis(getReverseSearchNanos() + getHeuristicPrepareNanos()));
 		entries.put("Graph prep", isGraphReused() ? "reused"
@@ -495,6 +502,13 @@ public final class AStarPathfinder implements ActiveSearch
 					clickPoints = walked.clickPoints();
 					keptStepIndices = walked.keptStepIndices();
 					path = walked.path();
+					if (SailingRoutes.hasLegs(path))
+					{
+						phaseStarted = System.nanoTime();
+						path = SailingRoutes.expand(collision, path, () -> cancelled);
+						keptStepIndices = shiftPastLegs(path, keptStepIndices);
+						sailingLegNanos = System.nanoTime() - phaseStarted;
+					}
 					if (best != null) bestTarget = last(path);
 				}
 			}
@@ -547,6 +561,20 @@ public final class AStarPathfinder implements ActiveSearch
 	private int firstTarget()
 	{
 		return targets.points().stream().min(Integer::compareUnsigned).orElse(Integer.MIN_VALUE);
+	}
+
+	// Indices into a route's steps, moved past the sailing steps filled in before them
+	private static List<Integer> shiftPastLegs(List<PathStep> expanded, List<Integer> indices)
+	{
+		if (indices.isEmpty()) return indices;
+		List<Integer> original = new java.util.ArrayList<>(expanded.size());
+		for (int i = 0; i < expanded.size(); i++)
+		{
+			if (expanded.get(i).getTraversal() != Traversal.SAILING) original.add(i);
+		}
+		List<Integer> shifted = new java.util.ArrayList<>(indices.size());
+		for (int index : indices) shifted.add(original.get(index));
+		return List.copyOf(shifted);
 	}
 
 	private static int last(List<PathStep> steps)
