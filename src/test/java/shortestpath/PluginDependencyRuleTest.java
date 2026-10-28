@@ -291,6 +291,8 @@ public class PluginDependencyRuleTest
 			"Transport records reference league regions");
 		LEAF_EDGES.put("transport -> requirement",
 			"transport parsers build requirement models");
+		LEAF_EDGES.put("transport -> sailing",
+			"Transport carries the restricted sea areas a sailing leg sails through (SeaArea)");
 		LEAF_EDGES.put("transport -> settings",
 			"TransportTypeConfig reads settings types");
 	}

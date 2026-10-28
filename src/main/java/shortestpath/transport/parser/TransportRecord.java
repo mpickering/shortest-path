@@ -145,6 +145,14 @@ public class TransportRecord
 	}
 
 	/**
+	 * Gets the sea areas field value: the restricted sea areas a sailing leg sails through.
+	 */
+	public String getSeaAreas()
+	{
+		return get(Fields.SEA_AREAS);
+	}
+
+	/**
 	 * Gets the league region override field value.
 	 */
 	public String getRegionOverride()
@@ -170,6 +178,7 @@ public class TransportRecord
 		public static final String VARBITS = "Varbits";
 		public static final String VAR_PLAYERS = "VarPlayers";
 		public static final String REGION_OVERRIDE = "Region override";
+		public static final String SEA_AREAS = "Sea areas";
 
 		private Fields()
 		{

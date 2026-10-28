@@ -83,7 +83,9 @@ public class SailingTransportsTest
 		for (int i = 0; i < sample.size(); i += 20)
 		{
 			Transport transport = sample.get(i);
-			SailingVessel vessel = SailingVessel.of(SailingTransports.kind(transport.getType()), SailingTransports.SPEED);
+			// With the parts for the areas its row names, and no others, the leg takes the row's time
+			SailingVessel vessel = SailingVessel.of(SailingTransports.kind(transport.getType()), SailingTransports.SPEED)
+				.withAreas(transport.getSeaAreas());
 			SailingLeg leg = SailingRoutes.leg(map, vessel, SailingTransports.from(transport),
 				SailingTransports.to(transport), () -> false);
 			assertNotNull(leg);

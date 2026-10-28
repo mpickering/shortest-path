@@ -39,6 +39,7 @@ import shortestpath.pathfinder.sailing.SailingMoorings;
 import shortestpath.pathfinder.sailing.SailingMoves;
 import shortestpath.pathfinder.sailing.SailingTransports;
 import shortestpath.pathfinder.sailing.SailingVessel;
+import shortestpath.sailing.SeaArea;
 import shortestpath.poh.PohService;
 import shortestpath.requirement.ClientPlayerStateSource;
 import shortestpath.requirement.PlayerStateSource;
@@ -478,8 +479,9 @@ public class PathfinderConfig
 				kind = candidate;
 			}
 		}
+		// The boat's parts are not read yet, so it is taken to have those for every restricted sea area
 		SailingVessel vessel = new SailingVessel(kind, state.getBoundsX(), state.getBoundsY(), state.getBoundsWidth(),
-			state.getBoundsHeight(), sailingSpeed);
+			state.getBoundsHeight(), sailingSpeed).withAreas(SeaArea.ALL);
 		// One of the 16 headings 128 angle units apart, from the boat's target orientation
 		int heading = state.getHeading() < 0 ? -1 : Math.floorMod((state.getHeading() + 64) / 128, 16);
 		return new SailingFleet(List.of(), SailingFleet.BoatLocations.UNKNOWN,

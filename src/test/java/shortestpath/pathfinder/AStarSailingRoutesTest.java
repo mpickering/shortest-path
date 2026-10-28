@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -22,6 +23,9 @@ import shortestpath.TestShortestPathConfig;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.astar.RoutingStatic;
 import shortestpath.pathfinder.sailing.SailingFleet;
+import shortestpath.pathfinder.sailing.SailingMoorings;
+import shortestpath.pathfinder.sailing.SailingWaters;
+import shortestpath.sailing.SeaArea;
 import shortestpath.pathfinder.sailing.SailingTransports;
 import shortestpath.pathfinder.sailing.SailingVessel;
 import shortestpath.settings.TeleportationItem;
@@ -45,6 +49,13 @@ public class AStarSailingRoutesTest
 	private static final int PORT_SARIM_BAY = point(3045, 3180);
 	// The Mudskipper Point dive site, a sea-charting spot
 	private static final int MUDSKIPPER_DIVE = point(2979, 3085);
+	private static final int PANDEMONIUM_DOCK = point(3069, 2986);
+	private static final int PORT_TYRAS_DOCK = point(2143, 3121);
+	// A sea-charting sealed crate off Isafdar, in crystal-flecked water
+	private static final int ISAFDAR_CRATE = point(2161, 3203);
+	// Off the Ruins of Unkah, and past the Elid Delta islands: a raft gets between the islands, a skiff doesn't
+	private static final int OFF_UNKAH = point(3143, 2847);
+	private static final int PAST_THE_ELID_DELTA = point(3273, 2738);
 	private static final SailingFleet ABOARD_IN_THE_BAY = new SailingFleet(List.of(), SailingFleet.BoatLocations.UNKNOWN,
 		new SailingFleet.Aboard(PORT_SARIM_BAY, 8, SailingVessel.of(SailingVessel.Kind.RAFT, 2.0), 0, 0));
 
@@ -231,6 +242,78 @@ public class AStarSailingRoutesTest
 			for (int kept : search.getKeptStepIndices())
 				assertEquals(Traversal.WALK, path.get(kept).getTraversal());
 		}
+	}
+
+	@Test
+	public void aTargetInRestrictedWaterIsReachedOnlyWithThePart()
+	{
+		SailingVessel skiff = SailingVessel.of(SailingVessel.Kind.SKIFF, 2.0);
+		AStarPathfinder without = search(everywhere(skiff), 99, PORT_TYRAS_DOCK, ISAFDAR_CRATE);
+		assertFalse(without.getResult().isReached());
+		assertEquals("known out of reach without sailing a leg", "0 legs sailed", legsSailed(without));
+		AStarPathfinder with = search(everywhere(skiff.withAreas(Set.of(SeaArea.CRYSTALLINE))), 99, PORT_TYRAS_DOCK,
+			ISAFDAR_CRATE);
+		assertTrue(with.getResult().getMessage(), with.getResult().isReached());
+		assertEquals(ISAFDAR_CRATE, with.getSeaTarget());
+	}
+
+	@Test
+	public void aLegThroughRestrictedWaterIsSailedOnlyWithThePart()
+	{
+		// Straight through Tempor Tantrum with a stormy mast, round it without
+		SailingVessel raft = SailingVessel.of(SailingVessel.Kind.RAFT, 2.0);
+		AStarPathfinder round = search(everywhere(raft), 99, PANDEMONIUM_DOCK, DOGNOSE_MOORING);
+		AStarPathfinder through = search(everywhere(raft.withAreas(Set.of(SeaArea.TEMPOR_TANTRUM))), 99,
+			PANDEMONIUM_DOCK, DOGNOSE_MOORING);
+		assertTrue(round.getResult().isReached());
+		assertTrue(through.getResult().isReached());
+		assertTrue(through.getResult().getPathCost() + " < " + round.getResult().getPathCost(),
+			through.getResult().getPathCost() < round.getResult().getPathCost());
+		assertTrue(sailingTransport(through).getSeaAreas().contains(SeaArea.TEMPOR_TANTRUM));
+		assertTrue(sailingTransport(round).getSeaAreas().isEmpty());
+		// The filled-in leg keeps out of the water the boat can't enter
+		CollisionMap map = new CollisionMap(TestWorldData.map());
+		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
+		for (PathStep step : round.getPath())
+		{
+			if (step.getTraversal() == Traversal.SAILING) assertNull(waters.area(step.getPackedPosition()));
+		}
+	}
+
+	@Test
+	public void waterTheHullCannotGetThroughIsKnownOutOfReachWithoutSailing()
+	{
+		AStarPathfinder skiff = search(aboard(OFF_UNKAH, SailingVessel.Kind.SKIFF), 99, OFF_UNKAH, PAST_THE_ELID_DELTA);
+		assertFalse(skiff.getResult().isReached());
+		assertEquals("0 legs sailed", legsSailed(skiff));
+		AStarPathfinder raft = search(aboard(OFF_UNKAH, SailingVessel.Kind.RAFT), 99, OFF_UNKAH, PAST_THE_ELID_DELTA);
+		assertTrue(raft.getResult().getMessage(), raft.getResult().isReached());
+	}
+
+	private static SailingFleet everywhere(SailingVessel vessel)
+	{
+		return new SailingFleet(List.of(vessel), SailingFleet.BoatLocations.EVERY_MOORING, null);
+	}
+
+	// Aboard a boat with every part, as the plugin takes the boat the player is on to be: only its hull limits it
+	private static SailingFleet aboard(int tile, SailingVessel.Kind kind)
+	{
+		return new SailingFleet(List.of(), SailingFleet.BoatLocations.UNKNOWN,
+			new SailingFleet.Aboard(tile, -1, SailingVessel.of(kind, 2.0).withAreas(SeaArea.ALL), 0, 0));
+	}
+
+	// The legs the search sailed at sea, as its debug stats report them, or "0 legs sailed" with none offered
+	private static String legsSailed(AStarPathfinder search)
+	{
+		String ends = search.debugStats().get("Sea ends");
+		return ends == null ? "0 legs sailed" : ends.substring(ends.indexOf(", ") + 2);
+	}
+
+	private static Transport sailingTransport(AStarPathfinder search)
+	{
+		int index = transportIndex(search.getPath());
+		assertTrue("the route sails", index >= 0);
+		return search.getPath().get(index).getTransport();
 	}
 
 	private static List<Integer> positions(List<PathStep> path)

@@ -82,7 +82,8 @@ jobs:
 
       - name: Export collision map
         run: |
-          java -jar cache.jar --cachedir ./cache --xteapath ./keys.json --outputdir "output"
+          java -jar cache.jar --cachedir ./cache --xteapath ./keys.json --outputdir "output" \
+            --seaareas src/main/resources/sailing/sea-areas.tsv
 
       - name: Export world map areas
         run: |
@@ -121,6 +122,11 @@ jobs:
             -PkahipNodeSeparator="$RUNNER_TEMP/kahip-bin/node_separator" \
             -ProutingCutsOutput="$GITHUB_WORKSPACE/src/main/resources/routing-cuts.bin"
 
+      # The sailing transports and the sea each boat reaches are timed on the collision map and the sea areas, so
+      # they are made again with them.
+      - name: Generate sailing times
+        run: ./gradlew sailingTimes
+
       # Gate: a corrupt or truncated export must never reach master. The zip
       # integrity check catches a broken archive; the test suite below loads
       # collision-map.zip and routing-cuts.bin from the real resources, so a
@@ -129,7 +135,8 @@ jobs:
         run: |
           unzip -t src/main/resources/collision-map.zip > /dev/null
           test -s src/main/resources/routing-cuts.bin
-          ls -lh src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin
+          test -s src/main/resources/sailing/sea-areas.tsv
+          ls -lh src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin src/main/resources/sailing/sea-areas.tsv
 
       - name: Build and test plugin with new data
         run: ./gradlew jar test --stacktrace
@@ -139,11 +146,11 @@ jobs:
           rm -rf runelite cache output cache.jar keys.json cache.zip tooling
 
       # `add` is an explicit pathspec so the commit can only ever contain the
-      # three generated artifacts, regardless of what else is left in the
+      # generated artifacts, regardless of what else is left in the
       # workspace.
       - name: Commit changes
         uses: EndBug/add-and-commit@v11
         with:
           default_author: github_actions
-          add: "src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin src/main/resources/world-map-areas.tsv"
+          add: "src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin src/main/resources/world-map-areas.tsv src/main/resources/sailing src/main/resources/transports/sailing_raft.tsv src/main/resources/transports/sailing_skiff.tsv src/main/resources/transports/sailing_sloop.tsv"
           message: "Update collision map"

@@ -21,6 +21,10 @@ import shortestpath.pathfinder.astar.SeaEnds;
  * ({@link #refine}) and guiding each leg's search, and it stays still while a leg is sailed, so the search's estimate
  * is consistent and the leg exact. Legs from the start to the moorings share one search by cost from the boat, which
  * goes only as far as the moorings the router reaches.
+ * <p>
+ * A link the boat can't sail is never offered, so no search runs to find that out: the moorings whose boats reach
+ * each tile ({@link SailingReach}) tell a channel its hull can't get through, and the pieces of sea
+ * ({@link SailingWaters#connects}) a restricted area its parts don't let it enter.
  */
 public final class SailingSeaEnds implements SeaEnds
 {
@@ -87,17 +91,20 @@ public final class SailingSeaEnds implements SeaEnds
 			SailingVessel vessel = aboard.vessel();
 			BoatHull hull = vessel.hull(aboard.pivotX(), aboard.pivotY());
 			int body = waters.body(this.start);
+			int[] pieces = {waters.piece(this.start)};
 			List<Integer> links = new ArrayList<>();
 			for (SailingMooring mooring : landable)
 			{
 				if (!capability.canDock(mooring, vessel) || !opensOnto(mooring, body)) continue;
+				if (!reaches(vessel, hull, pieces, mooring)) continue;
 				int bound = SailingMooring.DISEMBARK_TICKS
 					+ ticks(vessel, distance(this.start, mooring.berthTile()) - SailingMooring.DOCKING_RANGE);
 				links.add(add(START, mooring, vessel, hull, aboard.heading(), bound));
 			}
 			startLinks = links.stream().mapToInt(Integer::intValue).toArray();
 			int bound = targetBound(vessel, hull, this.start, body);
-			if (bound != NO_LINK && reachesATarget(vessel, hull, this.start)) directLink = add(DIRECT, null, vessel, hull, aboard.heading(), bound);
+			if (bound != NO_LINK && reachesATarget(vessel, hull, this.start, null, pieces))
+				directLink = add(DIRECT, null, vessel, hull, aboard.heading(), bound);
 		}
 		if (this.seaTargets.length > 0)
 		{
@@ -110,8 +117,8 @@ public final class SailingSeaEnds implements SeaEnds
 					int sailed = Integer.MAX_VALUE;
 					for (int body : bodies(mooring)) sailed = Math.min(sailed, targetBound(vessel, hull, mooring.berthTile(), body));
 					if (sailed == Integer.MAX_VALUE || sailed == NO_LINK) continue;
-					// Beyond a channel the hull can't get through: no search would arrive
-					if (!reachesATarget(vessel, hull, mooring.berthTile())) continue;
+					// Beyond a channel the hull can't get through or water it can't enter: no search would arrive
+					if (!reachesATarget(vessel, hull, WorldPointUtil.UNDEFINED, mooring, waters.berthPieces(mooring))) continue;
 					// Round the land between, cell by cell over the hull's own water
 					int cells = cellTicks(vessel, hull, mooring.berthTile());
 					if (cells == NO_LINK) continue;
@@ -333,7 +340,7 @@ public final class SailingSeaEnds implements SeaEnds
 			SailingVessel vessel = vessels.get(first);
 			BoatHull hull = hulls.get(first);
 			SailingQuery query = new SailingQuery(start, headings.get(first), vessel.moves(), hull,
-				SailingObjective.TICKS, new int[0], new int[0], exits, gate).landingOn(waters.forHull(map, hull)::navigable);
+				SailingObjective.TICKS, new int[0], new int[0], exits, gate).landingOn(waters.landing(map, vessel, hull));
 			startSolver = new SailingSolver(map, query);
 		}
 		startSolver.advance(limit, cancelled, new SailingSolver.Listener()
@@ -383,7 +390,7 @@ public final class SailingSeaEnds implements SeaEnds
 			return ticks == Integer.MAX_VALUE ? SailingSolver.NO_ROUTE : Math.min(ticks, cap);
 		};
 		SailingQuery query = new SailingQuery(from, headings.get(link), vessel.moves(), hull, SailingObjective.TICKS,
-			seaTargets, new int[0], List.of(), gate, estimate).landingOn(waters.forHull(map, hull)::navigable);
+			seaTargets, new int[0], List.of(), gate, estimate).landingOn(waters.landing(map, vessel, hull));
 		return new SailingSolver(map, query);
 	}
 
@@ -490,21 +497,30 @@ public final class SailingSeaEnds implements SeaEnds
 	}
 
 	/**
-	 * Whether a boat of vessel's kind setting out from {@code from} can arrive at some target, as far as the sea each
-	 * kind reaches from the moorings tells: unknown for a boat of no standard kind, or one off that sea (it set out
-	 * from somewhere else), so true.
+	 * Whether a boat setting out from {@code from}, or from {@code mooring}'s berth, from {@code pieces} can arrive at
+	 * some target: one its kind's boats can sail to from there, by pieces of sea its parts let it enter. Never false
+	 * for a boat that can.
 	 */
-	private boolean reachesATarget(SailingVessel vessel, BoatHull hull, int from)
+	private boolean reachesATarget(SailingVessel vessel, BoatHull hull, int from, SailingMooring mooring, int[] pieces)
 	{
-		SailingVessel.Kind kind = vessel.kind();
-		if (kind == null || hull == null) return true;
-		SailingReach reach = SailingReach.load();
-		if (waters.contains(from) && !reach.reaches(kind, from)) return true;
-		for (int target : seaTargets)
+		if (vessel.kind() != null && hull != null)
 		{
-			if (reach.reachesNear(kind, target, arrivalReach(hull))) return true;
+			SailingReach reach = SailingReach.load();
+			boolean may = mooring == null ? reach.mayReach(vessel.kind(), from, seaTargets, arrivalReach(hull))
+				: reach.mayReachFrom(vessel.kind(), mooring, seaTargets, arrivalReach(hull));
+			if (!may) return false;
 		}
-		return false;
+		java.util.Set<Integer> near = new java.util.TreeSet<>();
+		for (int target : seaTargets) for (int piece : waters.piecesNear(target, arrivalReach(hull))) near.add(piece);
+		return !near.isEmpty() && waters.connects(vessel, pieces, near.stream().mapToInt(Integer::intValue).toArray());
+	}
+
+	/** Whether a boat setting out from the start, from {@code pieces}, can dock at {@code mooring}; see above. */
+	private boolean reaches(SailingVessel vessel, BoatHull hull, int[] pieces, SailingMooring mooring)
+	{
+		if (vessel.kind() != null && hull != null && !SailingReach.load().mayReach(vessel.kind(), start,
+			new int[] {mooring.berthTile()}, SailingMooring.DOCKING_RANGE)) return false;
+		return waters.connects(vessel, pieces, waters.berthPieces(mooring));
 	}
 
 	// The straight line to the nearest target on body, at top speed, or NO_LINK with none there
