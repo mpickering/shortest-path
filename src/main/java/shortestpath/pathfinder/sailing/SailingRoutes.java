@@ -46,8 +46,9 @@ public final class SailingRoutes
 			SailingMooring to = transport == null ? null : SailingTransports.to(transport);
 			if (from != null && to != null)
 			{
+				// The boat the leg was timed with: one with the parts for the areas it sails through, and no others
 				SailingVessel vessel = SailingVessel.of(SailingTransports.kind(transport.getType()),
-					SailingTransports.SPEED);
+					SailingTransports.SPEED).withAreas(transport.getSeaAreas());
 				SailingLeg leg = leg(map, vessel, from, to, cancelled);
 				if (leg == null)
 				{
@@ -86,7 +87,7 @@ public final class SailingRoutes
 			return (int) Math.floor(Math.max(0, distance - SailingMooring.DOCKING_RANGE) / fastest);
 		};
 		SailingQuery query = new SailingQuery(from.berthTile(), -1, moves, hull, SailingObjective.TICKS, new int[0],
-			new int[0], List.of(to), SailingQuery.EdgeGate.NONE, estimate).landingOn(waters.forHull(map, hull)::navigable);
+			new int[0], List.of(to), SailingQuery.EdgeGate.NONE, estimate).landingOn(waters.landing(map, vessel, hull));
 		SailingSolver solver = new SailingSolver(map, query);
 		SailingLeg[] leg = new SailingLeg[1];
 		try

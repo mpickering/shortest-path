@@ -12,6 +12,7 @@ import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.IntDeque;
 import shortestpath.pathfinder.SplitFlagMap;
+import shortestpath.sailing.SeaArea;
 
 /**
  * The navigable sea: the open water a boat can reach from a mooring. In the collision map the sea is open tiles cut off
@@ -28,6 +29,12 @@ import shortestpath.pathfinder.SplitFlagMap;
  * <p>
  * Each hull has its own part of it, the tiles it can end a move on ({@link HullSea}), with the coarse grids its
  * bounds are made on.
+ * <p>
+ * The sea is also split into pieces, each of one {@link SeaArea} or of open water: the collision map marks the edges
+ * where two sea areas meet with the boundary flag a door has, and {@link #SEEDS} names the area of each restricted
+ * piece by one of its tiles. A boat may end a move only in a piece its parts let it enter ({@link #allows}). Which
+ * pieces touch, within a move of each other, makes a small graph that tells at once whether a boat can get from one
+ * piece to another at all ({@link #connects}).
  */
 public final class SailingWaters
 {
@@ -39,6 +46,11 @@ public final class SailingWaters
 	// How far the dock side of a berth may be from the mooring's land tile, in walking steps
 	private static final int DOCK_SIDE_STEPS = 40;
 	private static final int MAX_BODIES = 255;
+	/** The restricted sea areas' seed tiles, written with the collision map by its dumper. */
+	public static final String SEEDS = "/sailing/sea-areas.tsv";
+	// How far apart, in tiles along each axis, two pieces still count as touching: as far as a boat's longest move
+	// goes, so a move that hops over a narrow strip of another area joins the pieces either side
+	private static final int PIECE_REACH = 4;
 
 	private static Object cachedMap;
 	private static List<SailingMooring> cachedMoorings;
@@ -55,12 +67,24 @@ public final class SailingWaters
 	private final byte[][] blocking;
 	// The sea each hull can end its moves on, by its core (BoatHull.coreOffsets)
 	private final Map<String, HullSea> hullSeas = new java.util.HashMap<>();
+	// The piece of each tile, numbered from 1, or 0 for none; per region and plane, null for regions with no sea or
+	// all of one piece (uniformPieces then has it)
+	private final char[][] pieces;
+	private final int[] uniformPieces;
+	// Per piece (from 1; 0 unused): its restricted area, or null for open water, and the pieces it touches
+	private final List<SeaArea> pieceAreas = new ArrayList<>();
+	private int[][] pieceNeighbours = new int[0][];
+	// The pieces each mooring's berth opens onto
+	private final Map<SailingMooring, int[]> berthPieces = new IdentityHashMap<>();
 
 	private SailingWaters(SplitFlagMap.RegionExtent extent)
 	{
 		this.extent = extent;
 		bodies = new byte[(extent.getWidth() + 1) * (extent.getHeight() + 1) * PLANES][];
 		blocking = new byte[bodies.length][];
+		pieces = new char[bodies.length][];
+		uniformPieces = new int[bodies.length];
+		pieceAreas.add(null);
 	}
 
 	/** The sea of {@code map} the moorings open onto, computed once per collision data and mooring set. */
@@ -103,7 +127,44 @@ public final class SailingWaters
 			}
 			waters.berthBodies.put(mooring, opensOnto.stream().mapToInt(Integer::intValue).toArray());
 		}
+		waters.split(map, seeds(), queue);
+		for (SailingMooring mooring : moorings)
+		{
+			int berth = mooring.berthTile();
+			Set<Integer> opensOnto = new TreeSet<>();
+			Set<Integer> dockSide = walkableFrom(map, mooring.landTile(), DOCK_SIDE_STEPS);
+			int x = WorldPointUtil.unpackWorldX(berth), y = WorldPointUtil.unpackWorldY(berth);
+			int plane = WorldPointUtil.unpackWorldPlane(berth);
+			for (int dy = -BERTH_REACH; dy <= BERTH_REACH; dy++)
+			{
+				for (int dx = -BERTH_REACH; dx <= BERTH_REACH; dx++)
+				{
+					int piece = waters.piece(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane));
+					if (piece != 0 && !dockSide.contains(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane)))
+						opensOnto.add(piece);
+				}
+			}
+			waters.berthPieces.put(mooring, opensOnto.stream().mapToInt(Integer::intValue).toArray());
+		}
 		return waters;
+	}
+
+	/** The restricted areas' seed tiles from {@link #SEEDS}: each area, then the tiles naming its pieces. */
+	static Map<SeaArea, int[]> seeds()
+	{
+		Map<SeaArea, List<Integer>> byArea = new java.util.EnumMap<>(SeaArea.class);
+		String text = new String(SailingTransports.readBytes(SEEDS), java.nio.charset.StandardCharsets.UTF_8);
+		for (String line : text.split("\n"))
+		{
+			if (line.isEmpty() || line.startsWith("#")) continue;
+			String[] fields = line.split("\t");
+			String[] point = fields[1].trim().split(" ");
+			byArea.computeIfAbsent(SeaArea.valueOf(fields[0].trim()), area -> new ArrayList<>()).add(WorldPointUtil
+				.packWorldPoint(Integer.parseInt(point[0]), Integer.parseInt(point[1]), Integer.parseInt(point[2])));
+		}
+		Map<SeaArea, int[]> seeds = new java.util.EnumMap<>(SeaArea.class);
+		byArea.forEach((area, tiles) -> seeds.put(area, tiles.stream().mapToInt(Integer::intValue).toArray()));
+		return seeds;
 	}
 
 	/**
@@ -129,6 +190,17 @@ public final class SailingWaters
 	{
 		int[] core = hull == null ? new int[] {0, 0} : hull.coreOffsets();
 		return hullSeas.computeIfAbsent(java.util.Arrays.toString(core), key -> new HullSea(this, map, core));
+	}
+
+	/**
+	 * Where {@code vessel} with {@code hull} can end its moves: the sea its hull fits ({@link #forHull}), in the pieces
+	 * its parts let it enter.
+	 */
+	public java.util.function.IntPredicate landing(CollisionMap map, SailingVessel vessel, BoatHull hull)
+	{
+		HullSea sea = forHull(map, hull);
+		if (vessel.areas().containsAll(SeaArea.ALL)) return sea::navigable;
+		return tile -> sea.navigable(tile) && allows(vessel, tile);
 	}
 
 	/** Whether tile (x, y, z) blocks a boat ({@link BoatHull#blocksBoat}), remembered per tile. */
@@ -206,6 +278,103 @@ public final class SailingWaters
 		return opens == null ? null : opens.clone();
 	}
 
+	/** The piece of sea {@code packedTile} lies in, numbered from 1, or 0 if it is not sea. */
+	public int piece(int packedTile)
+	{
+		int region = regionOf(packedTile);
+		if (region < 0) return 0;
+		if (pieces[region] == null) return bodies[region] != null && bodies[region][indexInRegion(packedTile)] != 0
+			? uniformPieces[region] : 0;
+		return pieces[region][indexInRegion(packedTile)];
+	}
+
+	/** The restricted area {@code packedTile} lies in, or {@code null} for open water or land. */
+	public SeaArea area(int packedTile)
+	{
+		return pieceAreas.get(piece(packedTile));
+	}
+
+	/** Whether {@code vessel}'s parts let it end a move on {@code packedTile}. */
+	public boolean allows(SailingVessel vessel, int packedTile)
+	{
+		return vessel.canEnter(area(packedTile));
+	}
+
+	/** The restricted area of {@code piece}, or {@code null} for open water. */
+	public SeaArea pieceArea(int piece)
+	{
+		return pieceAreas.get(piece);
+	}
+
+	/** Pieces of sea. */
+	public int pieceCount()
+	{
+		return pieceAreas.size() - 1;
+	}
+
+	/**
+	 * The pieces {@code mooring}'s berth opens onto, or {@code null} for a mooring this sea was not made from.
+	 */
+	public int[] berthPieces(SailingMooring mooring)
+	{
+		int[] opens = berthPieces.get(mooring);
+		return opens == null ? null : opens.clone();
+	}
+
+	/** The pieces of sea within {@code reach} tiles of {@code packedTile}: where a boat can be to arrive there. */
+	public int[] piecesNear(int packedTile, double reach)
+	{
+		int radius = (int) Math.ceil(reach);
+		int x = WorldPointUtil.unpackWorldX(packedTile), y = WorldPointUtil.unpackWorldY(packedTile);
+		int plane = WorldPointUtil.unpackWorldPlane(packedTile);
+		Set<Integer> near = new TreeSet<>();
+		for (int dy = -radius; dy <= radius; dy++)
+		{
+			for (int dx = -radius; dx <= radius; dx++)
+			{
+				if (dx * dx + dy * dy > reach * reach) continue;
+				int piece = piece(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane));
+				if (piece != 0) near.add(piece);
+			}
+		}
+		return near.stream().mapToInt(Integer::intValue).toArray();
+	}
+
+	/**
+	 * Whether {@code vessel} can get from one of the pieces {@code from} to one of {@code to} by way of pieces its parts
+	 * let it enter, as far as which pieces touch tells: never false for a boat that can, so a search need not look
+	 * when it is. It sets out from its own piece whatever that is.
+	 */
+	public boolean connects(SailingVessel vessel, int[] from, int[] to)
+	{
+		if (from == null || to == null) return true;
+		boolean[] wanted = new boolean[pieceAreas.size()];
+		for (int piece : to) wanted[piece] = true;
+		boolean[] seen = new boolean[pieceAreas.size()];
+		IntDeque queue = new IntDeque(64);
+		for (int piece : from)
+		{
+			if (wanted[piece]) return true;
+			if (!seen[piece])
+			{
+				seen[piece] = true;
+				queue.addLast(piece);
+			}
+		}
+		while (!queue.isEmpty())
+		{
+			int piece = queue.pollFirst();
+			for (int next : pieceNeighbours[piece])
+			{
+				if (seen[next] || !vessel.canEnter(pieceAreas.get(next))) continue;
+				if (wanted[next]) return true;
+				seen[next] = true;
+				queue.addLast(next);
+			}
+		}
+		return false;
+	}
+
 	/** Sea tiles. */
 	public int tileCount()
 	{
@@ -235,6 +404,107 @@ public final class SailingWaters
 			if (map.n(tx, ty, tz)) add(tx, ty + 1, tz, body, queue);
 		}
 		return body;
+	}
+
+	// Splits the sea into pieces at the edges the collision map marks as boundaries, names the restricted ones from
+	// their seeds, and joins the pieces within PIECE_REACH of each other across a boundary
+	private void split(CollisionMap map, Map<SeaArea, int[]> seeds, IntDeque queue)
+	{
+		int[] count = {0};
+		forEachTile(tile ->
+		{
+			if (piece(tile) != 0) return;
+			if (pieceAreas.size() > Character.MAX_VALUE) throw new IllegalStateException("too many pieces of sea");
+			int piece = pieceAreas.size();
+			pieceAreas.add(null);
+			setPiece(tile, piece);
+			queue.addLast(tile);
+			while (!queue.isEmpty())
+			{
+				int next = queue.pollFirst();
+				int tx = WorldPointUtil.unpackWorldX(next), ty = WorldPointUtil.unpackWorldY(next);
+				int tz = WorldPointUtil.unpackWorldPlane(next);
+				if (map.w(tx, ty, tz) && !map.wallE(tx - 1, ty, tz)) joinPiece(tx - 1, ty, tz, piece, queue);
+				if (map.e(tx, ty, tz) && !map.wallE(tx, ty, tz)) joinPiece(tx + 1, ty, tz, piece, queue);
+				if (map.s(tx, ty, tz) && !map.wallN(tx, ty - 1, tz)) joinPiece(tx, ty - 1, tz, piece, queue);
+				if (map.n(tx, ty, tz) && !map.wallN(tx, ty, tz)) joinPiece(tx, ty + 1, tz, piece, queue);
+			}
+			count[0]++;
+		});
+		for (Map.Entry<SeaArea, int[]> area : seeds.entrySet())
+		{
+			for (int seed : area.getValue())
+			{
+				int piece = piece(seed);
+				if (piece != 0) pieceAreas.set(piece, area.getKey());
+			}
+		}
+		// Pieces touch where a boundary edge parts them; so, to be sure, does every piece within a move of one
+		List<Set<Integer>> touching = new ArrayList<>();
+		for (int i = 0; i < pieceAreas.size(); i++) touching.add(new TreeSet<>());
+		Set<Integer> around = new TreeSet<>();
+		forEachTile(tile ->
+		{
+			int x = WorldPointUtil.unpackWorldX(tile), y = WorldPointUtil.unpackWorldY(tile);
+			int z = WorldPointUtil.unpackWorldPlane(tile);
+			if (!map.wallE(x, y, z) && !map.wallN(x, y, z)) return;
+			around.clear();
+			for (int dy = -PIECE_REACH; dy <= PIECE_REACH; dy++)
+			{
+				for (int dx = -PIECE_REACH; dx <= PIECE_REACH; dx++)
+				{
+					int piece = piece(WorldPointUtil.packWorldPoint(x + dx, y + dy, z));
+					if (piece != 0) around.add(piece);
+				}
+			}
+			for (int a : around)
+			{
+				for (int b : around) if (a != b) touching.get(a).add(b);
+			}
+		});
+		pieceNeighbours = new int[pieceAreas.size()][];
+		for (int i = 0; i < pieceNeighbours.length; i++)
+			pieceNeighbours[i] = touching.get(i).stream().mapToInt(Integer::intValue).toArray();
+		compactPieces();
+	}
+
+	private void joinPiece(int x, int y, int plane, int piece, IntDeque queue)
+	{
+		int tile = WorldPointUtil.packWorldPoint(x, y, plane);
+		if (body(x, y, plane) == 0 || piece(tile) != 0) return;
+		setPiece(tile, piece);
+		queue.addLast(tile);
+	}
+
+	private void setPiece(int tile, int piece)
+	{
+		int region = regionOf(tile);
+		if (pieces[region] == null) pieces[region] = new char[REGION_SIZE * REGION_SIZE];
+		pieces[region][indexInRegion(tile)] = (char) piece;
+	}
+
+	// Keeps one number for each region whose sea is all one piece
+	private void compactPieces()
+	{
+		for (int region = 0; region < pieces.length; region++)
+		{
+			char[] regionPieces = pieces[region];
+			if (regionPieces == null) continue;
+			int only = -1;
+			boolean uniform = true;
+			for (int index = 0; index < regionPieces.length && uniform; index++)
+			{
+				if (bodies[region][index] == 0) continue;
+				if (only < 0) only = regionPieces[index];
+				else uniform = regionPieces[index] == only;
+			}
+			if (uniform && only > 0)
+			{
+				// Land keeps no piece: a uniform region answers its land tiles from the bodies
+				uniformPieces[region] = only;
+				pieces[region] = null;
+			}
+		}
 	}
 
 	// The tiles at most {@code steps} open-edge steps from {@code from}
