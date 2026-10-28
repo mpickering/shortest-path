@@ -56,12 +56,49 @@ collision map and commits both files together.
 
 ## Sailing
 
+### The model
+
+Everything below is a cache, a bound or a shortcut for this model, and must
+agree with it: a transport's time is the model's cost for the boat it was
+timed for, a bound is never more than the model's cost, and nothing pruned is a
+state the model can reach.
+
+- **States.** The player is on land at a tile, as when walking, or aboard a
+  boat at sea: the boat (its kind, its parts and its base speed), its tile and
+  its heading. The boat sits at its tile's centre throughout; the game's 16
+  points within a tile aren't modelled.
+- **A boat state is possible** when its hull, facing its heading, overlaps no
+  tile that blocks boats (`BoatHull.fits`), on sea in a piece of water its
+  parts let it enter.
+- **Board** at a mooring's land tile, with a boat of the player's moored there
+  that fits the mooring: the boat is then at any possible state within docking
+  range of the berth (`SailingWaters.castOff`), for the boarding ticks.
+  Boarding mirrors docking; the berth itself, a blocked dock tile, is never a
+  boat state.
+- **Sail** one move (`SailingMoves`): from a possible state to another, with
+  the hull's sweep along the move clear, for the move's ticks. Turning is
+  free: the boat may take any heading before a move.
+- **Dock** from any possible state within docking range of a mooring the boat
+  fits and the player meets the requirements of: the player is on the
+  mooring's land tile, for the docking ticks.
+- **A start aboard** is the boat's state, or, when that isn't possible (a boat
+  moored over its dock), where it casts off from the mooring nearest it. A
+  target at sea is reached by a boat state that covers it.
+
+What the model leaves out, for now: where the boat is after docking (a boat
+can be paid to move to any port, so a later boarding doesn't depend on it),
+turning time, speeding up and slowing down. The docking range (5 tiles) and
+the boarding and docking ticks are estimates.
+
+### Transports and sea links
+
 Sailing the player's own boat between moorings is an ordinary transport, one
 type per boat kind (`SAILING_RAFT`, `SAILING_SKIFF`, `SAILING_SLOOP`). A boat
-leaving a berth always sets out the same way, so each leg's time doesn't depend
-on how the player got there: `SailingTimesGenerator` (the `sailingTimes` task,
-about half a minute) times every pair of moorings once per boat kind, with a
-search by cost over the whole sea from each berth, and writes them to
+boarded at a mooring always casts off the same way, so each leg's time doesn't
+depend on how the player got there: `SailingTimesGenerator` (the `sailingTimes`
+task, about half a minute) times every pair of moorings once per boat kind,
+with a search by cost over the whole sea from where the boat casts off at each,
+and writes them to
 `transports/sailing_*.tsv`. The legs are timed for a boat with every part its
 kind can take, at 2 tiles a tick.
 The same searches give `sailing/sea-reach.bin`, the sea each boat kind can
@@ -86,10 +123,11 @@ any other boat it only bounds it, and the boat's own leg is sailed when the
 search wants it (below). Keeping out of water only makes a leg longer, so with
 fewer parts the row's time is the bound. At another speed the moves themselves
 change, each tick's velocity being rounded to quarter tiles, so the bound is the
-straight line between the berths at the boat's top speed. So the tables grow
+straight line between the berths, less the docking range at each end, at the
+boat's top speed. So the tables grow
 with the moorings, not with the ways a boat can be fitted out. `PathfinderConfig`
-prices each leg for the account's boat, and drops one whose berths no water the
-boat may enter joins. The live plugin doesn't read a boat's parts yet, so it
+prices each leg for the account's boat, and drops one where no water the boat
+may enter joins where it casts off to where it docks. The live plugin doesn't read a boat's parts yet, so it
 takes the boat the player is aboard to have them all.
 
 A start aboard a boat, targets at sea, and legs between moorings timed for

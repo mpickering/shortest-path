@@ -13,9 +13,10 @@ import shortestpath.requirement.model.DestinationRequirements;
  * A mooring point: one place where a player boards their own boat or leaves it, the boundary between walking and
  * sailing. Ports have a gangplank, islands a mooring point; both work the same way here.
  * <p>
- * The walking side is the land tile the player uses the gangplank from; the sailing side is the berth, the tile the
- * boat sits on while moored. A berth is a blocked dock tile, so a sailing route leaves it with the hull's berthed-tile
- * escape and arrives back by coming within {@link #DOCKING_RANGE} of it.
+ * The walking side is the land tile the player uses the gangplank from; the sailing side is the berth, the dock tile
+ * the boat is moored at. A berth is blocked, so it is never a boat state: boarding puts the boat anywhere within
+ * {@link #DOCKING_RANGE} of it that the boat can be ({@link SailingWaters#castOff}), and docking takes it from
+ * anywhere in that range.
  */
 @Getter
 @Accessors(fluent = true)

@@ -20,7 +20,7 @@ import shortestpath.sailing.SeaArea;
 
 /**
  * Writes the sailing transports ({@link SailingTransports}): for each boat kind at {@link SailingTransports#SPEED},
- * the ticks from each mooring's berth to every other mooring it can dock at, from searches by cost over the whole sea
+ * the ticks from casting off at each mooring to docking at every other mooring it can, from searches by cost over the whole sea
  * per berth; and the sea each kind reaches from them, in components ({@link SailingReach}). Run it with the
  * {@code sailingTimes} task whenever the collision map, the moorings or the sailing moves change;
  * {@code SailingTransportsTest} says when the committed files are stale.
@@ -128,9 +128,12 @@ public final class SailingTimesGenerator
 		BoatHull hull = vessel.hull(0, 0);
 		java.util.function.IntPredicate landing = waters.landing(map, vessel, hull);
 		PrimitiveIntList unreached = new PrimitiveIntList(1 << 16);
+		// Only tiles the boat can be on: one whose hull overlaps a blocked tile facing every way is no state at all
 		waters.forEachTile(tile ->
 		{
-			if (landing.test(tile) && !reach.reached(vessel.kind(), tile)) unreached.add(tile);
+			if (landing.test(tile) && !reach.reached(vessel.kind(), tile) && hull.fits(map,
+				WorldPointUtil.unpackWorldX(tile), WorldPointUtil.unpackWorldY(tile), WorldPointUtil.unpackWorldPlane(tile)))
+				unreached.add(tile);
 		});
 		int pockets = 0;
 		for (int i = 0; i < unreached.size(); i++)
@@ -170,7 +173,7 @@ public final class SailingTimesGenerator
 	}
 
 	/**
-	 * One search by cost from {@code from}'s berth for {@code vessel}, adding every tile a move ends on to
+	 * One search by cost from where {@code vessel} casts off at {@code from}, adding every tile a move ends on to
 	 * {@code reached}. Per exit, in order: the restricted areas its leg sails through and its ticks, or {@code null}
 	 * if the boat can't dock there.
 	 */
@@ -178,11 +181,12 @@ public final class SailingTimesGenerator
 		SailingMooring from, List<SailingMooring> exits, PrimitiveIntList reached)
 	{
 		BoatHull hull = vessel.hull(0, 0);
-		// A moored boat sits at the middle of its berth, its heading unknown; every move ends on sea its hull fits, in
-		// the areas the boat may enter
-		SailingQuery query = new SailingQuery(from.berthTile(), -1, vessel.moves(), hull, SailingObjective.TICKS,
+		// The boat casts off anywhere in docking range of the berth it fits, facing any way; every move ends on sea its
+		// hull fits, in the areas the boat may enter
+		SailingQuery query = new SailingQuery(WorldPointUtil.UNDEFINED, -1, vessel.moves(), hull, SailingObjective.TICKS,
 			new int[0], new int[0], exits, SailingQuery.EdgeGate.NONE).landingOn(waters.landing(map, vessel, hull));
 		SailingSolver solver = new SailingSolver(map, query);
+		solver.castOff(waters.castOff(map, from, vessel), 0);
 		List<Object[]> legs = new ArrayList<>(java.util.Collections.nCopies(exits.size(), null));
 		solver.advance(Integer.MAX_VALUE, () -> false, new SailingSolver.Listener()
 		{

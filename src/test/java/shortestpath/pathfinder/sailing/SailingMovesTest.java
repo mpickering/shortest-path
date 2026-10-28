@@ -215,8 +215,8 @@ public class SailingMovesTest
 		assertTrue("Stops short of the wreck", SailingSearch.canSailLine(map, 2705, 3044, 0, 0, 5));
 		assertFalse("Runs into the wreck", SailingSearch.canSailLine(map, 2705, 3044, 0, 0, 13));
 		assertFalse("Clips the wreck's corner", SailingSearch.canSailLine(map, 2702, 3048, 0, 3, 3));
-		// A boat that starts on a blocked tile can sail out of it, but not further into the blocked tiles
-		assertTrue("Leaves the wreck", SailingSearch.canSailLine(map, 2705, 3050, 0, 0, -3));
+		// No boat can be on a blocked tile, so no line leaves one
+		assertFalse("Leaves the wreck", SailingSearch.canSailLine(map, 2705, 3050, 0, 0, -3));
 		assertFalse("Stays in the wreck", SailingSearch.canSailLine(map, 2705, 3050, 0, 0, 3));
 	}
 

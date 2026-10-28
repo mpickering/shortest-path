@@ -885,7 +885,7 @@ public class PathfinderConfig
 			if (offered.getType().isSailing())
 			{
 				SailingVessel vessel = SailingTransports.vessel(offered, fleet);
-				if (vessel == null || !SailingTransports.usable(offered, fleet, waters,
+				if (vessel == null || !SailingTransports.usable(offered, fleet, getMap(), waters,
 					quest -> getQuestState(quest) != QuestState.NOT_STARTED))
 				{
 					continue;
