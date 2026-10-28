@@ -4,10 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
@@ -28,9 +25,9 @@ import shortestpath.sailing.SeaArea;
  * {@code sailingTimes} task whenever the collision map, the moorings or the sailing moves change;
  * {@code SailingTransportsTest} says when the committed files are stale.
  * <p>
- * Each berth's first search may enter every restricted {@link SeaArea}. Where the fastest legs sail through some, the
- * berth is searched again without each of those areas in turn, and so on: so for every set of parts a boat can have,
- * one of the rows is its fastest leg, and a row is kept only if no row needing fewer areas is as quick.
+ * Each berth is searched once per kind, with every restricted {@link SeaArea} the kind can be fitted for open, and
+ * each row names the areas its leg sails through: for a boat with those parts at that speed the row's time is the
+ * leg's, and for any other boat a bound on it, as {@link SailingTransports} says.
  */
 public final class SailingTimesGenerator
 {
@@ -100,53 +97,19 @@ public final class SailingTimesGenerator
 		{
 			if (to != from && to.fits(vessel)) exits.add(to);
 		}
-		// Per exit: the legs found, as the areas each sails through and its ticks
-		List<Map<Set<SeaArea>, Integer>> legs = new ArrayList<>();
-		for (int i = 0; i < exits.size(); i++) legs.add(new java.util.HashMap<>());
 		PrimitiveIntList reached = new PrimitiveIntList(1 << 20);
-		Set<Set<SeaArea>> searched = new java.util.HashSet<>();
-		java.util.ArrayDeque<Set<SeaArea>> toSearch = new java.util.ArrayDeque<>();
-		toSearch.add(SeaArea.ALL);
-		while (!toSearch.isEmpty())
-		{
-			Set<SeaArea> open = toSearch.poll();
-			if (!searched.add(open)) continue;
-			Set<SeaArea> through = search(map, waters, vessel.withAreas(open), from, exits, legs,
-				open.equals(SeaArea.ALL) ? reached : null);
-			// The areas the fastest legs went through, each kept out in turn
-			for (SeaArea area : through)
-			{
-				Set<SeaArea> fewer = java.util.EnumSet.noneOf(SeaArea.class);
-				fewer.addAll(open);
-				fewer.remove(area);
-				toSearch.add(java.util.Collections.unmodifiableSet(fewer));
-			}
-		}
+		List<Object[]> legs = search(map, waters, vessel.withAreas(SeaArea.ALL), from, exits, reached);
 		StringBuilder rows = new StringBuilder("# " + from.name() + "\n");
 		for (int i = 0; i < exits.size(); i++)
 		{
+			if (legs.get(i) == null) continue;
 			SailingMooring to = exits.get(i);
-			List<Map.Entry<Set<SeaArea>, Integer>> found = new ArrayList<>(legs.get(i).entrySet());
-			found.sort(java.util.Comparator.comparing((Map.Entry<Set<SeaArea>, Integer> leg) -> leg.getKey().size())
-				.thenComparing(Map.Entry::getValue).thenComparing(leg -> SeaArea.format(leg.getKey())));
-			List<Map.Entry<Set<SeaArea>, Integer>> kept = new ArrayList<>();
-			for (Map.Entry<Set<SeaArea>, Integer> leg : found)
-			{
-				boolean beaten = false;
-				for (Map.Entry<Set<SeaArea>, Integer> other : kept)
-				{
-					if (leg.getKey().containsAll(other.getKey()) && other.getValue() <= leg.getValue()) beaten = true;
-				}
-				if (!beaten) kept.add(leg);
-			}
-			for (Map.Entry<Set<SeaArea>, Integer> leg : kept)
-			{
-				rows.append(point(from.landTile())).append('\t').append(point(to.landTile())).append('\t')
-					.append(skills(from, to)).append('\t').append(quests(from, to)).append('\t')
-					.append(SeaArea.format(leg.getKey())).append('\t')
-					.append(SailingMooring.BOARD_TICKS + leg.getValue() + SailingMooring.DISEMBARK_TICKS).append('\t')
-					.append(to.name()).append('\n');
-			}
+			@SuppressWarnings("unchecked") Set<SeaArea> through = (Set<SeaArea>) legs.get(i)[0];
+			rows.append(point(from.landTile())).append('\t').append(point(to.landTile())).append('\t')
+				.append(skills(from, to)).append('\t').append(quests(from, to)).append('\t')
+				.append(SeaArea.format(through)).append('\t')
+				.append(SailingMooring.BOARD_TICKS + (int) legs.get(i)[1] + SailingMooring.DISEMBARK_TICKS).append('\t')
+				.append(to.name()).append('\n');
 		}
 		int[] tiles = new int[reached.size()];
 		for (int i = 0; i < tiles.length; i++) tiles[i] = reached.get(i);
@@ -207,11 +170,12 @@ public final class SailingTimesGenerator
 	}
 
 	/**
-	 * One search by cost from {@code from}'s berth for {@code vessel}, adding each exit's leg to {@code legs} and, if
-	 * asked, every tile a move ends on to {@code reached}. Returns the restricted areas the legs sailed through.
+	 * One search by cost from {@code from}'s berth for {@code vessel}, adding every tile a move ends on to
+	 * {@code reached}. Per exit, in order: the restricted areas its leg sails through and its ticks, or {@code null}
+	 * if the boat can't dock there.
 	 */
-	private static Set<SeaArea> search(CollisionMap map, SailingWaters waters, SailingVessel vessel, SailingMooring from,
-		List<SailingMooring> exits, List<Map<Set<SeaArea>, Integer>> legs, PrimitiveIntList reached)
+	private static List<Object[]> search(CollisionMap map, SailingWaters waters, SailingVessel vessel,
+		SailingMooring from, List<SailingMooring> exits, PrimitiveIntList reached)
 	{
 		BoatHull hull = vessel.hull(0, 0);
 		// A moored boat sits at the middle of its berth, its heading unknown; every move ends on sea its hull fits, in
@@ -219,22 +183,20 @@ public final class SailingTimesGenerator
 		SailingQuery query = new SailingQuery(from.berthTile(), -1, vessel.moves(), hull, SailingObjective.TICKS,
 			new int[0], new int[0], exits, SailingQuery.EdgeGate.NONE).landingOn(waters.landing(map, vessel, hull));
 		SailingSolver solver = new SailingSolver(map, query);
-		boolean[] docked = new boolean[exits.size()];
-		Set<SeaArea> through = java.util.EnumSet.noneOf(SeaArea.class);
+		List<Object[]> legs = new ArrayList<>(java.util.Collections.nCopies(exits.size(), null));
 		solver.advance(Integer.MAX_VALUE, () -> false, new SailingSolver.Listener()
 		{
 			@Override
 			public boolean settled(int node, int tile, int cost)
 			{
-				if (reached != null) reached.add(tile);
+				reached.add(tile);
 				return true;
 			}
 
 			@Override
 			public boolean exit(int exit, int node)
 			{
-				if (docked[exit]) return true;
-				docked[exit] = true;
+				if (legs.get(exit) != null) return true;
 				SailingLeg leg = solver.leg(node, exits.get(exit).berthTile());
 				Set<SeaArea> areas = java.util.EnumSet.noneOf(SeaArea.class);
 				for (int i = 0; i < leg.size(); i++)
@@ -242,14 +204,12 @@ public final class SailingTimesGenerator
 					SeaArea area = waters.area(leg.point(i));
 					if (area != null) areas.add(area);
 				}
-				Set<SeaArea> key = java.util.Collections.unmodifiableSet(areas);
-				legs.get(exit).merge(key, solver.cost(node), Math::min);
-				through.addAll(areas);
+				legs.set(exit, new Object[] {areas, solver.cost(node)});
 				return true;
 			}
 		});
 		solver.release();
-		return through;
+		return legs;
 	}
 
 	private static String point(int packed)

@@ -3,16 +3,13 @@
 # Duration: boarding (12 ticks), sailing from the first berth to within docking range of the second at
 # 2.0 tiles per tick with every move ending on sea the hull fits, and stepping off (8 ticks).
 # Skills and Quests: both moorings' docking requirements. Sea areas: the restricted sea areas the leg sails
-# through, when that is quicker than keeping out of them or the only way.
-# Fingerprint: b84ccfa0 speed 2.0 search 2
+# through, with every part the boat can be fitted with.
+# Fingerprint: b84ccfa0 speed 2.0 search 3
 # Port Sarim
 3050 3192 0	3069 2986 0				131	The Pandemonium
-3050 3192 0	1506 3402 0	5 Sailing			1222	Land's End
 3050 3192 0	1506 3402 0	5 Sailing		TEMPOR_TANTRUM	1104	Land's End
-3050 3192 0	1726 3453 0	5 Sailing			1169	Hosidius
 3050 3192 0	1726 3453 0	5 Sailing		TEMPOR_TANTRUM	1051	Hosidius
 3050 3192 0	2960 3146 0	10 Sailing			110	Musa Point
-3050 3192 0	1844 3688 0	15 Sailing			1267	Port Piscarilius
 3050 3192 0	1844 3688 0	15 Sailing		TEMPOR_TANTRUM	1149	Port Piscarilius
 3050 3192 0	2907 3225 0	18 Sailing			158	Rimmington
 3050 3192 0	2796 3413 0	20 Sailing			280	Catherby
@@ -21,89 +18,49 @@
 3050 3192 0	2685 3162 0	30 Sailing			302	Port Khazard
 3050 3192 0	2746 3304 0	34 Sailing			255	Witchaven
 3050 3192 0	2878 3335 0	36 Sailing			218	Entrana
-3050 3192 0	1776 3141 0	38 Sailing	Children of the Sun		1080	Civitas illa Fortis
 3050 3192 0	1776 3141 0	38 Sailing	Children of the Sun	TEMPOR_TANTRUM	962	Civitas illa Fortis
-3050 3192 0	2579 2843 0	40 Sailing	The Corsair Curse		486	Corsair Cove
 3050 3192 0	2579 2843 0	40 Sailing	The Corsair Curse	TEMPOR_TANTRUM	390	Corsair Cove
-3050 3192 0	3060 2638 0	40 Sailing			653	Dognose Island
 3050 3192 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	308	Dognose Island
-3050 3192 0	2751 2951 0	42 Sailing			418	Cairn Isle
 3050 3192 0	2751 2951 0	42 Sailing		TEMPOR_TANTRUM	328	Cairn Isle
-3050 3192 0	1892 3428 0	42 Sailing			1130	Chinchompa Island
 3050 3192 0	1892 3428 0	42 Sailing		TEMPOR_TANTRUM	1013	Chinchompa Island
-3050 3192 0	1513 2973 0	44 Sailing	Children of the Sun		1124	Sunset Coast
 3050 3192 0	1513 2973 0	44 Sailing	Children of the Sun	TEMPOR_TANTRUM	1006	Sunset Coast
-3050 3192 0	2965 2608 0	45 Sailing			630	Remote Island
 3050 3192 0	2965 2608 0	45 Sailing		TEMPOR_TANTRUM	328	Remote Island
-3050 3192 0	3173 2368 0	45 Sailing			799	The Summer Shore
 3050 3192 0	3173 2368 0	45 Sailing		TEMPOR_TANTRUM	476	The Summer Shore
-3050 3192 0	3353 2215 0	45 Sailing			914	The Little Pearl
 3050 3192 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	562	The Little Pearl
-3050 3192 0	1451 2969 0	46 Sailing	Children of the Sun		1148	Aldarin
 3050 3192 0	1451 2969 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	1031	Aldarin
-3050 3192 0	1873 2983 0	46 Sailing	Children of the Sun		943	Vatrachos Island
 3050 3192 0	1873 2983 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	825	Vatrachos Island
-3050 3192 0	2996 2287 0	47 Sailing			790	The Onyx Crest
 3050 3192 0	2996 2287 0	47 Sailing		TEMPOR_TANTRUM	481	The Onyx Crest
 3050 3192 0	3145 2824 0	48 Sailing		TEMPOR_TANTRUM	231	Ruins of Unkah
-3050 3192 0	1555 2772 0	49 Sailing			1060	Shimmering Atoll
 3050 3192 0	1555 2772 0	49 Sailing		TEMPOR_TANTRUM	943	Shimmering Atoll
-3050 3192 0	2651 2677 0	50 Sailing			551	Void Knights' Outpost
 3050 3192 0	2651 2677 0	50 Sailing		TEMPOR_TANTRUM	393	Void Knights' Outpost
-3050 3192 0	1862 3307 0	50 Sailing			1075	Port Roberts
 3050 3192 0	1862 3307 0	50 Sailing		TEMPOR_TANTRUM	958	Port Roberts
-3050 3192 0	2808 2509 0	52 Sailing			654	Red Rock
 3050 3192 0	2808 2509 0	52 Sailing		TEMPOR_TANTRUM	402	Red Rock
-3050 3192 0	1958 3113 0	54 Sailing	Children of the Sun		968	Minotaurs' Rest
 3050 3192 0	1958 3113 0	54 Sailing	Children of the Sun	TEMPOR_TANTRUM	851	Minotaurs' Rest
-3050 3192 0	2532 2531 0	56 Sailing			647	Isle of Bones
 3050 3192 0	2532 2531 0	56 Sailing		TEMPOR_TANTRUM	478	Isle of Bones
-3050 3192 0	1201 2733 0	58 Sailing			1232	Laguna Aurorae
 3050 3192 0	1201 2733 0	58 Sailing		TEMPOR_TANTRUM	1114	Laguna Aurorae
-3050 3192 0	2660 2392 0	60 Sailing			693	Charred Island
 3050 3192 0	2660 2392 0	60 Sailing		TEMPOR_TANTRUM	483	Charred Island
-3050 3192 0	2629 3704 0	62 Sailing	The Fremennik Trials		1482	Rellekka
 3050 3192 0	2629 3704 0	62 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1364	Rellekka
-3050 3192 0	2569 2295 0	62 Sailing			757	Wyrmscraig
 3050 3192 0	2569 2295 0	62 Sailing		TEMPOR_TANTRUM	548	Wyrmscraig
-3050 3192 0	1758 2655 0	64 Sailing			946	The Crown Jewel
 3050 3192 0	1758 2655 0	64 Sailing		TEMPOR_TANTRUM	828	The Crown Jewel
-3050 3192 0	2612 3841 0	65 Sailing	Royal Trouble		1495	Etceteria
 3050 3192 0	2612 3841 0	65 Sailing	Royal Trouble	TEMPOR_TANTRUM	1377	Etceteria
-3050 3192 0	1922 2759 0	67 Sailing			875	Deepfin Point
 3050 3192 0	1922 2759 0	67 Sailing		TEMPOR_TANTRUM	758	Deepfin Point
-3050 3192 0	2411 3781 0	68 Sailing	The Fremennik Isles		1385	Jatizso
 3050 3192 0	2411 3781 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1267	Jatizso
-3050 3192 0	2310 3781 0	68 Sailing	The Fremennik Isles		1333	Neitiznot
 3050 3192 0	2310 3781 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1216	Neitiznot
-3050 3192 0	2344 2268 0	69 Sailing		KELP	807	Rainbow's End
 3050 3192 0	2344 2268 0	69 Sailing		TEMPOR_TANTRUM;KELP	615	Rainbow's End
-3050 3192 0	2193 2319 0	72 Sailing		KELP	804	Sunbleak Island
 3050 3192 0	2193 2319 0	72 Sailing		TEMPOR_TANTRUM;KELP	677	Sunbleak Island
-3050 3192 0	2542 3764 0	74 Sailing	The Fremennik Trials		1452	Waterbirth Island
 3050 3192 0	2542 3764 0	74 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1334	Waterbirth Island
-3050 3192 0	2305 3689 0	75 Sailing	Swan Song		1315	Piscatoris
 3050 3192 0	2305 3689 0	75 Sailing	Swan Song	TEMPOR_TANTRUM	1198	Piscatoris
-3050 3192 0	2151 3880 0	76 Sailing	Lunar Diplomacy		1358	Lunar Isle
 3050 3192 0	2151 3880 0	76 Sailing	Lunar Diplomacy	TEMPOR_TANTRUM	1240	Lunar Isle
-3050 3192 0	2079 3689 0	76 Sailing			1266	Buccaneers' Haven
 3050 3192 0	2079 3689 0	76 Sailing		TEMPOR_TANTRUM	1148	Buccaneers' Haven
-3050 3192 0	2860 3970 0	80 Sailing	Making Friends with My Arm	NORTHERN	1641	Weiss
 3050 3192 0	2860 3970 0	80 Sailing	Making Friends with My Arm	TEMPOR_TANTRUM;NORTHERN	1523	Weiss
-3050 3192 0	1953 4056 0	81 Sailing		NORTHERN	1432	Brittle Isle
 3050 3192 0	1953 4056 0	81 Sailing		TEMPOR_TANTRUM;NORTHERN	1315	Brittle Isle
-3050 3192 0	2927 4055 0	87 Sailing		NORTHERN	1688	Grimstone
 3050 3192 0	2927 4055 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1571	Grimstone
-3050 3192 0	2849 2325 0	52 Sailing			747	Last Light
 3050 3192 0	2849 2325 0	52 Sailing		TEMPOR_TANTRUM	488	Last Light
 # The Pandemonium
 3069 2986 0	3050 3192 0				133	Port Sarim
-3069 2986 0	1506 3402 0	5 Sailing			1234	Land's End
 3069 2986 0	1506 3402 0	5 Sailing		TEMPOR_TANTRUM	1009	Land's End
-3069 2986 0	1726 3453 0	5 Sailing			1182	Hosidius
 3069 2986 0	1726 3453 0	5 Sailing		TEMPOR_TANTRUM	957	Hosidius
 3069 2986 0	2960 3146 0	10 Sailing			123	Musa Point
-3069 2986 0	1844 3688 0	15 Sailing			1280	Port Piscarilius
 3069 2986 0	1844 3688 0	15 Sailing		TEMPOR_TANTRUM	1054	Port Piscarilius
 3069 2986 0	2907 3225 0	18 Sailing			172	Rimmington
 3069 2986 0	2796 3413 0	20 Sailing			294	Catherby
@@ -112,88 +69,48 @@
 3069 2986 0	2685 3162 0	30 Sailing			315	Port Khazard
 3069 2986 0	2746 3304 0	34 Sailing			268	Witchaven
 3069 2986 0	2878 3335 0	36 Sailing			232	Entrana
-3069 2986 0	1776 3141 0	38 Sailing	Children of the Sun		1093	Civitas illa Fortis
 3069 2986 0	1776 3141 0	38 Sailing	Children of the Sun	TEMPOR_TANTRUM	868	Civitas illa Fortis
-3069 2986 0	2579 2843 0	40 Sailing	The Corsair Curse		499	Corsair Cove
 3069 2986 0	2579 2843 0	40 Sailing	The Corsair Curse	TEMPOR_TANTRUM	295	Corsair Cove
-3069 2986 0	3060 2638 0	40 Sailing			665	Dognose Island
 3069 2986 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	196	Dognose Island
-3069 2986 0	2751 2951 0	42 Sailing			430	Cairn Isle
 3069 2986 0	2751 2951 0	42 Sailing		TEMPOR_TANTRUM	233	Cairn Isle
-3069 2986 0	1892 3428 0	42 Sailing			1143	Chinchompa Island
 3069 2986 0	1892 3428 0	42 Sailing		TEMPOR_TANTRUM	918	Chinchompa Island
-3069 2986 0	1513 2973 0	44 Sailing	Children of the Sun		1136	Sunset Coast
 3069 2986 0	1513 2973 0	44 Sailing	Children of the Sun	TEMPOR_TANTRUM	911	Sunset Coast
-3069 2986 0	2965 2608 0	45 Sailing			644	Remote Island
 3069 2986 0	2965 2608 0	45 Sailing		TEMPOR_TANTRUM	228	Remote Island
-3069 2986 0	3173 2368 0	45 Sailing			813	The Summer Shore
 3069 2986 0	3173 2368 0	45 Sailing		TEMPOR_TANTRUM	366	The Summer Shore
-3069 2986 0	3353 2215 0	45 Sailing			927	The Little Pearl
 3069 2986 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	451	The Little Pearl
-3069 2986 0	1451 2969 0	46 Sailing	Children of the Sun		1161	Aldarin
 3069 2986 0	1451 2969 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	935	Aldarin
-3069 2986 0	1873 2983 0	46 Sailing	Children of the Sun		956	Vatrachos Island
 3069 2986 0	1873 2983 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	731	Vatrachos Island
-3069 2986 0	2996 2287 0	47 Sailing			803	The Onyx Crest
 3069 2986 0	2996 2287 0	47 Sailing		TEMPOR_TANTRUM	380	The Onyx Crest
 3069 2986 0	3145 2824 0	48 Sailing		TEMPOR_TANTRUM	120	Ruins of Unkah
-3069 2986 0	1555 2772 0	49 Sailing			1074	Shimmering Atoll
 3069 2986 0	1555 2772 0	49 Sailing		TEMPOR_TANTRUM	848	Shimmering Atoll
-3069 2986 0	2651 2677 0	50 Sailing			564	Void Knights' Outpost
 3069 2986 0	2651 2677 0	50 Sailing		TEMPOR_TANTRUM	294	Void Knights' Outpost
-3069 2986 0	1862 3307 0	50 Sailing			1088	Port Roberts
 3069 2986 0	1862 3307 0	50 Sailing		TEMPOR_TANTRUM	863	Port Roberts
-3069 2986 0	2808 2509 0	52 Sailing			666	Red Rock
 3069 2986 0	2808 2509 0	52 Sailing		TEMPOR_TANTRUM	301	Red Rock
-3069 2986 0	1958 3113 0	54 Sailing	Children of the Sun		981	Minotaurs' Rest
 3069 2986 0	1958 3113 0	54 Sailing	Children of the Sun	TEMPOR_TANTRUM	755	Minotaurs' Rest
-3069 2986 0	2532 2531 0	56 Sailing			660	Isle of Bones
 3069 2986 0	2532 2531 0	56 Sailing		TEMPOR_TANTRUM	378	Isle of Bones
-3069 2986 0	1201 2733 0	58 Sailing			1244	Laguna Aurorae
 3069 2986 0	1201 2733 0	58 Sailing		TEMPOR_TANTRUM	1019	Laguna Aurorae
-3069 2986 0	2660 2392 0	60 Sailing			706	Charred Island
 3069 2986 0	2660 2392 0	60 Sailing		TEMPOR_TANTRUM	383	Charred Island
-3069 2986 0	2629 3704 0	62 Sailing	The Fremennik Trials		1495	Rellekka
 3069 2986 0	2629 3704 0	62 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1270	Rellekka
-3069 2986 0	2569 2295 0	62 Sailing			770	Wyrmscraig
 3069 2986 0	2569 2295 0	62 Sailing		TEMPOR_TANTRUM	449	Wyrmscraig
-3069 2986 0	1758 2655 0	64 Sailing			959	The Crown Jewel
 3069 2986 0	1758 2655 0	64 Sailing		TEMPOR_TANTRUM	734	The Crown Jewel
-3069 2986 0	2612 3841 0	65 Sailing	Royal Trouble		1508	Etceteria
 3069 2986 0	2612 3841 0	65 Sailing	Royal Trouble	TEMPOR_TANTRUM	1283	Etceteria
-3069 2986 0	1922 2759 0	67 Sailing			888	Deepfin Point
 3069 2986 0	1922 2759 0	67 Sailing		TEMPOR_TANTRUM	663	Deepfin Point
-3069 2986 0	2411 3781 0	68 Sailing	The Fremennik Isles		1398	Jatizso
 3069 2986 0	2411 3781 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1172	Jatizso
-3069 2986 0	2310 3781 0	68 Sailing	The Fremennik Isles		1346	Neitiznot
 3069 2986 0	2310 3781 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1121	Neitiznot
-3069 2986 0	2344 2268 0	69 Sailing		KELP	820	Rainbow's End
 3069 2986 0	2344 2268 0	69 Sailing		TEMPOR_TANTRUM;KELP	515	Rainbow's End
-3069 2986 0	2193 2319 0	72 Sailing		KELP	818	Sunbleak Island
 3069 2986 0	2193 2319 0	72 Sailing		TEMPOR_TANTRUM;KELP	584	Sunbleak Island
-3069 2986 0	2542 3764 0	74 Sailing	The Fremennik Trials		1465	Waterbirth Island
 3069 2986 0	2542 3764 0	74 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1239	Waterbirth Island
-3069 2986 0	2305 3689 0	75 Sailing	Swan Song		1328	Piscatoris
 3069 2986 0	2305 3689 0	75 Sailing	Swan Song	TEMPOR_TANTRUM	1103	Piscatoris
-3069 2986 0	2151 3880 0	76 Sailing	Lunar Diplomacy		1371	Lunar Isle
 3069 2986 0	2151 3880 0	76 Sailing	Lunar Diplomacy	TEMPOR_TANTRUM	1145	Lunar Isle
-3069 2986 0	2079 3689 0	76 Sailing			1279	Buccaneers' Haven
 3069 2986 0	2079 3689 0	76 Sailing		TEMPOR_TANTRUM	1054	Buccaneers' Haven
-3069 2986 0	2860 3970 0	80 Sailing	Making Friends with My Arm	NORTHERN	1653	Weiss
 3069 2986 0	2860 3970 0	80 Sailing	Making Friends with My Arm	TEMPOR_TANTRUM;NORTHERN	1428	Weiss
-3069 2986 0	1953 4056 0	81 Sailing		NORTHERN	1446	Brittle Isle
 3069 2986 0	1953 4056 0	81 Sailing		TEMPOR_TANTRUM;NORTHERN	1220	Brittle Isle
-3069 2986 0	2927 4055 0	87 Sailing		NORTHERN	1702	Grimstone
 3069 2986 0	2927 4055 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1476	Grimstone
-3069 2986 0	2849 2325 0	52 Sailing			760	Last Light
 3069 2986 0	2849 2325 0	52 Sailing		TEMPOR_TANTRUM	388	Last Light
 # Land's End
-1506 3402 0	3050 3192 0	5 Sailing			1221	Port Sarim
 1506 3402 0	3050 3192 0	5 Sailing		TEMPOR_TANTRUM	1103	Port Sarim
-1506 3402 0	3069 2986 0	5 Sailing			1231	The Pandemonium
 1506 3402 0	3069 2986 0	5 Sailing		TEMPOR_TANTRUM	1009	The Pandemonium
 1506 3402 0	1726 3453 0	5 Sailing			137	Hosidius
-1506 3402 0	2960 3146 0	10 Sailing			1132	Musa Point
 1506 3402 0	2960 3146 0	10 Sailing		TEMPOR_TANTRUM	1083	Musa Point
 1506 3402 0	1844 3688 0	15 Sailing			334	Port Piscarilius
 1506 3402 0	2907 3225 0	18 Sailing			1085	Rimmington
@@ -242,12 +159,9 @@
 1506 3402 0	2927 4055 0	87 Sailing		NORTHERN	838	Grimstone
 1506 3402 0	2849 2325 0	52 Sailing			899	Last Light
 # Hosidius
-1726 3453 0	3050 3192 0	5 Sailing			1168	Port Sarim
 1726 3453 0	3050 3192 0	5 Sailing		TEMPOR_TANTRUM	1051	Port Sarim
-1726 3453 0	3069 2986 0	5 Sailing			1179	The Pandemonium
 1726 3453 0	3069 2986 0	5 Sailing		TEMPOR_TANTRUM	956	The Pandemonium
 1726 3453 0	1506 3402 0	5 Sailing			136	Land's End
-1726 3453 0	2960 3146 0	10 Sailing			1080	Musa Point
 1726 3453 0	2960 3146 0	10 Sailing		TEMPOR_TANTRUM	1030	Musa Point
 1726 3453 0	1844 3688 0	15 Sailing			223	Port Piscarilius
 1726 3453 0	2907 3225 0	18 Sailing			1033	Rimmington
@@ -298,11 +212,8 @@
 # Musa Point
 2960 3146 0	3050 3192 0	10 Sailing			111	Port Sarim
 2960 3146 0	3069 2986 0	10 Sailing			121	The Pandemonium
-2960 3146 0	1506 3402 0	10 Sailing			1132	Land's End
 2960 3146 0	1506 3402 0	10 Sailing		TEMPOR_TANTRUM	1083	Land's End
-2960 3146 0	1726 3453 0	10 Sailing			1080	Hosidius
 2960 3146 0	1726 3453 0	10 Sailing		TEMPOR_TANTRUM	1031	Hosidius
-2960 3146 0	1844 3688 0	15 Sailing			1178	Port Piscarilius
 2960 3146 0	1844 3688 0	15 Sailing		TEMPOR_TANTRUM	1129	Port Piscarilius
 2960 3146 0	2907 3225 0	18 Sailing			70	Rimmington
 2960 3146 0	2796 3413 0	20 Sailing			192	Catherby
@@ -311,89 +222,49 @@
 2960 3146 0	2685 3162 0	30 Sailing			213	Port Khazard
 2960 3146 0	2746 3304 0	34 Sailing			166	Witchaven
 2960 3146 0	2878 3335 0	36 Sailing			130	Entrana
-2960 3146 0	1776 3141 0	38 Sailing	Children of the Sun		991	Civitas illa Fortis
 2960 3146 0	1776 3141 0	38 Sailing	Children of the Sun	TEMPOR_TANTRUM	942	Civitas illa Fortis
-2960 3146 0	2579 2843 0	40 Sailing	The Corsair Curse		397	Corsair Cove
 2960 3146 0	2579 2843 0	40 Sailing	The Corsair Curse	TEMPOR_TANTRUM	370	Corsair Cove
-2960 3146 0	3060 2638 0	40 Sailing			563	Dognose Island
 2960 3146 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	296	Dognose Island
-2960 3146 0	2751 2951 0	42 Sailing			329	Cairn Isle
 2960 3146 0	2751 2951 0	42 Sailing		TEMPOR_TANTRUM	307	Cairn Isle
-2960 3146 0	1892 3428 0	42 Sailing			1042	Chinchompa Island
 2960 3146 0	1892 3428 0	42 Sailing		TEMPOR_TANTRUM	993	Chinchompa Island
-2960 3146 0	1513 2973 0	44 Sailing	Children of the Sun		1034	Sunset Coast
 2960 3146 0	1513 2973 0	44 Sailing	Children of the Sun	TEMPOR_TANTRUM	985	Sunset Coast
-2960 3146 0	2965 2608 0	45 Sailing			543	Remote Island
 2960 3146 0	2965 2608 0	45 Sailing		TEMPOR_TANTRUM	307	Remote Island
-2960 3146 0	3173 2368 0	45 Sailing			712	The Summer Shore
 2960 3146 0	3173 2368 0	45 Sailing		TEMPOR_TANTRUM	466	The Summer Shore
-2960 3146 0	3353 2215 0	45 Sailing			826	The Little Pearl
 2960 3146 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	552	The Little Pearl
-2960 3146 0	1451 2969 0	46 Sailing	Children of the Sun		1059	Aldarin
 2960 3146 0	1451 2969 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	1010	Aldarin
-2960 3146 0	1873 2983 0	46 Sailing	Children of the Sun		854	Vatrachos Island
 2960 3146 0	1873 2983 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	805	Vatrachos Island
-2960 3146 0	2996 2287 0	47 Sailing			702	The Onyx Crest
 2960 3146 0	2996 2287 0	47 Sailing		TEMPOR_TANTRUM	461	The Onyx Crest
 2960 3146 0	3145 2824 0	48 Sailing		TEMPOR_TANTRUM	221	Ruins of Unkah
-2960 3146 0	1555 2772 0	49 Sailing			972	Shimmering Atoll
 2960 3146 0	1555 2772 0	49 Sailing		TEMPOR_TANTRUM	923	Shimmering Atoll
-2960 3146 0	2651 2677 0	50 Sailing			462	Void Knights' Outpost
 2960 3146 0	2651 2677 0	50 Sailing		TEMPOR_TANTRUM	373	Void Knights' Outpost
-2960 3146 0	1862 3307 0	50 Sailing			987	Port Roberts
 2960 3146 0	1862 3307 0	50 Sailing		TEMPOR_TANTRUM	938	Port Roberts
-2960 3146 0	2808 2509 0	52 Sailing			564	Red Rock
 2960 3146 0	2808 2509 0	52 Sailing		TEMPOR_TANTRUM	381	Red Rock
-2960 3146 0	1958 3113 0	54 Sailing	Children of the Sun		879	Minotaurs' Rest
 2960 3146 0	1958 3113 0	54 Sailing	Children of the Sun	TEMPOR_TANTRUM	830	Minotaurs' Rest
-2960 3146 0	2532 2531 0	56 Sailing			559	Isle of Bones
 2960 3146 0	2532 2531 0	56 Sailing		TEMPOR_TANTRUM	457	Isle of Bones
-2960 3146 0	1201 2733 0	58 Sailing			1142	Laguna Aurorae
 2960 3146 0	1201 2733 0	58 Sailing		TEMPOR_TANTRUM	1093	Laguna Aurorae
-2960 3146 0	2660 2392 0	60 Sailing			605	Charred Island
 2960 3146 0	2660 2392 0	60 Sailing		TEMPOR_TANTRUM	463	Charred Island
-2960 3146 0	2629 3704 0	62 Sailing	The Fremennik Trials		1394	Rellekka
 2960 3146 0	2629 3704 0	62 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1345	Rellekka
-2960 3146 0	2569 2295 0	62 Sailing			668	Wyrmscraig
 2960 3146 0	2569 2295 0	62 Sailing		TEMPOR_TANTRUM	528	Wyrmscraig
-2960 3146 0	1758 2655 0	64 Sailing			857	The Crown Jewel
 2960 3146 0	1758 2655 0	64 Sailing		TEMPOR_TANTRUM	808	The Crown Jewel
-2960 3146 0	2612 3841 0	65 Sailing	Royal Trouble		1406	Etceteria
 2960 3146 0	2612 3841 0	65 Sailing	Royal Trouble	TEMPOR_TANTRUM	1357	Etceteria
-2960 3146 0	1922 2759 0	67 Sailing			786	Deepfin Point
 2960 3146 0	1922 2759 0	67 Sailing		TEMPOR_TANTRUM	737	Deepfin Point
-2960 3146 0	2411 3781 0	68 Sailing	The Fremennik Isles		1296	Jatizso
 2960 3146 0	2411 3781 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1247	Jatizso
-2960 3146 0	2310 3781 0	68 Sailing	The Fremennik Isles		1245	Neitiznot
 2960 3146 0	2310 3781 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1196	Neitiznot
-2960 3146 0	2344 2268 0	69 Sailing		KELP	719	Rainbow's End
 2960 3146 0	2344 2268 0	69 Sailing		TEMPOR_TANTRUM;KELP	595	Rainbow's End
-2960 3146 0	2193 2319 0	72 Sailing		KELP	716	Sunbleak Island
 2960 3146 0	2193 2319 0	72 Sailing		TEMPOR_TANTRUM;KELP	658	Sunbleak Island
-2960 3146 0	2542 3764 0	74 Sailing	The Fremennik Trials		1363	Waterbirth Island
 2960 3146 0	2542 3764 0	74 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1314	Waterbirth Island
-2960 3146 0	2305 3689 0	75 Sailing	Swan Song		1227	Piscatoris
 2960 3146 0	2305 3689 0	75 Sailing	Swan Song	TEMPOR_TANTRUM	1178	Piscatoris
-2960 3146 0	2151 3880 0	76 Sailing	Lunar Diplomacy		1269	Lunar Isle
 2960 3146 0	2151 3880 0	76 Sailing	Lunar Diplomacy	TEMPOR_TANTRUM	1220	Lunar Isle
-2960 3146 0	2079 3689 0	76 Sailing			1177	Buccaneers' Haven
 2960 3146 0	2079 3689 0	76 Sailing		TEMPOR_TANTRUM	1128	Buccaneers' Haven
-2960 3146 0	2860 3970 0	80 Sailing	Making Friends with My Arm	NORTHERN	1552	Weiss
 2960 3146 0	2860 3970 0	80 Sailing	Making Friends with My Arm	TEMPOR_TANTRUM;NORTHERN	1503	Weiss
-2960 3146 0	1953 4056 0	81 Sailing		NORTHERN	1344	Brittle Isle
 2960 3146 0	1953 4056 0	81 Sailing		TEMPOR_TANTRUM;NORTHERN	1295	Brittle Isle
-2960 3146 0	2927 4055 0	87 Sailing		NORTHERN	1600	Grimstone
 2960 3146 0	2927 4055 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1551	Grimstone
-2960 3146 0	2849 2325 0	52 Sailing			658	Last Light
 2960 3146 0	2849 2325 0	52 Sailing		TEMPOR_TANTRUM	467	Last Light
 # Port Piscarilius
-1844 3688 0	3050 3192 0	15 Sailing			1266	Port Sarim
 1844 3688 0	3050 3192 0	15 Sailing		TEMPOR_TANTRUM	1148	Port Sarim
-1844 3688 0	3069 2986 0	15 Sailing			1276	The Pandemonium
 1844 3688 0	3069 2986 0	15 Sailing		TEMPOR_TANTRUM	1054	The Pandemonium
 1844 3688 0	1506 3402 0	15 Sailing			334	Land's End
 1844 3688 0	1726 3453 0	15 Sailing			223	Hosidius
-1844 3688 0	2960 3146 0	15 Sailing			1177	Musa Point
 1844 3688 0	2960 3146 0	15 Sailing		TEMPOR_TANTRUM	1128	Musa Point
 1844 3688 0	2907 3225 0	18 Sailing			1130	Rimmington
 1844 3688 0	2796 3413 0	20 Sailing			1128	Catherby
@@ -455,42 +326,32 @@
 2907 3225 0	2878 3335 0	36 Sailing			78	Entrana
 2907 3225 0	1776 3141 0	38 Sailing	Children of the Sun		944	Civitas illa Fortis
 2907 3225 0	2579 2843 0	40 Sailing	The Corsair Curse		350	Corsair Cove
-2907 3225 0	3060 2638 0	40 Sailing			516	Dognose Island
 2907 3225 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	344	Dognose Island
 2907 3225 0	2751 2951 0	42 Sailing			282	Cairn Isle
 2907 3225 0	1892 3428 0	42 Sailing			995	Chinchompa Island
 2907 3225 0	1513 2973 0	44 Sailing	Children of the Sun		987	Sunset Coast
-2907 3225 0	2965 2608 0	45 Sailing			496	Remote Island
 2907 3225 0	2965 2608 0	45 Sailing		TEMPOR_TANTRUM	355	Remote Island
-2907 3225 0	3173 2368 0	45 Sailing			665	The Summer Shore
 2907 3225 0	3173 2368 0	45 Sailing		TEMPOR_TANTRUM	514	The Summer Shore
-2907 3225 0	3353 2215 0	45 Sailing			779	The Little Pearl
 2907 3225 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	600	The Little Pearl
 2907 3225 0	1451 2969 0	46 Sailing	Children of the Sun		1012	Aldarin
 2907 3225 0	1873 2983 0	46 Sailing	Children of the Sun		807	Vatrachos Island
-2907 3225 0	2996 2287 0	47 Sailing			655	The Onyx Crest
 2907 3225 0	2996 2287 0	47 Sailing		TEMPOR_TANTRUM	509	The Onyx Crest
 2907 3225 0	3145 2824 0	48 Sailing		TEMPOR_TANTRUM	269	Ruins of Unkah
 2907 3225 0	1555 2772 0	49 Sailing			925	Shimmering Atoll
 2907 3225 0	2651 2677 0	50 Sailing			415	Void Knights' Outpost
 2907 3225 0	1862 3307 0	50 Sailing			940	Port Roberts
-2907 3225 0	2808 2509 0	52 Sailing			517	Red Rock
 2907 3225 0	2808 2509 0	52 Sailing		TEMPOR_TANTRUM	429	Red Rock
 2907 3225 0	1958 3113 0	54 Sailing	Children of the Sun		832	Minotaurs' Rest
-2907 3225 0	2532 2531 0	56 Sailing			512	Isle of Bones
 2907 3225 0	2532 2531 0	56 Sailing		TEMPOR_TANTRUM	505	Isle of Bones
 2907 3225 0	1201 2733 0	58 Sailing			1095	Laguna Aurorae
-2907 3225 0	2660 2392 0	60 Sailing			558	Charred Island
 2907 3225 0	2660 2392 0	60 Sailing		TEMPOR_TANTRUM	511	Charred Island
 2907 3225 0	2629 3704 0	62 Sailing	The Fremennik Trials		1347	Rellekka
-2907 3225 0	2569 2295 0	62 Sailing			621	Wyrmscraig
 2907 3225 0	2569 2295 0	62 Sailing		TEMPOR_TANTRUM	576	Wyrmscraig
 2907 3225 0	1758 2655 0	64 Sailing			810	The Crown Jewel
 2907 3225 0	2612 3841 0	65 Sailing	Royal Trouble		1359	Etceteria
 2907 3225 0	1922 2759 0	67 Sailing			739	Deepfin Point
 2907 3225 0	2411 3781 0	68 Sailing	The Fremennik Isles		1249	Jatizso
 2907 3225 0	2310 3781 0	68 Sailing	The Fremennik Isles		1198	Neitiznot
-2907 3225 0	2344 2268 0	69 Sailing		KELP	672	Rainbow's End
 2907 3225 0	2344 2268 0	69 Sailing		TEMPOR_TANTRUM;KELP	643	Rainbow's End
 2907 3225 0	2193 2319 0	72 Sailing		KELP	669	Sunbleak Island
 2907 3225 0	2542 3764 0	74 Sailing	The Fremennik Trials		1316	Waterbirth Island
@@ -500,7 +361,6 @@
 2907 3225 0	2860 3970 0	80 Sailing	Making Friends with My Arm	NORTHERN	1505	Weiss
 2907 3225 0	1953 4056 0	81 Sailing		NORTHERN	1297	Brittle Isle
 2907 3225 0	2927 4055 0	87 Sailing		NORTHERN	1553	Grimstone
-2907 3225 0	2849 2325 0	52 Sailing			611	Last Light
 2907 3225 0	2849 2325 0	52 Sailing		TEMPOR_TANTRUM	515	Last Light
 # Catherby
 2796 3413 0	3050 3192 0	20 Sailing			280	Port Sarim
@@ -517,20 +377,15 @@
 2796 3413 0	2878 3335 0	36 Sailing			87	Entrana
 2796 3413 0	1776 3141 0	38 Sailing	Children of the Sun		941	Civitas illa Fortis
 2796 3413 0	2579 2843 0	40 Sailing	The Corsair Curse		348	Corsair Cove
-2796 3413 0	3060 2638 0	40 Sailing			514	Dognose Island
 2796 3413 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	466	Dognose Island
 2796 3413 0	2751 2951 0	42 Sailing			279	Cairn Isle
 2796 3413 0	1892 3428 0	42 Sailing			992	Chinchompa Island
 2796 3413 0	1513 2973 0	44 Sailing	Children of the Sun		985	Sunset Coast
-2796 3413 0	2965 2608 0	45 Sailing			492	Remote Island
 2796 3413 0	2965 2608 0	45 Sailing		TEMPOR_TANTRUM	477	Remote Island
-2796 3413 0	3173 2368 0	45 Sailing			661	The Summer Shore
 2796 3413 0	3173 2368 0	45 Sailing		TEMPOR_TANTRUM	634	The Summer Shore
-2796 3413 0	3353 2215 0	45 Sailing			775	The Little Pearl
 2796 3413 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	721	The Little Pearl
 2796 3413 0	1451 2969 0	46 Sailing	Children of the Sun		1010	Aldarin
 2796 3413 0	1873 2983 0	46 Sailing	Children of the Sun		805	Vatrachos Island
-2796 3413 0	2996 2287 0	47 Sailing			652	The Onyx Crest
 2796 3413 0	2996 2287 0	47 Sailing		TEMPOR_TANTRUM	630	The Onyx Crest
 2796 3413 0	3145 2824 0	48 Sailing		TEMPOR_TANTRUM	391	Ruins of Unkah
 2796 3413 0	1555 2772 0	49 Sailing			922	Shimmering Atoll
@@ -573,14 +428,12 @@
 2759 3229 0	2878 3335 0	36 Sailing			110	Entrana
 2759 3229 0	1776 3141 0	38 Sailing	Children of the Sun		873	Civitas illa Fortis
 2759 3229 0	2579 2843 0	40 Sailing	The Corsair Curse		279	Corsair Cove
-2759 3229 0	3060 2638 0	40 Sailing			446	Dognose Island
 2759 3229 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	425	Dognose Island
 2759 3229 0	2751 2951 0	42 Sailing			211	Cairn Isle
 2759 3229 0	1892 3428 0	42 Sailing			923	Chinchompa Island
 2759 3229 0	1513 2973 0	44 Sailing	Children of the Sun		917	Sunset Coast
 2759 3229 0	2965 2608 0	45 Sailing			423	Remote Island
 2759 3229 0	3173 2368 0	45 Sailing			592	The Summer Shore
-2759 3229 0	3353 2215 0	45 Sailing			707	The Little Pearl
 2759 3229 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	680	The Little Pearl
 2759 3229 0	1451 2969 0	46 Sailing	Children of the Sun		941	Aldarin
 2759 3229 0	1873 2983 0	46 Sailing	Children of the Sun		736	Vatrachos Island
@@ -728,14 +581,12 @@
 2746 3304 0	2878 3335 0	36 Sailing			94	Entrana
 2746 3304 0	1776 3141 0	38 Sailing	Children of the Sun		880	Civitas illa Fortis
 2746 3304 0	2579 2843 0	40 Sailing	The Corsair Curse		287	Corsair Cove
-2746 3304 0	3060 2638 0	40 Sailing			454	Dognose Island
 2746 3304 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	441	Dognose Island
 2746 3304 0	2751 2951 0	42 Sailing			218	Cairn Isle
 2746 3304 0	1892 3428 0	42 Sailing			931	Chinchompa Island
 2746 3304 0	1513 2973 0	44 Sailing	Children of the Sun		924	Sunset Coast
 2746 3304 0	2965 2608 0	45 Sailing			431	Remote Island
 2746 3304 0	3173 2368 0	45 Sailing			599	The Summer Shore
-2746 3304 0	3353 2215 0	45 Sailing			714	The Little Pearl
 2746 3304 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	696	The Little Pearl
 2746 3304 0	1451 2969 0	46 Sailing	Children of the Sun		949	Aldarin
 2746 3304 0	1873 2983 0	46 Sailing	Children of the Sun		744	Vatrachos Island
@@ -781,26 +632,20 @@
 2878 3335 0	2746 3304 0	36 Sailing			93	Witchaven
 2878 3335 0	1776 3141 0	38 Sailing	Children of the Sun		947	Civitas illa Fortis
 2878 3335 0	2579 2843 0	40 Sailing	The Corsair Curse		353	Corsair Cove
-2878 3335 0	3060 2638 0	40 Sailing			519	Dognose Island
 2878 3335 0	3060 2638 0	40 Sailing		TEMPOR_TANTRUM	403	Dognose Island
 2878 3335 0	2751 2951 0	42 Sailing			285	Cairn Isle
 2878 3335 0	1892 3428 0	42 Sailing			998	Chinchompa Island
 2878 3335 0	1513 2973 0	44 Sailing	Children of the Sun		990	Sunset Coast
-2878 3335 0	2965 2608 0	45 Sailing			499	Remote Island
 2878 3335 0	2965 2608 0	45 Sailing		TEMPOR_TANTRUM	414	Remote Island
-2878 3335 0	3173 2368 0	45 Sailing			668	The Summer Shore
 2878 3335 0	3173 2368 0	45 Sailing		TEMPOR_TANTRUM	573	The Summer Shore
-2878 3335 0	3353 2215 0	45 Sailing			782	The Little Pearl
 2878 3335 0	3353 2215 0	45 Sailing		TEMPOR_TANTRUM	659	The Little Pearl
 2878 3335 0	1451 2969 0	46 Sailing	Children of the Sun		1015	Aldarin
 2878 3335 0	1873 2983 0	46 Sailing	Children of the Sun		810	Vatrachos Island
-2878 3335 0	2996 2287 0	47 Sailing			658	The Onyx Crest
 2878 3335 0	2996 2287 0	47 Sailing		TEMPOR_TANTRUM	568	The Onyx Crest
 2878 3335 0	3145 2824 0	48 Sailing		TEMPOR_TANTRUM	328	Ruins of Unkah
 2878 3335 0	1555 2772 0	49 Sailing			928	Shimmering Atoll
 2878 3335 0	2651 2677 0	50 Sailing			418	Void Knights' Outpost
 2878 3335 0	1862 3307 0	50 Sailing			943	Port Roberts
-2878 3335 0	2808 2509 0	52 Sailing			520	Red Rock
 2878 3335 0	2808 2509 0	52 Sailing		TEMPOR_TANTRUM	488	Red Rock
 2878 3335 0	1958 3113 0	54 Sailing	Children of the Sun		835	Minotaurs' Rest
 2878 3335 0	2532 2531 0	56 Sailing			515	Isle of Bones
@@ -822,16 +667,12 @@
 2878 3335 0	2860 3970 0	80 Sailing	Making Friends with My Arm	NORTHERN	1508	Weiss
 2878 3335 0	1953 4056 0	81 Sailing		NORTHERN	1300	Brittle Isle
 2878 3335 0	2927 4055 0	87 Sailing		NORTHERN	1556	Grimstone
-2878 3335 0	2849 2325 0	52 Sailing			614	Last Light
 2878 3335 0	2849 2325 0	52 Sailing		TEMPOR_TANTRUM	575	Last Light
 # Civitas illa Fortis
-1776 3141 0	3050 3192 0	38 Sailing	Children of the Sun		1079	Port Sarim
 1776 3141 0	3050 3192 0	38 Sailing	Children of the Sun	TEMPOR_TANTRUM	961	Port Sarim
-1776 3141 0	3069 2986 0	38 Sailing	Children of the Sun		1089	The Pandemonium
 1776 3141 0	3069 2986 0	38 Sailing	Children of the Sun	TEMPOR_TANTRUM	866	The Pandemonium
 1776 3141 0	1506 3402 0	38 Sailing	Children of the Sun		235	Land's End
 1776 3141 0	1726 3453 0	38 Sailing	Children of the Sun		182	Hosidius
-1776 3141 0	2960 3146 0	38 Sailing	Children of the Sun		990	Musa Point
 1776 3141 0	2960 3146 0	38 Sailing	Children of the Sun	TEMPOR_TANTRUM	941	Musa Point
 1776 3141 0	1844 3688 0	38 Sailing	Children of the Sun		322	Port Piscarilius
 1776 3141 0	2907 3225 0	38 Sailing	Children of the Sun		944	Rimmington
@@ -879,13 +720,10 @@
 1776 3141 0	2927 4055 0	87 Sailing	Children of the Sun	NORTHERN	795	Grimstone
 1776 3141 0	2849 2325 0	52 Sailing	Children of the Sun		757	Last Light
 # Corsair Cove
-2579 2843 0	3050 3192 0	40 Sailing	The Corsair Curse		486	Port Sarim
 2579 2843 0	3050 3192 0	40 Sailing	The Corsair Curse	TEMPOR_TANTRUM	390	Port Sarim
-2579 2843 0	3069 2986 0	40 Sailing	The Corsair Curse		497	The Pandemonium
 2579 2843 0	3069 2986 0	40 Sailing	The Corsair Curse	TEMPOR_TANTRUM	295	The Pandemonium
 2579 2843 0	1506 3402 0	40 Sailing	The Corsair Curse		761	Land's End
 2579 2843 0	1726 3453 0	40 Sailing	The Corsair Curse		708	Hosidius
-2579 2843 0	2960 3146 0	40 Sailing	The Corsair Curse		398	Musa Point
 2579 2843 0	2960 3146 0	40 Sailing	The Corsair Curse	TEMPOR_TANTRUM	369	Musa Point
 2579 2843 0	1844 3688 0	40 Sailing	The Corsair Curse		806	Port Piscarilius
 2579 2843 0	2907 3225 0	40 Sailing	The Corsair Curse		351	Rimmington
@@ -933,26 +771,18 @@
 2579 2843 0	2927 4055 0	87 Sailing	The Corsair Curse	NORTHERN	1228	Grimstone
 2579 2843 0	2849 2325 0	52 Sailing	The Corsair Curse		322	Last Light
 # Dognose Island
-3060 2638 0	3050 3192 0	40 Sailing			653	Port Sarim
 3060 2638 0	3050 3192 0	40 Sailing		TEMPOR_TANTRUM	309	Port Sarim
-3060 2638 0	3069 2986 0	40 Sailing			664	The Pandemonium
 3060 2638 0	3069 2986 0	40 Sailing		TEMPOR_TANTRUM	198	The Pandemonium
 3060 2638 0	1506 3402 0	40 Sailing			963	Land's End
 3060 2638 0	1726 3453 0	40 Sailing			911	Hosidius
-3060 2638 0	2960 3146 0	40 Sailing			565	Musa Point
 3060 2638 0	2960 3146 0	40 Sailing		TEMPOR_TANTRUM	297	Musa Point
 3060 2638 0	1844 3688 0	40 Sailing			1009	Port Piscarilius
-3060 2638 0	2907 3225 0	40 Sailing			518	Rimmington
 3060 2638 0	2907 3225 0	40 Sailing		TEMPOR_TANTRUM	345	Rimmington
-3060 2638 0	2796 3413 0	40 Sailing			516	Catherby
 3060 2638 0	2796 3413 0	40 Sailing		TEMPOR_TANTRUM	467	Catherby
-3060 2638 0	2759 3229 0	40 Sailing			447	Brimhaven
 3060 2638 0	2759 3229 0	40 Sailing		TEMPOR_TANTRUM	425	Brimhaven
 3060 2638 0	2670 3266 0	40 Sailing			424	Ardougne
 3060 2638 0	2685 3162 0	40 Sailing			370	Port Khazard
-3060 2638 0	2746 3304 0	40 Sailing			455	Witchaven
 3060 2638 0	2746 3304 0	40 Sailing		TEMPOR_TANTRUM	441	Witchaven
-3060 2638 0	2878 3335 0	40 Sailing			522	Entrana
 3060 2638 0	2878 3335 0	40 Sailing		TEMPOR_TANTRUM	405	Entrana
 3060 2638 0	1776 3141 0	40 Sailing	Children of the Sun		822	Civitas illa Fortis
 3060 2638 0	2579 2843 0	40 Sailing	The Corsair Curse		305	Corsair Cove
@@ -992,13 +822,10 @@
 3060 2638 0	2927 4055 0	87 Sailing		NORTHERN	1431	Grimstone
 3060 2638 0	2849 2325 0	52 Sailing			213	Last Light
 # Cairn Isle
-2751 2951 0	3050 3192 0	42 Sailing			417	Port Sarim
 2751 2951 0	3050 3192 0	42 Sailing		TEMPOR_TANTRUM	329	Port Sarim
-2751 2951 0	3069 2986 0	42 Sailing			427	The Pandemonium
 2751 2951 0	3069 2986 0	42 Sailing		TEMPOR_TANTRUM	234	The Pandemonium
 2751 2951 0	1506 3402 0	42 Sailing			842	Land's End
 2751 2951 0	1726 3453 0	42 Sailing			789	Hosidius
-2751 2951 0	2960 3146 0	42 Sailing			328	Musa Point
 2751 2951 0	2960 3146 0	42 Sailing		TEMPOR_TANTRUM	308	Musa Point
 2751 2951 0	1844 3688 0	42 Sailing			887	Port Piscarilius
 2751 2951 0	2907 3225 0	42 Sailing			281	Rimmington
@@ -1047,13 +874,10 @@
 2751 2951 0	2849 2325 0	52 Sailing			348	Last Light
 # Chinchompa Island
 # Sunset Coast
-1513 2973 0	3050 3192 0	44 Sailing	Children of the Sun		1123	Port Sarim
 1513 2973 0	3050 3192 0	44 Sailing	Children of the Sun	TEMPOR_TANTRUM	1006	Port Sarim
-1513 2973 0	3069 2986 0	44 Sailing	Children of the Sun		1134	The Pandemonium
 1513 2973 0	3069 2986 0	44 Sailing	Children of the Sun	TEMPOR_TANTRUM	911	The Pandemonium
 1513 2973 0	1506 3402 0	44 Sailing	Children of the Sun		536	Land's End
 1513 2973 0	1726 3453 0	44 Sailing	Children of the Sun		483	Hosidius
-1513 2973 0	2960 3146 0	44 Sailing	Children of the Sun		1035	Musa Point
 1513 2973 0	2960 3146 0	44 Sailing	Children of the Sun	TEMPOR_TANTRUM	985	Musa Point
 1513 2973 0	1844 3688 0	44 Sailing	Children of the Sun		591	Port Piscarilius
 1513 2973 0	2907 3225 0	44 Sailing	Children of the Sun		988	Rimmington
@@ -1101,24 +925,18 @@
 1513 2973 0	2927 4055 0	87 Sailing	Children of the Sun	NORTHERN	1058	Grimstone
 1513 2973 0	2849 2325 0	52 Sailing	Children of the Sun		801	Last Light
 # Remote Island
-2965 2608 0	3050 3192 0	45 Sailing			633	Port Sarim
 2965 2608 0	3050 3192 0	45 Sailing		TEMPOR_TANTRUM	330	Port Sarim
-2965 2608 0	3069 2986 0	45 Sailing			643	The Pandemonium
 2965 2608 0	3069 2986 0	45 Sailing		TEMPOR_TANTRUM	230	The Pandemonium
 2965 2608 0	1506 3402 0	45 Sailing			920	Land's End
 2965 2608 0	1726 3453 0	45 Sailing			867	Hosidius
-2965 2608 0	2960 3146 0	45 Sailing			544	Musa Point
 2965 2608 0	2960 3146 0	45 Sailing		TEMPOR_TANTRUM	310	Musa Point
 2965 2608 0	1844 3688 0	45 Sailing			965	Port Piscarilius
-2965 2608 0	2907 3225 0	45 Sailing			497	Rimmington
 2965 2608 0	2907 3225 0	45 Sailing		TEMPOR_TANTRUM	357	Rimmington
-2965 2608 0	2796 3413 0	45 Sailing			495	Catherby
 2965 2608 0	2796 3413 0	45 Sailing		TEMPOR_TANTRUM	480	Catherby
 2965 2608 0	2759 3229 0	45 Sailing			426	Brimhaven
 2965 2608 0	2670 3266 0	45 Sailing			404	Ardougne
 2965 2608 0	2685 3162 0	45 Sailing			350	Port Khazard
 2965 2608 0	2746 3304 0	45 Sailing			433	Witchaven
-2965 2608 0	2878 3335 0	45 Sailing			501	Entrana
 2965 2608 0	2878 3335 0	45 Sailing		TEMPOR_TANTRUM	417	Entrana
 2965 2608 0	1776 3141 0	45 Sailing	Children of the Sun		778	Civitas illa Fortis
 2965 2608 0	2579 2843 0	45 Sailing	The Corsair Curse		269	Corsair Cove
@@ -1158,24 +976,18 @@
 2965 2608 0	2927 4055 0	87 Sailing		NORTHERN	1386	Grimstone
 2965 2608 0	2849 2325 0	52 Sailing			179	Last Light
 # The Summer Shore
-3173 2368 0	3050 3192 0	45 Sailing			801	Port Sarim
 3173 2368 0	3050 3192 0	45 Sailing		TEMPOR_TANTRUM	477	Port Sarim
-3173 2368 0	3069 2986 0	45 Sailing			811	The Pandemonium
 3173 2368 0	3069 2986 0	45 Sailing		TEMPOR_TANTRUM	366	The Pandemonium
 3173 2368 0	1506 3402 0	45 Sailing			1056	Land's End
 3173 2368 0	1726 3453 0	45 Sailing			1004	Hosidius
-3173 2368 0	2960 3146 0	45 Sailing			712	Musa Point
 3173 2368 0	2960 3146 0	45 Sailing		TEMPOR_TANTRUM	466	Musa Point
 3173 2368 0	1844 3688 0	45 Sailing			1101	Port Piscarilius
-3173 2368 0	2907 3225 0	45 Sailing			666	Rimmington
 3173 2368 0	2907 3225 0	45 Sailing		TEMPOR_TANTRUM	514	Rimmington
-3173 2368 0	2796 3413 0	45 Sailing			663	Catherby
 3173 2368 0	2796 3413 0	45 Sailing		TEMPOR_TANTRUM	636	Catherby
-3173 2368 0	2759 3229 0	45 Sailing			594	Brimhaven
+3173 2368 0	2759 3229 0	45 Sailing		TEMPOR_TANTRUM	594	Brimhaven
 3173 2368 0	2670 3266 0	45 Sailing			571	Ardougne
 3173 2368 0	2685 3162 0	45 Sailing			517	Port Khazard
 3173 2368 0	2746 3304 0	45 Sailing			601	Witchaven
-3173 2368 0	2878 3335 0	45 Sailing			669	Entrana
 3173 2368 0	2878 3335 0	45 Sailing		TEMPOR_TANTRUM	574	Entrana
 3173 2368 0	1776 3141 0	45 Sailing	Children of the Sun		915	Civitas illa Fortis
 3173 2368 0	2579 2843 0	45 Sailing	The Corsair Curse		405	Corsair Cove
@@ -1195,7 +1007,7 @@
 3173 2368 0	2808 2509 0	52 Sailing			225	Red Rock
 3173 2368 0	1958 3113 0	54 Sailing	Children of the Sun		802	Minotaurs' Rest
 3173 2368 0	2532 2531 0	56 Sailing			367	Isle of Bones
-3173 2368 0	1201 2733 0	58 Sailing			1066	Laguna Aurorae
+3173 2368 0	1201 2733 0	58 Sailing		KELP	1066	Laguna Aurorae
 3173 2368 0	2660 2392 0	60 Sailing			282	Charred Island
 3173 2368 0	2629 3704 0	62 Sailing	The Fremennik Trials		1317	Rellekka
 3173 2368 0	2569 2295 0	62 Sailing			335	Wyrmscraig
@@ -1215,26 +1027,18 @@
 3173 2368 0	2927 4055 0	87 Sailing		NORTHERN	1523	Grimstone
 3173 2368 0	2849 2325 0	52 Sailing			198	Last Light
 # The Little Pearl
-3353 2215 0	3050 3192 0	45 Sailing			913	Port Sarim
 3353 2215 0	3050 3192 0	45 Sailing		TEMPOR_TANTRUM	561	Port Sarim
-3353 2215 0	3069 2986 0	45 Sailing			924	The Pandemonium
 3353 2215 0	3069 2986 0	45 Sailing		TEMPOR_TANTRUM	451	The Pandemonium
 3353 2215 0	1506 3402 0	45 Sailing			1169	Land's End
 3353 2215 0	1726 3453 0	45 Sailing			1117	Hosidius
-3353 2215 0	2960 3146 0	45 Sailing			825	Musa Point
 3353 2215 0	2960 3146 0	45 Sailing		TEMPOR_TANTRUM	551	Musa Point
 3353 2215 0	1844 3688 0	45 Sailing			1215	Port Piscarilius
-3353 2215 0	2907 3225 0	45 Sailing			778	Rimmington
 3353 2215 0	2907 3225 0	45 Sailing		TEMPOR_TANTRUM	599	Rimmington
-3353 2215 0	2796 3413 0	45 Sailing			776	Catherby
 3353 2215 0	2796 3413 0	45 Sailing		TEMPOR_TANTRUM	721	Catherby
-3353 2215 0	2759 3229 0	45 Sailing			707	Brimhaven
 3353 2215 0	2759 3229 0	45 Sailing		TEMPOR_TANTRUM	680	Brimhaven
 3353 2215 0	2670 3266 0	45 Sailing			684	Ardougne
 3353 2215 0	2685 3162 0	45 Sailing			630	Port Khazard
-3353 2215 0	2746 3304 0	45 Sailing			715	Witchaven
 3353 2215 0	2746 3304 0	45 Sailing		TEMPOR_TANTRUM	695	Witchaven
-3353 2215 0	2878 3335 0	45 Sailing			782	Entrana
 3353 2215 0	2878 3335 0	45 Sailing		TEMPOR_TANTRUM	659	Entrana
 3353 2215 0	1776 3141 0	45 Sailing	Children of the Sun		1028	Civitas illa Fortis
 3353 2215 0	2579 2843 0	45 Sailing	The Corsair Curse		518	Corsair Cove
@@ -1254,7 +1058,7 @@
 3353 2215 0	2808 2509 0	52 Sailing			339	Red Rock
 3353 2215 0	1958 3113 0	54 Sailing	Children of the Sun		916	Minotaurs' Rest
 3353 2215 0	2532 2531 0	56 Sailing			480	Isle of Bones
-3353 2215 0	1201 2733 0	58 Sailing			1179	Laguna Aurorae
+3353 2215 0	1201 2733 0	58 Sailing		KELP	1179	Laguna Aurorae
 3353 2215 0	2660 2392 0	60 Sailing			396	Charred Island
 3353 2215 0	2629 3704 0	62 Sailing	The Fremennik Trials		1431	Rellekka
 3353 2215 0	2569 2295 0	62 Sailing			430	Wyrmscraig
@@ -1274,13 +1078,10 @@
 3353 2215 0	2927 4055 0	87 Sailing		NORTHERN	1637	Grimstone
 3353 2215 0	2849 2325 0	52 Sailing			301	Last Light
 # Aldarin
-1451 2969 0	3050 3192 0	46 Sailing	Children of the Sun		1148	Port Sarim
 1451 2969 0	3050 3192 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	1031	Port Sarim
-1451 2969 0	3069 2986 0	46 Sailing	Children of the Sun		1159	The Pandemonium
 1451 2969 0	3069 2986 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	936	The Pandemonium
 1451 2969 0	1506 3402 0	46 Sailing	Children of the Sun		561	Land's End
 1451 2969 0	1726 3453 0	46 Sailing	Children of the Sun		508	Hosidius
-1451 2969 0	2960 3146 0	46 Sailing	Children of the Sun		1060	Musa Point
 1451 2969 0	2960 3146 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	1010	Musa Point
 1451 2969 0	1844 3688 0	46 Sailing	Children of the Sun		616	Port Piscarilius
 1451 2969 0	2907 3225 0	46 Sailing	Children of the Sun		1013	Rimmington
@@ -1328,13 +1129,10 @@
 1451 2969 0	2927 4055 0	87 Sailing	Children of the Sun	NORTHERN	1083	Grimstone
 1451 2969 0	2849 2325 0	52 Sailing	Children of the Sun		826	Last Light
 # Vatrachos Island
-1873 2983 0	3050 3192 0	46 Sailing	Children of the Sun		943	Port Sarim
 1873 2983 0	3050 3192 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	825	Port Sarim
-1873 2983 0	3069 2986 0	46 Sailing	Children of the Sun		954	The Pandemonium
 1873 2983 0	3069 2986 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	730	The Pandemonium
 1873 2983 0	1506 3402 0	46 Sailing	Children of the Sun		331	Land's End
 1873 2983 0	1726 3453 0	46 Sailing	Children of the Sun		278	Hosidius
-1873 2983 0	2960 3146 0	46 Sailing	Children of the Sun		855	Musa Point
 1873 2983 0	2960 3146 0	46 Sailing	Children of the Sun	TEMPOR_TANTRUM	804	Musa Point
 1873 2983 0	1844 3688 0	46 Sailing	Children of the Sun		386	Port Piscarilius
 1873 2983 0	2907 3225 0	46 Sailing	Children of the Sun		808	Rimmington
@@ -1382,24 +1180,18 @@
 1873 2983 0	2927 4055 0	87 Sailing	Children of the Sun	NORTHERN	853	Grimstone
 1873 2983 0	2849 2325 0	52 Sailing	Children of the Sun		620	Last Light
 # The Onyx Crest
-2996 2287 0	3050 3192 0	47 Sailing			790	Port Sarim
 2996 2287 0	3050 3192 0	47 Sailing		TEMPOR_TANTRUM	480	Port Sarim
-2996 2287 0	3069 2986 0	47 Sailing			801	The Pandemonium
 2996 2287 0	3069 2986 0	47 Sailing		TEMPOR_TANTRUM	379	The Pandemonium
 2996 2287 0	1506 3402 0	47 Sailing			983	Land's End
 2996 2287 0	1726 3453 0	47 Sailing			931	Hosidius
-2996 2287 0	2960 3146 0	47 Sailing			702	Musa Point
 2996 2287 0	2960 3146 0	47 Sailing		TEMPOR_TANTRUM	460	Musa Point
 2996 2287 0	1844 3688 0	47 Sailing			1028	Port Piscarilius
-2996 2287 0	2907 3225 0	47 Sailing			655	Rimmington
 2996 2287 0	2907 3225 0	47 Sailing		TEMPOR_TANTRUM	508	Rimmington
-2996 2287 0	2796 3413 0	47 Sailing			653	Catherby
 2996 2287 0	2796 3413 0	47 Sailing		TEMPOR_TANTRUM	630	Catherby
 2996 2287 0	2759 3229 0	47 Sailing			584	Brimhaven
 2996 2287 0	2670 3266 0	47 Sailing			561	Ardougne
 2996 2287 0	2685 3162 0	47 Sailing			507	Port Khazard
 2996 2287 0	2746 3304 0	47 Sailing			592	Witchaven
-2996 2287 0	2878 3335 0	47 Sailing			659	Entrana
 2996 2287 0	2878 3335 0	47 Sailing		TEMPOR_TANTRUM	568	Entrana
 2996 2287 0	1776 3141 0	47 Sailing	Children of the Sun		842	Civitas illa Fortis
 2996 2287 0	2579 2843 0	47 Sailing	The Corsair Curse		366	Corsair Cove
@@ -1419,7 +1211,7 @@
 2996 2287 0	2808 2509 0	52 Sailing			160	Red Rock
 2996 2287 0	1958 3113 0	54 Sailing	Children of the Sun		729	Minotaurs' Rest
 2996 2287 0	2532 2531 0	56 Sailing			294	Isle of Bones
-2996 2287 0	1201 2733 0	58 Sailing			993	Laguna Aurorae
+2996 2287 0	1201 2733 0	58 Sailing		KELP	993	Laguna Aurorae
 2996 2287 0	2660 2392 0	60 Sailing			209	Charred Island
 2996 2287 0	2629 3704 0	62 Sailing	The Fremennik Trials		1244	Rellekka
 2996 2287 0	2569 2295 0	62 Sailing			244	Wyrmscraig
@@ -1490,13 +1282,10 @@
 3145 2824 0	2927 4055 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1478	Grimstone
 3145 2824 0	2849 2325 0	52 Sailing		TEMPOR_TANTRUM	318	Last Light
 # Shimmering Atoll
-1555 2772 0	3050 3192 0	49 Sailing			1060	Port Sarim
 1555 2772 0	3050 3192 0	49 Sailing		TEMPOR_TANTRUM	942	Port Sarim
-1555 2772 0	3069 2986 0	49 Sailing			1070	The Pandemonium
 1555 2772 0	3069 2986 0	49 Sailing		TEMPOR_TANTRUM	847	The Pandemonium
 1555 2772 0	1506 3402 0	49 Sailing			515	Land's End
 1555 2772 0	1726 3453 0	49 Sailing			463	Hosidius
-1555 2772 0	2960 3146 0	49 Sailing			971	Musa Point
 1555 2772 0	2960 3146 0	49 Sailing		TEMPOR_TANTRUM	922	Musa Point
 1555 2772 0	1844 3688 0	49 Sailing			571	Port Piscarilius
 1555 2772 0	2907 3225 0	49 Sailing			925	Rimmington
@@ -1544,13 +1333,10 @@
 1555 2772 0	2927 4055 0	87 Sailing		NORTHERN	1038	Grimstone
 1555 2772 0	2849 2325 0	52 Sailing			737	Last Light
 # Void Knights' Outpost
-2651 2677 0	3050 3192 0	50 Sailing			550	Port Sarim
 2651 2677 0	3050 3192 0	50 Sailing		TEMPOR_TANTRUM	393	Port Sarim
-2651 2677 0	3069 2986 0	50 Sailing			561	The Pandemonium
 2651 2677 0	3069 2986 0	50 Sailing		TEMPOR_TANTRUM	294	The Pandemonium
 2651 2677 0	1506 3402 0	50 Sailing			741	Land's End
 2651 2677 0	1726 3453 0	50 Sailing			689	Hosidius
-2651 2677 0	2960 3146 0	50 Sailing			462	Musa Point
 2651 2677 0	2960 3146 0	50 Sailing		TEMPOR_TANTRUM	372	Musa Point
 2651 2677 0	1844 3688 0	50 Sailing			787	Port Piscarilius
 2651 2677 0	2907 3225 0	50 Sailing			415	Rimmington
@@ -1598,13 +1384,10 @@
 2651 2677 0	2927 4055 0	87 Sailing		NORTHERN	1209	Grimstone
 2651 2677 0	2849 2325 0	52 Sailing			237	Last Light
 # Port Roberts
-1862 3307 0	3050 3192 0	50 Sailing			1074	Port Sarim
 1862 3307 0	3050 3192 0	50 Sailing		TEMPOR_TANTRUM	957	Port Sarim
-1862 3307 0	3069 2986 0	50 Sailing			1085	The Pandemonium
 1862 3307 0	3069 2986 0	50 Sailing		TEMPOR_TANTRUM	862	The Pandemonium
 1862 3307 0	1506 3402 0	50 Sailing			211	Land's End
 1862 3307 0	1726 3453 0	50 Sailing			119	Hosidius
-1862 3307 0	2960 3146 0	50 Sailing			986	Musa Point
 1862 3307 0	2960 3146 0	50 Sailing		TEMPOR_TANTRUM	936	Musa Point
 1862 3307 0	1844 3688 0	50 Sailing			221	Port Piscarilius
 1862 3307 0	2907 3225 0	50 Sailing			939	Rimmington
@@ -1653,23 +1436,18 @@
 1862 3307 0	2849 2325 0	52 Sailing			752	Last Light
 # Anglers' Retreat
 # Red Rock
-2808 2509 0	3050 3192 0	52 Sailing			653	Port Sarim
 2808 2509 0	3050 3192 0	52 Sailing		TEMPOR_TANTRUM	401	Port Sarim
-2808 2509 0	3069 2986 0	52 Sailing			664	The Pandemonium
 2808 2509 0	3069 2986 0	52 Sailing		TEMPOR_TANTRUM	300	The Pandemonium
 2808 2509 0	1506 3402 0	52 Sailing			862	Land's End
 2808 2509 0	1726 3453 0	52 Sailing			809	Hosidius
-2808 2509 0	2960 3146 0	52 Sailing			565	Musa Point
 2808 2509 0	2960 3146 0	52 Sailing		TEMPOR_TANTRUM	380	Musa Point
 2808 2509 0	1844 3688 0	52 Sailing			907	Port Piscarilius
-2808 2509 0	2907 3225 0	52 Sailing			518	Rimmington
 2808 2509 0	2907 3225 0	52 Sailing		TEMPOR_TANTRUM	428	Rimmington
 2808 2509 0	2796 3413 0	52 Sailing			515	Catherby
 2808 2509 0	2759 3229 0	52 Sailing			447	Brimhaven
 2808 2509 0	2670 3266 0	52 Sailing			424	Ardougne
 2808 2509 0	2685 3162 0	52 Sailing			370	Port Khazard
 2808 2509 0	2746 3304 0	52 Sailing			454	Witchaven
-2808 2509 0	2878 3335 0	52 Sailing			521	Entrana
 2808 2509 0	2878 3335 0	52 Sailing		TEMPOR_TANTRUM	488	Entrana
 2808 2509 0	1776 3141 0	52 Sailing	Children of the Sun		720	Civitas illa Fortis
 2808 2509 0	2579 2843 0	52 Sailing	The Corsair Curse		227	Corsair Cove
@@ -1689,7 +1467,7 @@
 2808 2509 0	1862 3307 0	52 Sailing			715	Port Roberts
 2808 2509 0	1958 3113 0	54 Sailing	Children of the Sun		608	Minotaurs' Rest
 2808 2509 0	2532 2531 0	56 Sailing			172	Isle of Bones
-2808 2509 0	1201 2733 0	58 Sailing			872	Laguna Aurorae
+2808 2509 0	1201 2733 0	58 Sailing		KELP	872	Laguna Aurorae
 2808 2509 0	2660 2392 0	60 Sailing			118	Charred Island
 2808 2509 0	2629 3704 0	62 Sailing	The Fremennik Trials		1122	Rellekka
 2808 2509 0	2569 2295 0	62 Sailing			183	Wyrmscraig
@@ -1709,13 +1487,10 @@
 2808 2509 0	2927 4055 0	87 Sailing		NORTHERN	1328	Grimstone
 2808 2509 0	2849 2325 0	52 Sailing			116	Last Light
 # Minotaurs' Rest
-1958 3113 0	3050 3192 0	54 Sailing	Children of the Sun		970	Port Sarim
 1958 3113 0	3050 3192 0	54 Sailing	Children of the Sun	TEMPOR_TANTRUM	853	Port Sarim
-1958 3113 0	3069 2986 0	54 Sailing	Children of the Sun		981	The Pandemonium
 1958 3113 0	3069 2986 0	54 Sailing	Children of the Sun	TEMPOR_TANTRUM	758	The Pandemonium
 1958 3113 0	1506 3402 0	54 Sailing	Children of the Sun		291	Land's End
 1958 3113 0	1726 3453 0	54 Sailing	Children of the Sun		225	Hosidius
-1958 3113 0	2960 3146 0	54 Sailing	Children of the Sun		882	Musa Point
 1958 3113 0	2960 3146 0	54 Sailing	Children of the Sun	TEMPOR_TANTRUM	832	Musa Point
 1958 3113 0	1844 3688 0	54 Sailing	Children of the Sun		322	Port Piscarilius
 1958 3113 0	2907 3225 0	54 Sailing	Children of the Sun		835	Rimmington
@@ -1764,16 +1539,12 @@
 1958 3113 0	2849 2325 0	54 Sailing	Children of the Sun		648	Last Light
 # Isle of Souls
 # Isle of Bones
-2532 2531 0	3050 3192 0	56 Sailing			648	Port Sarim
 2532 2531 0	3050 3192 0	56 Sailing		TEMPOR_TANTRUM	477	Port Sarim
-2532 2531 0	3069 2986 0	56 Sailing			659	The Pandemonium
 2532 2531 0	3069 2986 0	56 Sailing		TEMPOR_TANTRUM	378	The Pandemonium
 2532 2531 0	1506 3402 0	56 Sailing			722	Land's End
 2532 2531 0	1726 3453 0	56 Sailing			670	Hosidius
-2532 2531 0	2960 3146 0	56 Sailing			560	Musa Point
 2532 2531 0	2960 3146 0	56 Sailing		TEMPOR_TANTRUM	457	Musa Point
 2532 2531 0	1844 3688 0	56 Sailing			767	Port Piscarilius
-2532 2531 0	2907 3225 0	56 Sailing			513	Rimmington
 2532 2531 0	2907 3225 0	56 Sailing		TEMPOR_TANTRUM	505	Rimmington
 2532 2531 0	2796 3413 0	56 Sailing			511	Catherby
 2532 2531 0	2759 3229 0	56 Sailing			442	Brimhaven
@@ -1819,13 +1590,10 @@
 2532 2531 0	2927 4055 0	87 Sailing		NORTHERN	1189	Grimstone
 2532 2531 0	2849 2325 0	56 Sailing			209	Last Light
 # Laguna Aurorae
-1201 2733 0	3050 3192 0	58 Sailing			1231	Port Sarim
 1201 2733 0	3050 3192 0	58 Sailing		TEMPOR_TANTRUM	1113	Port Sarim
-1201 2733 0	3069 2986 0	58 Sailing			1241	The Pandemonium
 1201 2733 0	3069 2986 0	58 Sailing		TEMPOR_TANTRUM	1019	The Pandemonium
 1201 2733 0	1506 3402 0	58 Sailing			693	Land's End
 1201 2733 0	1726 3453 0	58 Sailing			641	Hosidius
-1201 2733 0	2960 3146 0	58 Sailing			1142	Musa Point
 1201 2733 0	2960 3146 0	58 Sailing		TEMPOR_TANTRUM	1093	Musa Point
 1201 2733 0	1844 3688 0	58 Sailing			749	Port Piscarilius
 1201 2733 0	2907 3225 0	58 Sailing			1095	Rimmington
@@ -1873,16 +1641,12 @@
 1201 2733 0	2927 4055 0	87 Sailing		NORTHERN	1215	Grimstone
 1201 2733 0	2849 2325 0	58 Sailing			909	Last Light
 # Charred Island
-2660 2392 0	3050 3192 0	60 Sailing			692	Port Sarim
 2660 2392 0	3050 3192 0	60 Sailing		TEMPOR_TANTRUM	482	Port Sarim
-2660 2392 0	3069 2986 0	60 Sailing			703	The Pandemonium
 2660 2392 0	3069 2986 0	60 Sailing		TEMPOR_TANTRUM	382	The Pandemonium
 2660 2392 0	1506 3402 0	60 Sailing			806	Land's End
 2660 2392 0	1726 3453 0	60 Sailing			753	Hosidius
-2660 2392 0	2960 3146 0	60 Sailing			604	Musa Point
 2660 2392 0	2960 3146 0	60 Sailing		TEMPOR_TANTRUM	462	Musa Point
 2660 2392 0	1844 3688 0	60 Sailing			851	Port Piscarilius
-2660 2392 0	2907 3225 0	60 Sailing			557	Rimmington
 2660 2392 0	2907 3225 0	60 Sailing		TEMPOR_TANTRUM	510	Rimmington
 2660 2392 0	2796 3413 0	60 Sailing			555	Catherby
 2660 2392 0	2759 3229 0	60 Sailing			486	Brimhaven
@@ -1909,7 +1673,7 @@
 2660 2392 0	2808 2509 0	60 Sailing			121	Red Rock
 2660 2392 0	1958 3113 0	60 Sailing	Children of the Sun		552	Minotaurs' Rest
 2660 2392 0	2532 2531 0	60 Sailing			117	Isle of Bones
-2660 2392 0	1201 2733 0	60 Sailing			816	Laguna Aurorae
+2660 2392 0	1201 2733 0	60 Sailing		KELP	816	Laguna Aurorae
 2660 2392 0	2629 3704 0	62 Sailing	The Fremennik Trials		1066	Rellekka
 2660 2392 0	2569 2295 0	62 Sailing			98	Wyrmscraig
 2660 2392 0	1758 2655 0	64 Sailing			521	The Crown Jewel
@@ -1928,13 +1692,10 @@
 2660 2392 0	2927 4055 0	87 Sailing		NORTHERN	1273	Grimstone
 2660 2392 0	2849 2325 0	60 Sailing			127	Last Light
 # Rellekka
-2629 3704 0	3050 3192 0	62 Sailing	The Fremennik Trials		1482	Port Sarim
 2629 3704 0	3050 3192 0	62 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1365	Port Sarim
-2629 3704 0	3069 2986 0	62 Sailing	The Fremennik Trials		1493	The Pandemonium
 2629 3704 0	3069 2986 0	62 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1270	The Pandemonium
 2629 3704 0	1506 3402 0	62 Sailing	The Fremennik Trials		633	Land's End
 2629 3704 0	1726 3453 0	62 Sailing	The Fremennik Trials		521	Hosidius
-2629 3704 0	2960 3146 0	62 Sailing	The Fremennik Trials		1394	Musa Point
 2629 3704 0	2960 3146 0	62 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1344	Musa Point
 2629 3704 0	1844 3688 0	62 Sailing	The Fremennik Trials		416	Port Piscarilius
 2629 3704 0	2907 3225 0	62 Sailing	The Fremennik Trials		1347	Rimmington
@@ -1982,16 +1743,12 @@
 2629 3704 0	2927 4055 0	87 Sailing	The Fremennik Trials	NORTHERN	251	Grimstone
 2629 3704 0	2849 2325 0	62 Sailing	The Fremennik Trials		1160	Last Light
 # Wyrmscraig
-2569 2295 0	3050 3192 0	62 Sailing			757	Port Sarim
 2569 2295 0	3050 3192 0	62 Sailing		TEMPOR_TANTRUM	548	Port Sarim
-2569 2295 0	3069 2986 0	62 Sailing			767	The Pandemonium
 2569 2295 0	3069 2986 0	62 Sailing		TEMPOR_TANTRUM	449	The Pandemonium
 2569 2295 0	1506 3402 0	62 Sailing			789	Land's End
 2569 2295 0	1726 3453 0	62 Sailing			737	Hosidius
-2569 2295 0	2960 3146 0	62 Sailing			668	Musa Point
 2569 2295 0	2960 3146 0	62 Sailing		TEMPOR_TANTRUM	528	Musa Point
 2569 2295 0	1844 3688 0	62 Sailing			834	Port Piscarilius
-2569 2295 0	2907 3225 0	62 Sailing			622	Rimmington
 2569 2295 0	2907 3225 0	62 Sailing		TEMPOR_TANTRUM	576	Rimmington
 2569 2295 0	2796 3413 0	62 Sailing			619	Catherby
 2569 2295 0	2759 3229 0	62 Sailing			550	Brimhaven
@@ -2018,7 +1775,7 @@
 2569 2295 0	2808 2509 0	62 Sailing			184	Red Rock
 2569 2295 0	1958 3113 0	62 Sailing	Children of the Sun		535	Minotaurs' Rest
 2569 2295 0	2532 2531 0	62 Sailing			141	Isle of Bones
-2569 2295 0	1201 2733 0	62 Sailing			774	Laguna Aurorae
+2569 2295 0	1201 2733 0	62 Sailing		KELP	774	Laguna Aurorae
 2569 2295 0	2660 2392 0	62 Sailing			96	Charred Island
 2569 2295 0	2629 3704 0	62 Sailing	The Fremennik Trials		1050	Rellekka
 2569 2295 0	1758 2655 0	64 Sailing			479	The Crown Jewel
@@ -2037,13 +1794,10 @@
 2569 2295 0	2927 4055 0	87 Sailing		NORTHERN	1256	Grimstone
 2569 2295 0	2849 2325 0	62 Sailing			166	Last Light
 # The Crown Jewel
-1758 2655 0	3050 3192 0	64 Sailing			946	Port Sarim
 1758 2655 0	3050 3192 0	64 Sailing		TEMPOR_TANTRUM	828	Port Sarim
-1758 2655 0	3069 2986 0	64 Sailing			956	The Pandemonium
 1758 2655 0	3069 2986 0	64 Sailing		TEMPOR_TANTRUM	733	The Pandemonium
 1758 2655 0	1506 3402 0	64 Sailing			512	Land's End
 1758 2655 0	1726 3453 0	64 Sailing			459	Hosidius
-1758 2655 0	2960 3146 0	64 Sailing			857	Musa Point
 1758 2655 0	2960 3146 0	64 Sailing		TEMPOR_TANTRUM	807	Musa Point
 1758 2655 0	1844 3688 0	64 Sailing			567	Port Piscarilius
 1758 2655 0	2907 3225 0	64 Sailing			810	Rimmington
@@ -2091,13 +1845,10 @@
 1758 2655 0	2927 4055 0	87 Sailing		NORTHERN	1034	Grimstone
 1758 2655 0	2849 2325 0	64 Sailing			615	Last Light
 # Etceteria
-2612 3841 0	3050 3192 0	65 Sailing	Royal Trouble		1494	Port Sarim
 2612 3841 0	3050 3192 0	65 Sailing	Royal Trouble	TEMPOR_TANTRUM	1377	Port Sarim
-2612 3841 0	3069 2986 0	65 Sailing	Royal Trouble		1505	The Pandemonium
 2612 3841 0	3069 2986 0	65 Sailing	Royal Trouble	TEMPOR_TANTRUM	1282	The Pandemonium
 2612 3841 0	1506 3402 0	65 Sailing	Royal Trouble		645	Land's End
 2612 3841 0	1726 3453 0	65 Sailing	Royal Trouble		534	Hosidius
-2612 3841 0	2960 3146 0	65 Sailing	Royal Trouble		1406	Musa Point
 2612 3841 0	2960 3146 0	65 Sailing	Royal Trouble	TEMPOR_TANTRUM	1356	Musa Point
 2612 3841 0	1844 3688 0	65 Sailing	Royal Trouble		427	Port Piscarilius
 2612 3841 0	2907 3225 0	65 Sailing	Royal Trouble		1359	Rimmington
@@ -2138,7 +1889,6 @@
 2612 3841 0	2193 2319 0	72 Sailing	Royal Trouble	KELP	984	Sunbleak Island
 2612 3841 0	2542 3764 0	74 Sailing	Royal Trouble;The Fremennik Trials		67	Waterbirth Island
 2612 3841 0	2305 3689 0	75 Sailing	Royal Trouble;Swan Song		202	Piscatoris
-2612 3841 0	2151 3880 0	76 Sailing	Lunar Diplomacy;Royal Trouble		279	Lunar Isle
 2612 3841 0	2151 3880 0	76 Sailing	Lunar Diplomacy;Royal Trouble	NORTHERN	265	Lunar Isle
 2612 3841 0	2079 3689 0	76 Sailing	Royal Trouble		309	Buccaneers' Haven
 2612 3841 0	2860 3970 0	80 Sailing	Making Friends with My Arm;Royal Trouble	NORTHERN	165	Weiss
@@ -2148,13 +1898,10 @@
 # Port Tyras
 # Lledrith Island
 # Deepfin Point
-1922 2759 0	3050 3192 0	67 Sailing			875	Port Sarim
 1922 2759 0	3050 3192 0	67 Sailing		TEMPOR_TANTRUM	757	Port Sarim
-1922 2759 0	3069 2986 0	67 Sailing			885	The Pandemonium
 1922 2759 0	3069 2986 0	67 Sailing		TEMPOR_TANTRUM	662	The Pandemonium
 1922 2759 0	1506 3402 0	67 Sailing			453	Land's End
 1922 2759 0	1726 3453 0	67 Sailing			400	Hosidius
-1922 2759 0	2960 3146 0	67 Sailing			786	Musa Point
 1922 2759 0	2960 3146 0	67 Sailing		TEMPOR_TANTRUM	737	Musa Point
 1922 2759 0	1844 3688 0	67 Sailing			499	Port Piscarilius
 1922 2759 0	2907 3225 0	67 Sailing			740	Rimmington
@@ -2202,13 +1949,10 @@
 1922 2759 0	2927 4055 0	87 Sailing		NORTHERN	961	Grimstone
 1922 2759 0	2849 2325 0	67 Sailing			552	Last Light
 # Jatizso
-2411 3781 0	3050 3192 0	68 Sailing	The Fremennik Isles		1384	Port Sarim
 2411 3781 0	3050 3192 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1266	Port Sarim
-2411 3781 0	3069 2986 0	68 Sailing	The Fremennik Isles		1394	The Pandemonium
 2411 3781 0	3069 2986 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1172	The Pandemonium
 2411 3781 0	1506 3402 0	68 Sailing	The Fremennik Isles		535	Land's End
 2411 3781 0	1726 3453 0	68 Sailing	The Fremennik Isles		424	Hosidius
-2411 3781 0	2960 3146 0	68 Sailing	The Fremennik Isles		1295	Musa Point
 2411 3781 0	2960 3146 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1246	Musa Point
 2411 3781 0	1844 3688 0	68 Sailing	The Fremennik Isles		318	Port Piscarilius
 2411 3781 0	2907 3225 0	68 Sailing	The Fremennik Isles		1248	Rimmington
@@ -2256,13 +2000,10 @@
 2411 3781 0	2927 4055 0	87 Sailing	The Fremennik Isles	NORTHERN	323	Grimstone
 2411 3781 0	2849 2325 0	68 Sailing	The Fremennik Isles		1062	Last Light
 # Neitiznot
-2310 3781 0	3050 3192 0	68 Sailing	The Fremennik Isles		1333	Port Sarim
 2310 3781 0	3050 3192 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1215	Port Sarim
-2310 3781 0	3069 2986 0	68 Sailing	The Fremennik Isles		1343	The Pandemonium
 2310 3781 0	3069 2986 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1120	The Pandemonium
 2310 3781 0	1506 3402 0	68 Sailing	The Fremennik Isles		484	Land's End
 2310 3781 0	1726 3453 0	68 Sailing	The Fremennik Isles		371	Hosidius
-2310 3781 0	2960 3146 0	68 Sailing	The Fremennik Isles		1244	Musa Point
 2310 3781 0	2960 3146 0	68 Sailing	The Fremennik Isles	TEMPOR_TANTRUM	1195	Musa Point
 2310 3781 0	1844 3688 0	68 Sailing	The Fremennik Isles		266	Port Piscarilius
 2310 3781 0	2907 3225 0	68 Sailing	The Fremennik Isles		1198	Rimmington
@@ -2310,16 +2051,12 @@
 2310 3781 0	2927 4055 0	87 Sailing	The Fremennik Isles	NORTHERN	385	Grimstone
 2310 3781 0	2849 2325 0	68 Sailing	The Fremennik Isles		1010	Last Light
 # Rainbow's End
-2344 2268 0	3050 3192 0	69 Sailing		KELP	811	Port Sarim
 2344 2268 0	3050 3192 0	69 Sailing		TEMPOR_TANTRUM;KELP	615	Port Sarim
-2344 2268 0	3069 2986 0	69 Sailing		KELP	822	The Pandemonium
 2344 2268 0	3069 2986 0	69 Sailing		TEMPOR_TANTRUM;KELP	515	The Pandemonium
 2344 2268 0	1506 3402 0	69 Sailing		KELP	772	Land's End
 2344 2268 0	1726 3453 0	69 Sailing		KELP	720	Hosidius
-2344 2268 0	2960 3146 0	69 Sailing		KELP	723	Musa Point
 2344 2268 0	2960 3146 0	69 Sailing		TEMPOR_TANTRUM;KELP	595	Musa Point
 2344 2268 0	1844 3688 0	69 Sailing		KELP	817	Port Piscarilius
-2344 2268 0	2907 3225 0	69 Sailing		KELP	676	Rimmington
 2344 2268 0	2907 3225 0	69 Sailing		TEMPOR_TANTRUM;KELP	643	Rimmington
 2344 2268 0	2796 3413 0	69 Sailing		KELP	674	Catherby
 2344 2268 0	2759 3229 0	69 Sailing		KELP	605	Brimhaven
@@ -2366,13 +2103,10 @@
 2344 2268 0	2849 2325 0	69 Sailing		KELP	280	Last Light
 # Prifddinas
 # Sunbleak Island
-2193 2319 0	3050 3192 0	72 Sailing		KELP	804	Port Sarim
 2193 2319 0	3050 3192 0	72 Sailing		TEMPOR_TANTRUM;KELP	678	Port Sarim
-2193 2319 0	3069 2986 0	72 Sailing		KELP	815	The Pandemonium
 2193 2319 0	3069 2986 0	72 Sailing		TEMPOR_TANTRUM;KELP	584	The Pandemonium
 2193 2319 0	1506 3402 0	72 Sailing		KELP	710	Land's End
 2193 2319 0	1726 3453 0	72 Sailing		KELP	658	Hosidius
-2193 2319 0	2960 3146 0	72 Sailing		KELP	716	Musa Point
 2193 2319 0	2960 3146 0	72 Sailing		TEMPOR_TANTRUM;KELP	658	Musa Point
 2193 2319 0	1844 3688 0	72 Sailing		KELP	756	Port Piscarilius
 2193 2319 0	2907 3225 0	72 Sailing		KELP	669	Rimmington
@@ -2421,13 +2155,10 @@
 2193 2319 0	2849 2325 0	72 Sailing		KELP	363	Last Light
 # Ynysdail
 # Waterbirth Island
-2542 3764 0	3050 3192 0	74 Sailing	The Fremennik Trials		1454	Port Sarim
 2542 3764 0	3050 3192 0	74 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1336	Port Sarim
-2542 3764 0	3069 2986 0	74 Sailing	The Fremennik Trials		1464	The Pandemonium
 2542 3764 0	3069 2986 0	74 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1241	The Pandemonium
 2542 3764 0	1506 3402 0	74 Sailing	The Fremennik Trials		605	Land's End
 2542 3764 0	1726 3453 0	74 Sailing	The Fremennik Trials		492	Hosidius
-2542 3764 0	2960 3146 0	74 Sailing	The Fremennik Trials		1365	Musa Point
 2542 3764 0	2960 3146 0	74 Sailing	The Fremennik Trials	TEMPOR_TANTRUM	1316	Musa Point
 2542 3764 0	1844 3688 0	74 Sailing	The Fremennik Trials		387	Port Piscarilius
 2542 3764 0	2907 3225 0	74 Sailing	The Fremennik Trials		1319	Rimmington
@@ -2475,13 +2206,10 @@
 2542 3764 0	2927 4055 0	87 Sailing	The Fremennik Trials	NORTHERN	260	Grimstone
 2542 3764 0	2849 2325 0	74 Sailing	The Fremennik Trials		1131	Last Light
 # Piscatoris
-2305 3689 0	3050 3192 0	75 Sailing	Swan Song		1315	Port Sarim
 2305 3689 0	3050 3192 0	75 Sailing	Swan Song	TEMPOR_TANTRUM	1197	Port Sarim
-2305 3689 0	3069 2986 0	75 Sailing	Swan Song		1325	The Pandemonium
 2305 3689 0	3069 2986 0	75 Sailing	Swan Song	TEMPOR_TANTRUM	1102	The Pandemonium
 2305 3689 0	1506 3402 0	75 Sailing	Swan Song		466	Land's End
 2305 3689 0	1726 3453 0	75 Sailing	Swan Song		353	Hosidius
-2305 3689 0	2960 3146 0	75 Sailing	Swan Song		1226	Musa Point
 2305 3689 0	2960 3146 0	75 Sailing	Swan Song	TEMPOR_TANTRUM	1177	Musa Point
 2305 3689 0	1844 3688 0	75 Sailing	Swan Song		256	Port Piscarilius
 2305 3689 0	2907 3225 0	75 Sailing	Swan Song		1180	Rimmington
@@ -2529,13 +2257,10 @@
 2305 3689 0	2927 4055 0	87 Sailing	Swan Song	NORTHERN	396	Grimstone
 2305 3689 0	2849 2325 0	75 Sailing	Swan Song		992	Last Light
 # Lunar Isle
-2151 3880 0	3050 3192 0	76 Sailing	Lunar Diplomacy		1357	Port Sarim
 2151 3880 0	3050 3192 0	76 Sailing	Lunar Diplomacy	TEMPOR_TANTRUM	1240	Port Sarim
-2151 3880 0	3069 2986 0	76 Sailing	Lunar Diplomacy		1368	The Pandemonium
 2151 3880 0	3069 2986 0	76 Sailing	Lunar Diplomacy	TEMPOR_TANTRUM	1145	The Pandemonium
 2151 3880 0	1506 3402 0	76 Sailing	Lunar Diplomacy		476	Land's End
 2151 3880 0	1726 3453 0	76 Sailing	Lunar Diplomacy		364	Hosidius
-2151 3880 0	2960 3146 0	76 Sailing	Lunar Diplomacy		1269	Musa Point
 2151 3880 0	2960 3146 0	76 Sailing	Lunar Diplomacy	TEMPOR_TANTRUM	1219	Musa Point
 2151 3880 0	1844 3688 0	76 Sailing	Lunar Diplomacy		224	Port Piscarilius
 2151 3880 0	2907 3225 0	76 Sailing	Lunar Diplomacy		1222	Rimmington
@@ -2569,7 +2294,6 @@
 2151 3880 0	2629 3704 0	76 Sailing	Lunar Diplomacy;The Fremennik Trials		286	Rellekka
 2151 3880 0	2569 2295 0	76 Sailing	Lunar Diplomacy		925	Wyrmscraig
 2151 3880 0	1758 2655 0	76 Sailing	Lunar Diplomacy		702	The Crown Jewel
-2151 3880 0	2612 3841 0	76 Sailing	Lunar Diplomacy;Royal Trouble		279	Etceteria
 2151 3880 0	2612 3841 0	76 Sailing	Lunar Diplomacy;Royal Trouble	NORTHERN	265	Etceteria
 2151 3880 0	1922 2759 0	76 Sailing	Lunar Diplomacy		628	Deepfin Point
 2151 3880 0	2411 3781 0	76 Sailing	Lunar Diplomacy;The Fremennik Isles		168	Jatizso
@@ -2584,13 +2308,10 @@
 2151 3880 0	2927 4055 0	87 Sailing	Lunar Diplomacy	NORTHERN	435	Grimstone
 2151 3880 0	2849 2325 0	76 Sailing	Lunar Diplomacy		1035	Last Light
 # Buccaneers' Haven
-2079 3689 0	3050 3192 0	76 Sailing			1267	Port Sarim
 2079 3689 0	3050 3192 0	76 Sailing		TEMPOR_TANTRUM	1149	Port Sarim
-2079 3689 0	3069 2986 0	76 Sailing			1277	The Pandemonium
 2079 3689 0	3069 2986 0	76 Sailing		TEMPOR_TANTRUM	1054	The Pandemonium
 2079 3689 0	1506 3402 0	76 Sailing			389	Land's End
 2079 3689 0	1726 3453 0	76 Sailing			278	Hosidius
-2079 3689 0	2960 3146 0	76 Sailing			1178	Musa Point
 2079 3689 0	2960 3146 0	76 Sailing		TEMPOR_TANTRUM	1129	Musa Point
 2079 3689 0	1844 3688 0	76 Sailing			153	Port Piscarilius
 2079 3689 0	2907 3225 0	76 Sailing			1132	Rimmington
@@ -2639,13 +2360,10 @@
 2079 3689 0	2849 2325 0	76 Sailing			944	Last Light
 # Drumstick Isle
 # Weiss
-2860 3970 0	3050 3192 0	80 Sailing	Making Friends with My Arm	NORTHERN	1641	Port Sarim
 2860 3970 0	3050 3192 0	80 Sailing	Making Friends with My Arm	TEMPOR_TANTRUM;NORTHERN	1523	Port Sarim
-2860 3970 0	3069 2986 0	80 Sailing	Making Friends with My Arm	NORTHERN	1651	The Pandemonium
 2860 3970 0	3069 2986 0	80 Sailing	Making Friends with My Arm	TEMPOR_TANTRUM;NORTHERN	1429	The Pandemonium
 2860 3970 0	1506 3402 0	80 Sailing	Making Friends with My Arm	NORTHERN	792	Land's End
 2860 3970 0	1726 3453 0	80 Sailing	Making Friends with My Arm	NORTHERN	680	Hosidius
-2860 3970 0	2960 3146 0	80 Sailing	Making Friends with My Arm	NORTHERN	1552	Musa Point
 2860 3970 0	2960 3146 0	80 Sailing	Making Friends with My Arm	TEMPOR_TANTRUM;NORTHERN	1503	Musa Point
 2860 3970 0	1844 3688 0	80 Sailing	Making Friends with My Arm	NORTHERN	575	Port Piscarilius
 2860 3970 0	2907 3225 0	80 Sailing	Making Friends with My Arm	NORTHERN	1505	Rimmington
@@ -2693,13 +2411,10 @@
 2860 3970 0	2927 4055 0	87 Sailing	Making Friends with My Arm	NORTHERN	71	Grimstone
 2860 3970 0	2849 2325 0	80 Sailing	Making Friends with My Arm	NORTHERN	1319	Last Light
 # Brittle Isle
-1953 4056 0	3050 3192 0	81 Sailing		NORTHERN	1432	Port Sarim
 1953 4056 0	3050 3192 0	81 Sailing		TEMPOR_TANTRUM;NORTHERN	1315	Port Sarim
-1953 4056 0	3069 2986 0	81 Sailing		NORTHERN	1443	The Pandemonium
 1953 4056 0	3069 2986 0	81 Sailing		TEMPOR_TANTRUM;NORTHERN	1220	The Pandemonium
 1953 4056 0	1506 3402 0	81 Sailing		NORTHERN	522	Land's End
 1953 4056 0	1726 3453 0	81 Sailing		NORTHERN	411	Hosidius
-1953 4056 0	2960 3146 0	81 Sailing		NORTHERN	1344	Musa Point
 1953 4056 0	2960 3146 0	81 Sailing		TEMPOR_TANTRUM;NORTHERN	1294	Musa Point
 1953 4056 0	1844 3688 0	81 Sailing		NORTHERN	222	Port Piscarilius
 1953 4056 0	2907 3225 0	81 Sailing		NORTHERN	1297	Rimmington
@@ -2747,13 +2462,10 @@
 1953 4056 0	2927 4055 0	87 Sailing		NORTHERN	522	Grimstone
 1953 4056 0	2849 2325 0	81 Sailing		NORTHERN	1110	Last Light
 # Grimstone
-2927 4055 0	3050 3192 0	87 Sailing		NORTHERN	1691	Port Sarim
 2927 4055 0	3050 3192 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1573	Port Sarim
-2927 4055 0	3069 2986 0	87 Sailing		NORTHERN	1701	The Pandemonium
 2927 4055 0	3069 2986 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1478	The Pandemonium
 2927 4055 0	1506 3402 0	87 Sailing		NORTHERN	842	Land's End
 2927 4055 0	1726 3453 0	87 Sailing		NORTHERN	729	Hosidius
-2927 4055 0	2960 3146 0	87 Sailing		NORTHERN	1602	Musa Point
 2927 4055 0	2960 3146 0	87 Sailing		TEMPOR_TANTRUM;NORTHERN	1553	Musa Point
 2927 4055 0	1844 3688 0	87 Sailing		NORTHERN	624	Port Piscarilius
 2927 4055 0	2907 3225 0	87 Sailing		NORTHERN	1556	Rimmington
@@ -2801,23 +2513,18 @@
 2927 4055 0	1953 4056 0	87 Sailing		NORTHERN	524	Brittle Isle
 2927 4055 0	2849 2325 0	87 Sailing		NORTHERN	1368	Last Light
 # Last Light
-2849 2325 0	3050 3192 0	52 Sailing			746	Port Sarim
 2849 2325 0	3050 3192 0	52 Sailing		TEMPOR_TANTRUM	488	Port Sarim
-2849 2325 0	3069 2986 0	52 Sailing			757	The Pandemonium
 2849 2325 0	3069 2986 0	52 Sailing		TEMPOR_TANTRUM	387	The Pandemonium
 2849 2325 0	1506 3402 0	52 Sailing			899	Land's End
 2849 2325 0	1726 3453 0	52 Sailing			846	Hosidius
-2849 2325 0	2960 3146 0	52 Sailing			658	Musa Point
 2849 2325 0	2960 3146 0	52 Sailing		TEMPOR_TANTRUM	467	Musa Point
 2849 2325 0	1844 3688 0	52 Sailing			944	Port Piscarilius
-2849 2325 0	2907 3225 0	52 Sailing			611	Rimmington
 2849 2325 0	2907 3225 0	52 Sailing		TEMPOR_TANTRUM	515	Rimmington
 2849 2325 0	2796 3413 0	52 Sailing			608	Catherby
 2849 2325 0	2759 3229 0	52 Sailing			540	Brimhaven
 2849 2325 0	2670 3266 0	52 Sailing			517	Ardougne
 2849 2325 0	2685 3162 0	52 Sailing			463	Port Khazard
 2849 2325 0	2746 3304 0	52 Sailing			547	Witchaven
-2849 2325 0	2878 3335 0	52 Sailing			614	Entrana
 2849 2325 0	2878 3335 0	52 Sailing		TEMPOR_TANTRUM	575	Entrana
 2849 2325 0	1776 3141 0	52 Sailing	Children of the Sun		757	Civitas illa Fortis
 2849 2325 0	2579 2843 0	52 Sailing	The Corsair Curse		322	Corsair Cove
@@ -2838,7 +2545,7 @@
 2849 2325 0	2808 2509 0	52 Sailing			116	Red Rock
 2849 2325 0	1958 3113 0	54 Sailing	Children of the Sun		645	Minotaurs' Rest
 2849 2325 0	2532 2531 0	56 Sailing			209	Isle of Bones
-2849 2325 0	1201 2733 0	58 Sailing			909	Laguna Aurorae
+2849 2325 0	1201 2733 0	58 Sailing		KELP	909	Laguna Aurorae
 2849 2325 0	2660 2392 0	60 Sailing			124	Charred Island
 2849 2325 0	2629 3704 0	62 Sailing	The Fremennik Trials		1159	Rellekka
 2849 2325 0	2569 2295 0	62 Sailing			165	Wyrmscraig

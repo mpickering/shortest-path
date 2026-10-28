@@ -60,8 +60,10 @@ Sailing the player's own boat between moorings is an ordinary transport, one
 type per boat kind (`SAILING_RAFT`, `SAILING_SKIFF`, `SAILING_SLOOP`). A boat
 leaving a berth always sets out the same way, so each leg's time doesn't depend
 on how the player got there: `SailingTimesGenerator` (the `sailingTimes` task,
-about two minutes) times every pair of moorings once, with searches by cost
-over the whole sea from each berth, and writes them to `transports/sailing_*.tsv`.
+about half a minute) times every pair of moorings once per boat kind, with a
+search by cost over the whole sea from each berth, and writes them to
+`transports/sailing_*.tsv`. The legs are timed for a boat with every part its
+kind can take, at 2 tiles a tick.
 The same searches give `sailing/sea-reach.bin`, the sea each boat kind can
 reach, numbered in components: moorings whose boats reach a common tile are one
 component. `SailingTransportsTest` fails when either is stale, and the
@@ -77,17 +79,24 @@ map dumper marks the edges round each one with the boundary flag a door has,
 leaving the movement flags alone, and writes `sailing/sea-areas.tsv`, a tile of
 each piece of restricted sea per region. `SailingWaters` splits the sea into
 pieces at those edges and names each from its tiles. A boat's moves end only in
-pieces its parts let it enter (`SailingVessel.areas`). A leg that is quicker
-through restricted water, or only possible through it, has a row of its own
-whose `Sea areas` column names the areas, and only a boat with those parts may
-sail it: the generator searches each berth with every area open, then again
-without each area the fastest legs went through, so every set of parts has its
-fastest leg among the rows. The live plugin doesn't read a boat's parts yet, so
-it takes the boat the player is aboard to have them all.
+pieces its parts let it enter (`SailingVessel.areas`). Each row's `Sea areas`
+column names the areas its leg sails through. For a boat with the parts for
+them, at the speed the legs are timed at, the row's time is the boat's own; for
+any other boat it only bounds it, and the boat's own leg is sailed when the
+search wants it (below). Keeping out of water only makes a leg longer, so with
+fewer parts the row's time is the bound. At another speed the moves themselves
+change, each tick's velocity being rounded to quarter tiles, so the bound is the
+straight line between the berths at the boat's top speed. So the tables grow
+with the moorings, not with the ways a boat can be fitted out. `PathfinderConfig`
+prices each leg for the account's boat, and drops one whose berths no water the
+boat may enter joins. The live plugin doesn't read a boat's parts yet, so it
+takes the boat the player is aboard to have them all.
 
-A start aboard a boat, and targets at sea, attach to the search through
-`SeaEnds` links: from the start to each mooring the boat can dock at, from each
-mooring with a boat to the targets, and from the start straight to them.
+A start aboard a boat, targets at sea, and legs between moorings timed for
+another boat attach to the search through `SeaEnds` links: from the start to
+each mooring the boat can dock at, from each mooring with a boat to the
+targets, from the start straight to them, and crossings, one per such leg,
+which land where the transport does.
 Targets at sea join the heuristic as seeded targets at those moorings
 (`TargetOverlay.withSeedCosts`). A link waits in its own queue at a lower bound
 on its cost, which `SailingSeaEnds` raises step by step (a distance field from

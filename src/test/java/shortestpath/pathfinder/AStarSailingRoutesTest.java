@@ -23,6 +23,7 @@ import shortestpath.TestShortestPathConfig;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.astar.RoutingStatic;
 import shortestpath.pathfinder.sailing.SailingFleet;
+import shortestpath.pathfinder.sailing.SailingMooring;
 import shortestpath.pathfinder.sailing.SailingMoorings;
 import shortestpath.pathfinder.sailing.SailingWaters;
 import shortestpath.sailing.SeaArea;
@@ -116,6 +117,27 @@ public class AStarSailingRoutesTest
 		assertEquals(GREAT_CONCH_CLUE, path.get(path.size() - 1).getPackedPosition());
 		assertEquals(Traversal.WALK, path.get(path.size() - 1).getTraversal());
 		assertTrue("and walks after docking", transportIndex(path) < path.size() - 2);
+	}
+
+	@Test
+	public void aBoatAtAnotherSpeedSailsItsOwnLegs()
+	{
+		// The legs are timed at 2 tiles a tick: a quicker boat's are sailed for it, and the route follows them
+		AStarPathfinder timed = search(RAFT_EVERYWHERE, 99, PORT_SARIM_DOCK, GREAT_CONCH_CLUE);
+		AStarPathfinder quicker = search(everywhere(SailingVessel.of(SailingVessel.Kind.RAFT, 3.0)), 99,
+			PORT_SARIM_DOCK, GREAT_CONCH_CLUE);
+		assertTrue(quicker.getResult().getMessage(), quicker.getResult().isReached());
+		assertEquals("0 legs sailed", legsSailed(timed));
+		assertNotEquals("0 legs sailed", legsSailed(quicker));
+		assertTrue(quicker.getResult().getPathCost() + " < " + timed.getResult().getPathCost(),
+			quicker.getResult().getPathCost() < timed.getResult().getPathCost());
+		// The filled-in leg is the one sailed: it docks at the mooring the transport lands at
+		List<PathStep> path = quicker.getPath();
+		int landing = transportIndex(path);
+		SailingMooring docked = SailingTransports.to(path.get(landing).getTransport());
+		assertEquals(Traversal.SAILING, path.get(landing - 1).getTraversal());
+		assertTrue(WorldPointUtil.distanceBetween(path.get(landing - 1).getPackedPosition(), docked.berthTile())
+			<= SailingMooring.DOCKING_RANGE + 1);
 	}
 
 	@Test
@@ -270,7 +292,6 @@ public class AStarSailingRoutesTest
 		assertTrue(through.getResult().getPathCost() + " < " + round.getResult().getPathCost(),
 			through.getResult().getPathCost() < round.getResult().getPathCost());
 		assertTrue(sailingTransport(through).getSeaAreas().contains(SeaArea.TEMPOR_TANTRUM));
-		assertTrue(sailingTransport(round).getSeaAreas().isEmpty());
 		// The filled-in leg keeps out of the water the boat can't enter
 		CollisionMap map = new CollisionMap(TestWorldData.map());
 		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());

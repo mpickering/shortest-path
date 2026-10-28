@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
 import net.runelite.api.Quest;
+import shortestpath.WorldPointUtil;
 import shortestpath.sailing.SeaArea;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportType;
@@ -23,16 +24,20 @@ import shortestpath.transport.TransportType;
  * names the collision map, moorings, speed and search rules they were made from, so a test catches a stale file.
  * Whether the player has the boat at the mooring is not in the files: {@link #usable} checks it per account.
  * <p>
- * A leg that is quicker through a restricted {@link SeaArea}, or only possible through one, has a row of its own
- * naming the areas it sails through ({@code Sea areas}); only a boat with the parts for them can sail it. The fastest
- * leg for any set of parts is then the fastest row whose areas the boat can enter.
+ * Each leg is timed for a boat of its kind with every part it can be fitted with, at {@link #SPEED}, and its row
+ * names the restricted {@link SeaArea}s the leg sails through ({@code Sea areas}). For a boat with the parts for them
+ * at that speed the row's time is the leg's own ({@link #timedFor}). For a boat with fewer parts it is a lower bound,
+ * since keeping out of water only makes a leg longer; for one at another speed the bound is the straight line
+ * ({@link #boundFor}).
+ * The route then sails such a leg for the boat itself, once the search wants it ({@code SailingSeaEnds}), so the
+ * files grow with the moorings, not with the ways a boat can be fitted out.
  */
 public final class SailingTransports
 {
 	/** The boats' base speed the legs are timed at, in tiles per tick. */
 	public static final double SPEED = SailingMoves.ESTIMATED_SPEED;
 	// Bump when the sailing search's rules change, so the files are made again
-	private static final int SEARCH_VERSION = 2;
+	private static final int SEARCH_VERSION = 3;
 	static final String FINGERPRINT = "# Fingerprint: ";
 	private static volatile Map<Integer, SailingMooring> mooringsByLand;
 
@@ -96,21 +101,16 @@ public final class SailingTransports
 
 	/**
 	 * Whether the account can sail {@code transport}: it has a boat of the transport's kind moored at the mooring it
-	 * boards at, with the parts for the restricted areas the leg sails through. The moorings' levels and finished
-	 * quests are the transport's own requirements; the quests they need only started, {@code started} answers.
+	 * boards at, whose parts let it into water joining the two berths ({@link SailingWaters#connects}). The moorings'
+	 * levels and finished quests are the transport's own requirements; the quests they need only started,
+	 * {@code started} answers.
 	 */
-	public static boolean usable(Transport transport, SailingFleet fleet, Predicate<Quest> started)
+	public static boolean usable(Transport transport, SailingFleet fleet, SailingWaters waters, Predicate<Quest> started)
 	{
-		SailingVessel.Kind kind = kind(transport.getType());
 		SailingMooring from = mooringAt(transport.getOrigin()), to = mooringAt(transport.getDestination());
-		if (kind == null || from == null || to == null || fleet == null) return false;
-		boolean moored = false;
-		for (SailingVessel vessel : fleet.vessels())
-		{
-			if (vessel.kind() == kind && vessel.areas().containsAll(transport.getSeaAreas())
-				&& fleet.locations().moored(from, vessel)) moored = true;
-		}
-		if (!moored) return false;
+		SailingVessel vessel = vessel(transport, fleet);
+		if (vessel == null || !waters.connects(vessel, waters.berthPieces(from, vessel), waters.berthPieces(to)))
+			return false;
 		for (Quest quest : from.questsStarted())
 		{
 			if (!started.test(quest)) return false;
@@ -120,6 +120,54 @@ public final class SailingTransports
 			if (!started.test(quest)) return false;
 		}
 		return true;
+	}
+
+	/** The account's boat that sails {@code transport}: one of its kind moored where it boards, or {@code null}. */
+	public static SailingVessel vessel(Transport transport, SailingFleet fleet)
+	{
+		SailingVessel.Kind kind = kind(transport.getType());
+		SailingMooring from = mooringAt(transport.getOrigin()), to = mooringAt(transport.getDestination());
+		if (kind == null || from == null || to == null || fleet == null) return null;
+		for (SailingVessel vessel : fleet.vessels())
+		{
+			if (vessel.kind() == kind && fleet.locations().moored(from, vessel)) return vessel;
+		}
+		return null;
+	}
+
+	/**
+	 * Whether {@code transport}'s duration is how long {@code vessel} takes: the boat sails at the speed the leg was
+	 * timed at, with the parts for the areas it sails through. Otherwise the duration only bounds it.
+	 */
+	public static boolean timedFor(Transport transport, SailingVessel vessel)
+	{
+		return vessel.speed() == SPEED && vessel.areas().containsAll(transport.getSeaAreas());
+	}
+
+	/**
+	 * {@code transport} with a duration no more than {@code vessel} takes. With fewer parts it is the transport itself:
+	 * keeping out of water only makes a leg longer. At another speed the moves themselves change (each tick's velocity
+	 * is rounded to quarter tiles), so the time at {@link #SPEED} says nothing sure about the boat's; the bound is then
+	 * the straight line between the berths at the boat's top speed, as for every other leg sailed for a query.
+	 */
+	public static Transport boundFor(Transport transport, SailingVessel vessel)
+	{
+		if (vessel.speed() == SPEED) return transport;
+		SailingMooring from = mooringAt(transport.getOrigin()), to = mooringAt(transport.getDestination());
+		double tiles = Math.hypot(
+			WorldPointUtil.unpackWorldX(from.berthTile()) - WorldPointUtil.unpackWorldX(to.berthTile()),
+			WorldPointUtil.unpackWorldY(from.berthTile()) - WorldPointUtil.unpackWorldY(to.berthTile()));
+		int sailed = (int) Math.floor(Math.max(0, tiles - SailingMooring.DOCKING_RANGE) / topSpeed(vessel.moves()));
+		return transport.withDuration(SailingMooring.BOARD_TICKS + sailed + SailingMooring.DISEMBARK_TICKS);
+	}
+
+	// The farthest any move goes per tick, in a straight line
+	static double topSpeed(SailingMoves moves)
+	{
+		double top = 0;
+		for (int move = 0; move < moves.size(); move++)
+			top = Math.max(top, Math.hypot(moves.dx(move), moves.dy(move)) / moves.ticks(move));
+		return top;
 	}
 
 	/** The files' header, for {@code fingerprint}: the column names first, as the transport parser needs. */
@@ -132,7 +180,7 @@ public final class SailingTransports
 			+ "# " + SPEED + " tiles per tick with every move ending on sea the hull fits, and stepping off ("
 			+ SailingMooring.DISEMBARK_TICKS + " ticks).\n"
 			+ "# Skills and Quests: both moorings' docking requirements. Sea areas: the restricted sea areas the leg"
-			+ " sails\n# through, when that is quicker than keeping out of them or the only way.\n"
+			+ " sails\n# through, with every part the boat can be fitted with.\n"
 			+ FINGERPRINT + fingerprint + "\n";
 	}
 

@@ -9,6 +9,8 @@ import shortestpath.PrimitiveIntHashMap;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.astar.SeaEnds;
+import shortestpath.sailing.SeaArea;
+import shortestpath.transport.Transport;
 
 /**
  * A route's ends at sea for one query, from the account's boats and moorings: from the boat the player is aboard to
@@ -22,13 +24,19 @@ import shortestpath.pathfinder.astar.SeaEnds;
  * is consistent and the leg exact. Legs from the start to the moorings share one search by cost from the boat, which
  * goes only as far as the moorings the router reaches.
  * <p>
+ * Legs between moorings are transports ({@link SailingTransports}), timed for a boat with every part at one speed. For
+ * a boat of the player's with fewer parts or another speed a leg's time only bounds the boat's, so it is a crossing
+ * link ({@link #crossingLink}): the router sails it for that boat, by the search the legs are timed by, a step at a
+ * time as far as its bound needs, and only once nothing cheaper is left; the crossings from one berth share that
+ * search.
+ * <p>
  * A link the boat can't sail is never offered, so no search runs to find that out: the moorings whose boats reach
  * each tile ({@link SailingReach}) tell a channel its hull can't get through, and the pieces of sea
  * ({@link SailingWaters#connects}) a restricted area its parts don't let it enter.
  */
 public final class SailingSeaEnds implements SeaEnds
 {
-	private static final int START = 0, TARGET = 1, DIRECT = 2;
+	private static final int START = 0, TARGET = 1, DIRECT = 2, CROSSING = 3;
 	// How much further the field grows than the bound it is asked about, in ticks: a step's worth, so a link's bound
 	// rises in a few steps rather than many
 	private static final int GROWTH_TICKS = 32;
@@ -40,9 +48,17 @@ public final class SailingSeaEnds implements SeaEnds
 	private final int start;
 	private final int[] seaTargets;
 	private final SailingQuery.EdgeGate gate;
-	// Per link: its kind, its mooring (none for a direct link), the boat and its hull
+	private final SailingFleet fleet;
+	// Per link: its kind, its mooring (none for a direct link; where a crossing boards), the boat and its hull
 	private final List<Integer> kinds = new ArrayList<>();
 	private final List<SailingMooring> moorings = new ArrayList<>();
+	// Per crossing link, the mooring it docks at and its transport; and each sailing transport's crossing link, or -1
+	private final java.util.Map<Integer, SailingMooring> docksAt = new java.util.HashMap<>();
+	private final java.util.Map<Integer, Transport> crossingTransports = new java.util.HashMap<>();
+	private final java.util.Map<Transport, Integer> crossings = new java.util.IdentityHashMap<>();
+	private final java.util.Map<Transport, SailingLeg> crossed = new java.util.IdentityHashMap<>();
+	// The searches the crossings share, by the berth they board at and the boat
+	private final java.util.Map<List<Object>, BerthSearch> berthSearches = new java.util.HashMap<>();
 	private final List<SailingVessel> vessels = new ArrayList<>();
 	private final List<BoatHull> hulls = new ArrayList<>();
 	private final List<Integer> headings = new ArrayList<>();
@@ -77,6 +93,7 @@ public final class SailingSeaEnds implements SeaEnds
 		this.waters = SailingWaters.of(map, SailingMoorings.all());
 		this.seaTargets = seaTargets.clone();
 		this.gate = gate;
+		this.fleet = capability.fleet();
 		SailingFleet.Aboard aboard = capability.fleet().aboard();
 		this.start = aboard != null && waters.contains(start) ? start : WorldPointUtil.UNDEFINED;
 		List<SailingMooring> landable = new ArrayList<>();
@@ -118,7 +135,8 @@ public final class SailingSeaEnds implements SeaEnds
 					for (int body : bodies(mooring)) sailed = Math.min(sailed, targetBound(vessel, hull, mooring.berthTile(), body));
 					if (sailed == Integer.MAX_VALUE || sailed == NO_LINK) continue;
 					// Beyond a channel the hull can't get through or water it can't enter: no search would arrive
-					if (!reachesATarget(vessel, hull, WorldPointUtil.UNDEFINED, mooring, waters.berthPieces(mooring))) continue;
+					if (!reachesATarget(vessel, hull, WorldPointUtil.UNDEFINED, mooring,
+							waters.berthPieces(mooring, vessel))) continue;
 					// Round the land between, cell by cell over the hull's own water
 					int cells = cellTicks(vessel, hull, mooring.berthTile());
 					if (cells == NO_LINK) continue;
@@ -131,18 +149,37 @@ public final class SailingSeaEnds implements SeaEnds
 				}
 			}
 		}
-		exact = new int[kinds.size()];
-		Arrays.fill(exact, -1);
-		legs = new int[kinds.size()][][];
-		reached = new int[kinds.size()];
-		Arrays.fill(reached, WorldPointUtil.UNDEFINED);
-		solvers = new SailingSolver[kinds.size()];
+		grow();
 	}
 
-	/** Whether the query has anything at sea: a start aboard, or targets at sea some boat can reach. */
+	/**
+	 * Whether the query has anything at sea: a start aboard, targets at sea some boat can reach, or a boat of the
+	 * player's whose legs between moorings were timed for another.
+	 */
 	public boolean active()
 	{
+		if (atSea()) return true;
+		for (SailingVessel vessel : fleet.vessels())
+		{
+			SailingVessel timed = SailingVessel.of(vessel.kind(), SailingTransports.SPEED).withAreas(SeaArea.ALL);
+			if (vessel.speed() != timed.speed() || !vessel.areas().containsAll(timed.areas())) return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Whether a route may be at sea at its ends: it starts aboard, or some boat can sail to the targets at sea. Only
+	 * then is a target at sea reached aboard rather than walked to.
+	 */
+	public boolean atSea()
+	{
 		return start != WorldPointUtil.UNDEFINED || targetLinksByLand.size() > 0;
+	}
+
+	/** The leg sailed for {@code transport}'s crossing link, or {@code null} if it has none or was not sailed. */
+	public SailingLeg sailedLeg(Transport transport)
+	{
+		return crossed.get(transport);
 	}
 
 	/** The land tiles target links board from, with the least bound of their links: the target overlay's seeds. */
@@ -205,9 +242,29 @@ public final class SailingSeaEnds implements SeaEnds
 	}
 
 	@Override
+	public int crossingLink(Transport transport)
+	{
+		if (!transport.getType().isSailing()) return -1;
+		Integer known = crossings.get(transport);
+		if (known != null) return known;
+		SailingVessel vessel = SailingTransports.vessel(transport, fleet);
+		int link = -1;
+		if (vessel != null && !SailingTransports.timedFor(transport, vessel))
+		{
+			link = add(CROSSING, SailingTransports.from(transport), vessel, vessel.hull(0, 0), -1,
+				transport.getDuration());
+			docksAt.put(link, SailingTransports.to(transport));
+			crossingTransports.put(link, transport);
+			grow();
+		}
+		crossings.put(transport, link);
+		return link;
+	}
+
+	@Override
 	public int landTile(int link)
 	{
-		return moorings.get(link).landTile();
+		return kinds.get(link) == CROSSING ? docksAt.get(link).landTile() : moorings.get(link).landTile();
 	}
 
 	@Override
@@ -233,6 +290,7 @@ public final class SailingSeaEnds implements SeaEnds
 				return frontier == SailingSolver.EXHAUSTED ? NO_LINK
 					: Math.max(bound, SailingMooring.DISEMBARK_TICKS + frontier);
 			}
+			if (kind == CROSSING) return refineCrossing(link, bound, cancelled);
 			int offset = kind == TARGET ? SailingMooring.BOARD_TICKS : 0;
 			if (solvers[link] == null)
 			{
@@ -279,6 +337,68 @@ public final class SailingSeaEnds implements SeaEnds
 		}
 	}
 
+	/**
+	 * A crossing's leg, a step past its bound at a time. The crossings from one berth for one boat share a search by
+	 * cost from it, which docks at every mooring the boat fits as it reaches them: its frontier bounds every leg it
+	 * has not docked yet, and it goes only as far as the dearest crossing the router has asked about.
+	 */
+	private int refineCrossing(int link, int bound, BooleanSupplier cancelled)
+	{
+		int ends = SailingMooring.BOARD_TICKS + SailingMooring.DISEMBARK_TICKS;
+		SailingVessel vessel = vessels.get(link);
+		BerthSearch search = berthSearches.computeIfAbsent(java.util.Arrays.asList(moorings.get(link), vessel),
+			key -> new BerthSearch(moorings.get(link), vessel));
+		SailingMooring to = docksAt.get(link);
+		if (search.legs.get(to) == null && !search.exhausted)
+			search.advance(bound - ends + STEP_TICKS, cancelled);
+		SailingLeg leg = search.legs.get(to);
+		if (leg != null)
+		{
+			record(link, leg);
+			return exact[link];
+		}
+		if (search.exhausted) return exact[link] = NO_LINK;
+		if (cancelled.getAsBoolean()) return bound;
+		return Math.max(bound, ends + search.solver.frontier());
+	}
+
+	/** The search by cost from one berth for one boat, shared by the crossings that board there. */
+	private final class BerthSearch
+	{
+		private final List<SailingMooring> exits = new ArrayList<>();
+		private final java.util.Map<SailingMooring, SailingLeg> legs = new java.util.HashMap<>();
+		private final SailingSolver solver;
+		private boolean exhausted;
+
+		BerthSearch(SailingMooring from, SailingVessel vessel)
+		{
+			for (SailingMooring mooring : SailingMoorings.all())
+			{
+				if (mooring != from && mooring.fits(vessel)) exits.add(mooring);
+			}
+			BoatHull hull = vessel.hull(0, 0);
+			// As the legs are timed: a boat at rest in the berth, every move ending on sea the hull fits, in water
+			// the boat's parts let it enter
+			SailingQuery query = new SailingQuery(from.berthTile(), -1, vessel.moves(), hull, SailingObjective.TICKS,
+				new int[0], new int[0], exits, SailingQuery.EdgeGate.NONE).landingOn(waters.landing(map, vessel, hull));
+			solver = new SailingSolver(map, query);
+		}
+
+		void advance(int limit, BooleanSupplier cancelled)
+		{
+			solver.advance(limit, cancelled, new SailingSolver.Listener()
+			{
+				@Override
+				public boolean exit(int exit, int node)
+				{
+					legs.putIfAbsent(exits.get(exit), solver.leg(node, exits.get(exit).berthTile()));
+					return true;
+				}
+			});
+			exhausted = solver.frontier() == SailingSolver.EXHAUSTED;
+		}
+	}
+
 	@Override
 	public int exact(int link, BooleanSupplier cancelled)
 	{
@@ -314,7 +434,7 @@ public final class SailingSeaEnds implements SeaEnds
 
 	private int add(int kind, SailingMooring mooring, SailingVessel vessel, BoatHull hull, int heading, int bound)
 	{
-		if (kind != START) longestReach = Math.max(longestReach, arrivalReach(hull));
+		if (kind == TARGET || kind == DIRECT) longestReach = Math.max(longestReach, arrivalReach(hull));
 		kinds.add(kind);
 		moorings.add(mooring);
 		vessels.add(vessel);
@@ -360,7 +480,7 @@ public final class SailingSeaEnds implements SeaEnds
 	{
 		legsSailed++;
 		int kind = kinds.get(link);
-		int offset = kind == TARGET ? SailingMooring.BOARD_TICKS : 0;
+		int offset = kind == TARGET || kind == CROSSING ? SailingMooring.BOARD_TICKS : 0;
 		int[] tiles = new int[leg.size()], costs = new int[leg.size()];
 		for (int i = 0; i < leg.size(); i++)
 		{
@@ -369,7 +489,22 @@ public final class SailingSeaEnds implements SeaEnds
 		}
 		legs[link] = new int[][] {tiles, costs};
 		reached[link] = leg.reached();
-		exact[link] = kind == START ? leg.cost() + SailingMooring.DISEMBARK_TICKS : offset + leg.cost();
+		boolean ashore = kind == START || kind == CROSSING;
+		exact[link] = offset + leg.cost() + (ashore ? SailingMooring.DISEMBARK_TICKS : 0);
+		if (kind == CROSSING) crossed.put(crossingTransports.get(link), leg);
+	}
+
+	// Sizes the per-link arrays to the links made so far
+	private void grow()
+	{
+		int from = exact.length, to = kinds.size();
+		if (to <= from) return;
+		exact = Arrays.copyOf(exact, to);
+		Arrays.fill(exact, from, to, -1);
+		legs = Arrays.copyOf(legs, to);
+		reached = Arrays.copyOf(reached, to);
+		Arrays.fill(reached, from, to, WorldPointUtil.UNDEFINED);
+		solvers = Arrays.copyOf(solvers, to);
 	}
 
 	/**

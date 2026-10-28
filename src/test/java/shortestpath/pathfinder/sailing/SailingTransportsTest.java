@@ -93,4 +93,41 @@ public class SailingTransportsTest
 				transport.getDuration() - SailingMooring.BOARD_TICKS - SailingMooring.DISEMBARK_TICKS, leg.cost());
 		}
 	}
+
+	@Test
+	public void aLegsTimeBoundsABoatWithFewerPartsOrAnotherSpeed()
+	{
+		CollisionMap map = new CollisionMap(TestWorldData.map());
+		List<Transport> through = new ArrayList<>();
+		for (Set<Transport> transports : TestWorldData.rawTransports().values())
+		{
+			for (Transport transport : transports)
+			{
+				if (transport.getType().isSailing() && !transport.getSeaAreas().isEmpty()) through.add(transport);
+			}
+		}
+		through.sort(java.util.Comparator.comparingInt(Transport::getOrigin).thenComparingInt(Transport::getDestination)
+			.thenComparing(Transport::getType));
+		int ends = SailingMooring.BOARD_TICKS + SailingMooring.DISEMBARK_TICKS, sailed = 0;
+		for (int i = 0; i < through.size(); i += through.size() / 12)
+		{
+			Transport transport = through.get(i);
+			SailingVessel.Kind kind = SailingTransports.kind(transport.getType());
+			// No parts: kept out of the water the timed leg sails through, the boat goes round or not at all
+			for (SailingVessel vessel : List.of(SailingVessel.of(kind, SailingTransports.SPEED),
+				SailingVessel.of(kind, 1.5).withAreas(shortestpath.sailing.SeaArea.ALL),
+				SailingVessel.of(kind, 3.5).withAreas(shortestpath.sailing.SeaArea.ALL)))
+			{
+				assertFalse(SailingTransports.timedFor(transport, vessel));
+				SailingLeg leg = SailingRoutes.leg(map, vessel, SailingTransports.from(transport),
+					SailingTransports.to(transport), () -> false);
+				if (leg == null) continue;
+				sailed++;
+				int bound = SailingTransports.boundFor(transport, vessel).getDuration();
+				assertTrue(vessel + " " + transport.getDisplayInfo() + ": " + bound + " <= " + (ends + leg.cost()),
+					bound <= ends + leg.cost());
+			}
+		}
+		assertTrue(sailed > 12);
+	}
 }

@@ -83,6 +83,7 @@ public final class AStarForwardSearch
 		Closest closest = new Closest(target);
 		if (cancelled.getAsBoolean()) return Result.cancelled(ctx.counters.snapshot(ctx.bestBankCost[0]), startPath);
 		SeaLinks links = sea == SeaEnds.NONE ? null : new SeaLinks(sea);
+		ctx.links = links;
 
 		int startState = seaStart ? -1 : ctx.space.state(start, BankVisitState.CARRIED);
 		if (seaStart)
@@ -95,11 +96,12 @@ public final class AStarForwardSearch
 				int bound = sea.bound(link);
 				if (bound == SeaEnds.NO_LINK) continue;
 				int h = ctx.effectiveHeuristic(landing, bound);
-				if (h != CostArithmetic.INF) links.offer(link, landing, bound, priority(bound, h, heuristicWeight), false);
+				if (h != CostArithmetic.INF)
+					links.offer(SeaLinks.START, link, landing, bound, priority(bound, h, heuristicWeight), false);
 			}
 			int direct = sea.directLink();
 			if (direct >= 0 && sea.bound(direct) != SeaEnds.NO_LINK)
-				links.offer(direct, -1, sea.bound(direct), sea.bound(direct), false);
+				links.offer(SeaLinks.TARGET, direct, -1, sea.bound(direct), sea.bound(direct), false);
 		}
 		else
 		{
@@ -169,7 +171,7 @@ public final class AStarForwardSearch
 				for (int link : sea.targetLinksFrom(tile))
 				{
 					int bound = CostArithmetic.add(cost, sea.bound(link));
-					if (bound != CostArithmetic.INF) links.offer(link, state, bound, bound, false);
+					if (bound != CostArithmetic.INF) links.offer(SeaLinks.TARGET, link, state, bound, bound, false);
 				}
 			}
 			if (ctx.space.isBase(node))
@@ -193,14 +195,20 @@ public final class AStarForwardSearch
 	/**
 	 * The links to and from the sea waiting their turn, in their own queue ordered like the search's: by cost so far
 	 * plus the heuristic from where the link lands. Each entry is a link, the state it was boarded from (or lands on,
-	 * for a start link), and whether its cost is the sailed one or still the bound.
+	 * for a start link), and whether its cost is the sailed one or still the bound. A crossing's entry also keeps the
+	 * state it lands on, the boarding cost it was offered at, and what the transport costs beyond its duration.
 	 */
 	private static final class SeaLinks
 	{
+		static final byte START = 0, TARGET = 1, CROSSING = 2;
+
 		private final SeaEnds sea;
 		private final AStarMinHeap queue = new AStarMinHeap(64);
-		private int[] linkOf = new int[64], stateOf = new int[64];
+		private int[] linkOf = new int[64], stateOf = new int[64], landingOf = new int[64], baseOf = new int[64];
+		private int[] extraOf = new int[64];
+		private byte[] kindOf = new byte[64];
 		private boolean[] exactOf = new boolean[64];
+		private Transport[] transportOf = new Transport[64];
 		private int count;
 		// Each state a start link put the player ashore on, with the link and its cost: where routes begin
 		private final PrimitiveIntHashMap<int[]> landings = new PrimitiveIntHashMap<>(16);
@@ -220,19 +228,44 @@ public final class AStarForwardSearch
 			return queue.peekPriority();
 		}
 
-		void offer(int link, int state, int cost, int priority, boolean exact)
+		void offer(byte kind, int link, int state, int cost, int priority, boolean exact)
 		{
 			if (priority == CostArithmetic.INF) return;
 			if (count == linkOf.length)
 			{
 				linkOf = Arrays.copyOf(linkOf, count * 2);
 				stateOf = Arrays.copyOf(stateOf, count * 2);
+				landingOf = Arrays.copyOf(landingOf, count * 2);
+				baseOf = Arrays.copyOf(baseOf, count * 2);
+				extraOf = Arrays.copyOf(extraOf, count * 2);
+				kindOf = Arrays.copyOf(kindOf, count * 2);
 				exactOf = Arrays.copyOf(exactOf, count * 2);
+				transportOf = Arrays.copyOf(transportOf, count * 2);
 			}
 			linkOf[count] = link;
 			stateOf[count] = state;
+			kindOf[count] = kind;
 			exactOf[count] = exact;
 			queue.push(priority, cost, count++);
+		}
+
+		/**
+		 * Offers crossing {@code link} for {@code transport}, boarded from state {@code from} at {@code cost}, landing on
+		 * {@code landing}, where the transport's step costs {@code stepCost}: its duration, the link's bound, and the rest.
+		 */
+		void offerCrossing(SearchCtx ctx, int link, Transport transport, int from, int cost, int landing, int stepCost)
+		{
+			int bound = sea.bound(link);
+			if (bound == SeaEnds.NO_LINK) return;
+			int arrival = CostArithmetic.add(cost, stepCost);
+			if (arrival == CostArithmetic.INF || arrival >= ctx.best.get(landing)) return;
+			int h = ctx.effectiveHeuristic(landing, arrival);
+			if (h == CostArithmetic.INF) return;
+			offer(CROSSING, link, from, arrival, priority(arrival, h, ctx.heuristicWeight), false);
+			landingOf[count - 1] = landing;
+			baseOf[count - 1] = cost;
+			extraOf[count - 1] = stepCost - bound;
+			transportOf[count - 1] = transport;
 		}
 
 		/** Takes the cheapest link: sails it if only its bound is known, else lands or ends the route with it. */
@@ -241,7 +274,8 @@ public final class AStarForwardSearch
 			queue.poll();
 			int entry = queue.state(), cost = queue.cost();
 			int link = linkOf[entry], state = stateOf[entry];
-			boolean startLink = sea.startsAtSea() && state >= 0 && !isTargetLink(link);
+			if (kindOf[entry] == CROSSING) return cross(ctx, entry, cost, cancelled);
+			boolean startLink = kindOf[entry] == START;
 			if (!exactOf[entry])
 			{
 				int base = startLink || state < 0 ? 0 : ctx.best.get(state);
@@ -253,7 +287,7 @@ public final class AStarForwardSearch
 					int raised = CostArithmetic.add(base, refined);
 					int h = startLink ? ctx.effectiveHeuristic(state, raised) : 0;
 					if (raised != CostArithmetic.INF && h != CostArithmetic.INF)
-						offer(link, state, raised, priority(raised, h, ctx.heuristicWeight), false);
+						offer(kindOf[entry], link, state, raised, priority(raised, h, ctx.heuristicWeight), false);
 					return null;
 				}
 				int exact = sea.exact(link, cancelled);
@@ -261,7 +295,8 @@ public final class AStarForwardSearch
 				int sailed = CostArithmetic.add(base, exact);
 				if (sailed == CostArithmetic.INF) return null;
 				int h = startLink ? ctx.effectiveHeuristic(state, sailed) : 0;
-				if (h != CostArithmetic.INF) offer(link, state, sailed, priority(sailed, h, ctx.heuristicWeight), true);
+				if (h != CostArithmetic.INF)
+					offer(kindOf[entry], link, state, sailed, priority(sailed, h, ctx.heuristicWeight), true);
 				return null;
 			}
 			if (startLink)
@@ -288,10 +323,36 @@ public final class AStarForwardSearch
 				append(walk, sea.leg(link), legStart, banked, false), sea.seaTarget(link));
 		}
 
-		private boolean isTargetLink(int link)
+		/**
+		 * Takes a crossing: raises its bound if the leg's search can, else sails it and lands like the transport, at
+		 * the boat's own time. An entry offered before its boarding state got cheaper is dropped: the state offered it
+		 * again when it was taken at the lower cost.
+		 */
+		private Result cross(SearchCtx ctx, int entry, int cost, BooleanSupplier cancelled)
 		{
-			for (int start : sea.startLinks()) if (start == link) return false;
-			return true;
+			int link = linkOf[entry], from = stateOf[entry], landing = landingOf[entry];
+			int base = baseOf[entry], extra = extraOf[entry];
+			if (base != ctx.best.get(from) || cost >= ctx.best.get(landing)) return null;
+			int bound = cost - base - extra;
+			int refined = sea.refine(link, bound, cancelled);
+			if (refined == SeaEnds.NO_LINK) return null;
+			if (refined > bound)
+			{
+				int raised = CostArithmetic.add(base, CostArithmetic.add(extra, refined));
+				if (raised == CostArithmetic.INF || raised >= ctx.best.get(landing)) return null;
+				int h = ctx.effectiveHeuristic(landing, raised);
+				if (h == CostArithmetic.INF) return null;
+				offer(CROSSING, link, from, raised, priority(raised, h, ctx.heuristicWeight), false);
+				landingOf[count - 1] = landing;
+				baseOf[count - 1] = base;
+				extraOf[count - 1] = extra;
+				transportOf[count - 1] = transportOf[entry];
+				return null;
+			}
+			int exact = sea.exact(link, cancelled);
+			if (exact == SeaEnds.NO_LINK) return null;
+			ctx.relaxState(from, landing, base, CostArithmetic.add(extra, exact), transportOf[entry], PUSH_LOCAL);
+			return null;
 		}
 
 		/** The route to {@code terminal}, starting with its leg ashore if it began at sea. */
@@ -466,6 +527,8 @@ public final class AStarForwardSearch
 		final boolean restrictedHeuristic, optimized;
 		final double heuristicWeight;
 		final int tileStates;
+		// The links to and from the sea, or null for a search with no ends at sea
+		SeaLinks links;
 
 		SearchCtx(TargetOverlay target, PreparedHeuristic heuristic, int start, boolean optimized,
 			double heuristicWeight, SearchRestrictions restrictions)
@@ -571,7 +634,13 @@ public final class AStarForwardSearch
 				// walked neighbour (crossing the wilderness ditch is a transport, and must not bypass
 				// the avoid-wilderness gate), so apply them to the jump's landing tile.
 				if (node < 0 || !space.stepAllowed(from / 2, node)) continue;
-				relaxTransport(from, banked, cost, view.destinations[i], view.costs[i], view.transports[i], PUSH_LOCAL);
+				// A crossing whose duration only bounds the boat's time waits to be sailed
+				int crossing = links == null ? -1 : links.sea.crossingLink(view.transports[i]);
+				if (crossing >= 0)
+					links.offerCrossing(this, crossing, view.transports[i], from, cost, stateForNode(node, banked),
+						view.costs[i]);
+				else
+					relaxTransport(from, banked, cost, view.destinations[i], view.costs[i], view.transports[i], PUSH_LOCAL);
 			}
 		}
 

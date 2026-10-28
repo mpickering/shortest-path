@@ -494,7 +494,7 @@ public final class AStarPathfinder implements ActiveSearch
 				if (ends.active())
 				{
 					sea = ends;
-					if (seaTargets.length > 0)
+					if (seaTargets.length > 0 && ends.atSea())
 					{
 						landPoints = new java.util.HashSet<>(targets.points());
 						for (int target : seaTargets) landPoints.remove(target);
@@ -622,7 +622,9 @@ public final class AStarPathfinder implements ActiveSearch
 					if (SailingRoutes.hasLegs(path))
 					{
 						phaseStarted = System.nanoTime();
-						path = SailingRoutes.expand(collision, path, () -> cancelled);
+						SailingSeaEnds ends = sea;
+						path = SailingRoutes.expand(collision, path, ends == null ? transport -> null : ends::sailedLeg,
+							() -> cancelled);
 						keptStepIndices = shiftPastLegs(path, keptStepIndices);
 						sailingLegNanos = System.nanoTime() - phaseStarted;
 					}

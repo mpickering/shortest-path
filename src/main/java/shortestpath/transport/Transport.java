@@ -119,8 +119,8 @@ public class Transport
 	@Getter
 	private LeagueRegion regionOverride = null;
 	/**
-	 * For sailing between moorings: the restricted sea areas the leg sails through, which the boat's parts must let it
-	 * enter. Empty for every other transport.
+	 * For sailing between moorings: the restricted sea areas the leg it was timed by sails through, with every part the
+	 * boat can be fitted with. Empty for every other transport.
 	 */
 	@Getter
 	private Set<SeaArea> seaAreas = SeaArea.NONE;
@@ -255,6 +255,18 @@ public class Transport
 		Transport copy = new Transport();
 		copy.copyFrom(this);
 		copy.itemRequirements = items;
+		return copy;
+	}
+
+	/**
+	 * A copy of this transport taking {@code ticks}: for one whose time depends on the account, such as sailing the
+	 * player's own boat, priced for the account's boat at availability-build time.
+	 */
+	public Transport withDuration(int ticks)
+	{
+		Transport copy = new Transport();
+		copy.copyFrom(this);
+		copy.duration = ticks;
 		return copy;
 	}
 
