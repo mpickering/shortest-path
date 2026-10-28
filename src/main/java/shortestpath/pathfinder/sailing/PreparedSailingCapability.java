@@ -7,10 +7,8 @@ import lombok.experimental.Accessors;
 /**
  * One query's sailing capability: what the router needs to know about the player's sailing, prepared from the
  * account before the search. The moorings are those whose requirements the account meets; the fleet says which
- * boats can be boarded where, and which the player is aboard.
- * <p>
- * Hazards (storms, fetid water, crystal-flecked water, kelp and ice) and the ship parts that let a boat through them
- * are not modelled yet; they belong here, with the boats, so that adding them leaves the search unchanged.
+ * boats can be boarded where, and which the player is aboard; each boat carries its speed and the restricted sea areas
+ * its parts let it enter ({@link SailingVessel}).
  */
 @Getter
 @Accessors(fluent = true)

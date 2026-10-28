@@ -135,9 +135,10 @@ public final class SailingWaters
 			Set<Integer> dockSide = walkableFrom(map, mooring.landTile(), DOCK_SIDE_STEPS);
 			int x = WorldPointUtil.unpackWorldX(berth), y = WorldPointUtil.unpackWorldY(berth);
 			int plane = WorldPointUtil.unpackWorldPlane(berth);
-			for (int dy = -BERTH_REACH; dy <= BERTH_REACH; dy++)
+			// A boat's first move from the berth can end as far out as any move goes
+			for (int dy = -PIECE_REACH; dy <= PIECE_REACH; dy++)
 			{
-				for (int dx = -BERTH_REACH; dx <= BERTH_REACH; dx++)
+				for (int dx = -PIECE_REACH; dx <= PIECE_REACH; dx++)
 				{
 					int piece = waters.piece(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane));
 					if (piece != 0 && !dockSide.contains(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane)))
@@ -313,12 +314,24 @@ public final class SailingWaters
 	}
 
 	/**
-	 * The pieces {@code mooring}'s berth opens onto, or {@code null} for a mooring this sea was not made from.
+	 * The pieces {@code mooring}'s berth opens onto, those a boat's first move from it can end in, or {@code null} for
+	 * a mooring this sea was not made from.
 	 */
 	public int[] berthPieces(SailingMooring mooring)
 	{
 		int[] opens = berthPieces.get(mooring);
 		return opens == null ? null : opens.clone();
+	}
+
+	/**
+	 * The pieces {@code mooring}'s berth opens onto that {@code vessel} may enter: where a boat moored there can set
+	 * out to, since none of its moves may end in water its parts keep it out of. {@code null} as above.
+	 */
+	public int[] berthPieces(SailingMooring mooring, SailingVessel vessel)
+	{
+		int[] opens = berthPieces.get(mooring);
+		return opens == null ? null
+			: java.util.Arrays.stream(opens).filter(piece -> vessel.canEnter(pieceAreas.get(piece))).toArray();
 	}
 
 	/** The pieces of sea within {@code reach} tiles of {@code packedTile}: where a boat can be to arrive there. */

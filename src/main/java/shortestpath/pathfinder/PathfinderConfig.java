@@ -39,6 +39,7 @@ import shortestpath.pathfinder.sailing.SailingMoorings;
 import shortestpath.pathfinder.sailing.SailingMoves;
 import shortestpath.pathfinder.sailing.SailingTransports;
 import shortestpath.pathfinder.sailing.SailingVessel;
+import shortestpath.pathfinder.sailing.SailingWaters;
 import shortestpath.sailing.SeaArea;
 import shortestpath.poh.PohService;
 import shortestpath.requirement.ClientPlayerStateSource;
@@ -883,8 +884,9 @@ public class PathfinderConfig
 		varbitValues = context.getVarbitValues();
 		varPlayerValues = context.getVarPlayerValues();
 		requirements = new Requirements(context, policy, requirementHooks);
-		// Sailing between moorings needs a boat of the transport's kind moored where it boards
+		// Sailing between moorings needs a boat of the transport's kind moored where it boards, and takes that boat's time
 		SailingFleet fleet = sailingFleet();
+		SailingWaters waters = fleet.vessels().isEmpty() ? null : SailingWaters.of(getMap(), SailingMoorings.all());
 		TransportAvailability.Builder withoutBank = new TransportAvailability.Builder(allTransports.length);
 		TransportAvailability.Builder withBank = new TransportAvailability.Builder(allTransports.length);
 		for (Transport transport : allTransports)
@@ -895,10 +897,15 @@ public class PathfinderConfig
 			// views, so downstream consumers share one identity.
 			Transport offered = eligibility.wrapFairyRingStaff(transport);
 
-			if (offered.getType().isSailing() && !SailingTransports.usable(offered, fleet,
-				quest -> getQuestState(quest) != QuestState.NOT_STARTED))
+			if (offered.getType().isSailing())
 			{
-				continue;
+				SailingVessel vessel = SailingTransports.vessel(offered, fleet);
+				if (vessel == null || !SailingTransports.usable(offered, fleet, waters,
+					quest -> getQuestState(quest) != QuestState.NOT_STARTED))
+				{
+					continue;
+				}
+				offered = SailingTransports.boundFor(offered, vessel);
 			}
 
 			// The named gates run first; a transport failing any of them is

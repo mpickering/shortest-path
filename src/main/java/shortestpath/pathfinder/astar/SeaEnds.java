@@ -1,11 +1,14 @@
 package shortestpath.pathfinder.astar;
 
 import java.util.function.BooleanSupplier;
+import shortestpath.transport.Transport;
 
 /**
  * Where a route meets the sea at its ends: links from a start at sea to the land tiles a boat can put the player
  * ashore on, from land tiles where a boat can be boarded to a target at sea, and from the start straight to that
- * target. A link's cost is sailing time plus boarding or stepping off, and is found lazily: each link starts with a
+ * target; and across the sea between two land tiles, for a transport whose duration only bounds how long the
+ * player's own boat takes ({@link #crossingLink}). A link's cost is sailing time plus boarding or stepping off, and is
+ * found lazily: each link starts with a
  * lower bound ({@link #bound}), and the search asks for the exact cost ({@link #exact}) only once the link is the
  * cheapest thing left to look at, so it sails only the few legs that could end up on the route.
  * <p>
@@ -43,6 +46,17 @@ public interface SeaEnds
 	default int[] targetLinksFrom(int landTile)
 	{
 		return EMPTY;
+	}
+
+	/**
+	 * The link that sails {@code transport} for the player's own boat, or -1 to take the transport at its duration:
+	 * for a transport across the sea between two land tiles whose duration is only a lower bound on the boat's time,
+	 * such as a leg timed for a boat with other parts. Its {@link #bound} is the duration; it lands on the transport's
+	 * destination, and its {@link #leg} runs from boarding to stepping off.
+	 */
+	default int crossingLink(Transport transport)
+	{
+		return -1;
 	}
 
 	/** The land tile a start link lands on. */
