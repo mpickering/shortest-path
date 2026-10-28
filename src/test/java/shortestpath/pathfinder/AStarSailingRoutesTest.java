@@ -97,11 +97,12 @@ public class AStarSailingRoutesTest
 		assertTrue("the route sails", landing > 0);
 		Transport transport = path.get(landing).getTransport();
 		assertEquals(SailingVessel.Kind.RAFT, SailingTransports.kind(transport.getType()));
-		// Before the landing: the berth, then a point per move, the last within docking range of the next berth
+		// Before the landing: where the boat casts off, in docking range of the berth, then a point per move, the last
+		// within docking range of the next berth
 		int legStart = landing;
 		while (legStart > 0 && path.get(legStart - 1).getTraversal() == Traversal.SAILING) legStart--;
 		assertTrue("the leg has moves", landing - legStart > 2);
-		assertEquals(SailingTransports.from(transport).berthTile(), path.get(legStart).getPackedPosition());
+		assertTrue(SailingTransports.from(transport).inDockingRange(path.get(legStart).getPackedPosition()));
 		assertTrue(SailingTransports.to(transport).inDockingRange(path.get(landing - 1).getPackedPosition()));
 		assertEquals(transport.getOrigin(), path.get(legStart - 1).getPackedPosition());
 	}

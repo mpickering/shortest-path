@@ -46,6 +46,9 @@ public final class SailingSeaEnds implements SeaEnds
 	private final CollisionMap map;
 	private final SailingWaters waters;
 	private final int start;
+	// Where the boat the player is aboard sets out from: its own tile, or where it casts off from the mooring it is
+	// moored at
+	private final int[] startTiles;
 	private final int[] seaTargets;
 	private final SailingQuery.EdgeGate gate;
 	private final SailingFleet fleet;
@@ -95,7 +98,8 @@ public final class SailingSeaEnds implements SeaEnds
 		this.gate = gate;
 		this.fleet = capability.fleet();
 		SailingFleet.Aboard aboard = capability.fleet().aboard();
-		this.start = aboard != null && waters.contains(start) ? start : WorldPointUtil.UNDEFINED;
+		this.startTiles = aboard == null ? EMPTY : startTiles(aboard, start, capability.moorings());
+		this.start = startTiles.length > 0 ? start : WorldPointUtil.UNDEFINED;
 		List<SailingMooring> landable = new ArrayList<>();
 		int[] walkable = SailingMoorings.walkableLandTiles(map);
 		Arrays.sort(walkable);
@@ -107,20 +111,19 @@ public final class SailingSeaEnds implements SeaEnds
 		{
 			SailingVessel vessel = aboard.vessel();
 			BoatHull hull = vessel.hull(aboard.pivotX(), aboard.pivotY());
-			int body = waters.body(this.start);
-			int[] pieces = {waters.piece(this.start)};
+			int[] pieces = piecesOf(startTiles);
 			List<Integer> links = new ArrayList<>();
 			for (SailingMooring mooring : landable)
 			{
-				if (!capability.canDock(mooring, vessel) || !opensOnto(mooring, body)) continue;
+				if (!capability.canDock(mooring, vessel) || !opensOnto(mooring, startTiles)) continue;
 				if (!reaches(vessel, hull, pieces, mooring)) continue;
 				int bound = SailingMooring.DISEMBARK_TICKS
-					+ ticks(vessel, distance(this.start, mooring.berthTile()) - SailingMooring.DOCKING_RANGE);
+					+ ticks(vessel, distance(startTiles, mooring.berthTile()) - SailingMooring.DOCKING_RANGE);
 				links.add(add(START, mooring, vessel, hull, aboard.heading(), bound));
 			}
 			startLinks = links.stream().mapToInt(Integer::intValue).toArray();
-			int bound = targetBound(vessel, hull, this.start, body);
-			if (bound != NO_LINK && reachesATarget(vessel, hull, this.start, null, pieces))
+			int bound = targetBound(vessel, hull, startTiles);
+			if (bound != NO_LINK && reachesATarget(vessel, hull, startTiles, null, pieces))
 				directLink = add(DIRECT, null, vessel, hull, aboard.heading(), bound);
 		}
 		if (this.seaTargets.length > 0)
@@ -131,14 +134,13 @@ public final class SailingSeaEnds implements SeaEnds
 				{
 					if (!capability.canBoard(mooring, vessel)) continue;
 					BoatHull hull = vessel.hull(0, 0);
-					int sailed = Integer.MAX_VALUE;
-					for (int body : bodies(mooring)) sailed = Math.min(sailed, targetBound(vessel, hull, mooring.berthTile(), body));
-					if (sailed == Integer.MAX_VALUE || sailed == NO_LINK) continue;
+					int[] castOff = waters.castOff(map, mooring, vessel);
+					int sailed = targetBound(vessel, hull, castOff);
+					if (sailed == NO_LINK) continue;
 					// Beyond a channel the hull can't get through or water it can't enter: no search would arrive
-					if (!reachesATarget(vessel, hull, WorldPointUtil.UNDEFINED, mooring,
-							waters.berthPieces(mooring, vessel))) continue;
+					if (!reachesATarget(vessel, hull, castOff, mooring, piecesOf(castOff))) continue;
 					// Round the land between, cell by cell over the hull's own water
-					int cells = cellTicks(vessel, hull, mooring.berthTile());
+					int cells = cellTicks(vessel, hull, castOff);
 					if (cells == NO_LINK) continue;
 					sailed = Math.max(sailed, cells);
 					int link = add(TARGET, mooring, vessel, hull, -1, SailingMooring.BOARD_TICKS + sailed);
@@ -297,8 +299,7 @@ public final class SailingSeaEnds implements SeaEnds
 				// First the field: cheap, and it sees round the land the straight line crosses
 				SeaField field = field(vessels.get(link).moves());
 				field.growTo(bound - offset + GROWTH_TICKS);
-				int from = kind == TARGET ? moorings.get(link).berthTile() : start;
-				int ticks = fieldTicks(field, from, longestMove(vessels.get(link).moves()));
+				int ticks = fieldTicks(field, setsOutFrom(link));
 				if (ticks == Integer.MAX_VALUE) return exact[link] = NO_LINK;
 				if (offset + ticks > bound) return offset + ticks;
 				solvers[link] = targetSolver(link, field);
@@ -377,11 +378,13 @@ public final class SailingSeaEnds implements SeaEnds
 				if (mooring != from && mooring.fits(vessel)) exits.add(mooring);
 			}
 			BoatHull hull = vessel.hull(0, 0);
-			// As the legs are timed: a boat at rest in the berth, every move ending on sea the hull fits, in water
-			// the boat's parts let it enter
-			SailingQuery query = new SailingQuery(from.berthTile(), -1, vessel.moves(), hull, SailingObjective.TICKS,
-				new int[0], new int[0], exits, SailingQuery.EdgeGate.NONE).landingOn(waters.landing(map, vessel, hull));
+			// As the legs are timed: the boat casts off in docking range of the berth, every move ending on sea the
+			// hull fits, in water the boat's parts let it enter
+			SailingQuery query = new SailingQuery(WorldPointUtil.UNDEFINED, -1, vessel.moves(), hull,
+				SailingObjective.TICKS, new int[0], new int[0], exits, SailingQuery.EdgeGate.NONE)
+				.landingOn(waters.landing(map, vessel, hull));
 			solver = new SailingSolver(map, query);
+			solver.castOff(waters.castOff(map, from, vessel), 0);
 		}
 
 		void advance(int limit, BooleanSupplier cancelled)
@@ -459,9 +462,10 @@ public final class SailingSeaEnds implements SeaEnds
 			int first = startLinks[0];
 			SailingVessel vessel = vessels.get(first);
 			BoatHull hull = hulls.get(first);
-			SailingQuery query = new SailingQuery(start, headings.get(first), vessel.moves(), hull,
+			SailingQuery query = new SailingQuery(WorldPointUtil.UNDEFINED, headings.get(first), vessel.moves(), hull,
 				SailingObjective.TICKS, new int[0], new int[0], exits, gate).landingOn(waters.landing(map, vessel, hull));
 			startSolver = new SailingSolver(map, query);
+			startSolver.castOff(startTiles, 0);
 		}
 		startSolver.advance(limit, cancelled, new SailingSolver.Listener()
 		{
@@ -514,19 +518,20 @@ public final class SailingSeaEnds implements SeaEnds
 	 */
 	private SailingSolver targetSolver(int link, SeaField field)
 	{
-		int kind = kinds.get(link);
 		SailingVessel vessel = vessels.get(link);
 		BoatHull hull = hulls.get(link);
-		int from = kind == TARGET ? moorings.get(link).berthTile() : start;
 		int cap = field.reachedTicks();
 		IntUnaryOperator estimate = tile ->
 		{
 			int ticks = field.ticks(tile);
 			return ticks == Integer.MAX_VALUE ? SailingSolver.NO_ROUTE : Math.min(ticks, cap);
 		};
-		SailingQuery query = new SailingQuery(from, headings.get(link), vessel.moves(), hull, SailingObjective.TICKS,
-			seaTargets, new int[0], List.of(), gate, estimate).landingOn(waters.landing(map, vessel, hull));
-		return new SailingSolver(map, query);
+		SailingQuery query = new SailingQuery(WorldPointUtil.UNDEFINED, headings.get(link), vessel.moves(), hull,
+			SailingObjective.TICKS, seaTargets, new int[0], List.of(), gate, estimate)
+			.landingOn(waters.landing(map, vessel, hull));
+		SailingSolver solver = new SailingSolver(map, query);
+		solver.castOff(setsOutFrom(link), 0);
+		return solver;
 	}
 
 	private void releaseSolver(int link)
@@ -559,38 +564,55 @@ public final class SailingSeaEnds implements SeaEnds
 		});
 	}
 
-	// The field's ticks from tile; from a tile off the sea (a berth), the least over where a first move can land
-	private int fieldTicks(SeaField field, int tile, int firstMoveTiles)
+	// The least of the field's ticks from the tiles a boat sets out from
+	private static int fieldTicks(SeaField field, int[] from)
 	{
-		if (waters.contains(tile)) return field.ticks(tile);
 		int best = Integer.MAX_VALUE;
-		int x = WorldPointUtil.unpackWorldX(tile), y = WorldPointUtil.unpackWorldY(tile);
-		int z = WorldPointUtil.unpackWorldPlane(tile);
-		for (int dy = -firstMoveTiles; dy <= firstMoveTiles; dy++)
-		{
-			for (int dx = -firstMoveTiles; dx <= firstMoveTiles; dx++)
-			{
-				int next = WorldPointUtil.packWorldPoint(x + dx, y + dy, z);
-				if (waters.contains(next)) best = Math.min(best, field.ticks(next));
-			}
-		}
+		for (int tile : from) best = Math.min(best, field.ticks(tile));
 		return best;
 	}
 
-	// The most tiles any move goes along an axis
-	private static int longestMove(SailingMoves moves)
+	// Where link's boat sets out from: where it casts off for a target link, the boat's own tiles for a direct one
+	private int[] setsOutFrom(int link)
 	{
-		int longest = 0;
-		for (int move = 0; move < moves.size(); move++)
-			longest = Math.max(longest, Math.max(Math.abs(moves.dx(move)), Math.abs(moves.dy(move))));
-		return longest;
+		return kinds.get(link) == TARGET ? waters.castOff(map, moorings.get(link), vessels.get(link)) : startTiles;
 	}
 
 	/**
-	 * A bound on the ticks from {@code from} (a berth: its first move lands within a cell or two) to arriving at a
-	 * target, from the hull's coarse water grids (see {@link SeaGrid}), or {@link #NO_LINK} if they join no target.
+	 * Where the boat the player is aboard sets out from: its tile, when the boat can be there; otherwise it is moored,
+	 * over the dock, and casts off from the mooring nearest it in docking range; none if neither.
 	 */
-	private int cellTicks(SailingVessel vessel, BoatHull hull, int from)
+	private int[] startTiles(SailingFleet.Aboard aboard, int tile, List<SailingMooring> moorings)
+	{
+		SailingVessel vessel = aboard.vessel();
+		BoatHull hull = vessel.hull(aboard.pivotX(), aboard.pivotY());
+		int x = WorldPointUtil.unpackWorldX(tile), y = WorldPointUtil.unpackWorldY(tile);
+		int z = WorldPointUtil.unpackWorldPlane(tile);
+		if (waters.contains(tile) && waters.allows(vessel, tile) && (hull == null ? !waters.blocksBoat(map, x, y, z)
+			: hull.fits(map, x, y, z))) return new int[] {tile};
+		SailingMooring nearest = null;
+		for (SailingMooring mooring : moorings)
+		{
+			if (!mooring.inDockingRange(tile) || !mooring.fits(vessel)) continue;
+			if (nearest == null || distance(tile, mooring.berthTile()) < distance(tile, nearest.berthTile()))
+				nearest = mooring;
+		}
+		return nearest == null ? EMPTY : waters.castOff(map, nearest, vessel);
+	}
+
+	// The pieces of sea the tiles lie in
+	private int[] piecesOf(int[] tiles)
+	{
+		java.util.Set<Integer> pieces = new java.util.TreeSet<>();
+		for (int tile : tiles) pieces.add(waters.piece(tile));
+		return pieces.stream().mapToInt(Integer::intValue).toArray();
+	}
+
+	/**
+	 * A bound on the ticks from the tiles {@code from} to arriving at a target, from the hull's coarse water grids (see
+	 * {@link SeaGrid}), or {@link #NO_LINK} if they join no target.
+	 */
+	private int cellTicks(SailingVessel vessel, BoatHull hull, int[] from)
 	{
 		HullSea sea = waters.forHull(map, hull);
 		short[][] distances = arrivalCells.computeIfAbsent(sea, key ->
@@ -621,10 +643,14 @@ public final class SailingSeaEnds implements SeaEnds
 			longestManhattan = Math.max(longestManhattan, dx + dy);
 		}
 		SeaGrid axis = sea.axisGrid(), rotated = sea.rotatedGrid();
-		int axisCells = axis.cell(from) >= 0 ? distances[0][axis.cell(from)]
-			: axis.nearest(distances[0], from, longestChebyshev / SeaGrid.CELL + 1);
-		int rotatedCells = rotated.cell(from) >= 0 ? distances[1][rotated.cell(from)]
-			: rotated.nearest(distances[1], from, longestManhattan / SeaGrid.CELL + 1);
+		int axisCells = SeaGrid.UNREACHED, rotatedCells = SeaGrid.UNREACHED;
+		for (int tile : from)
+		{
+			axisCells = Math.min(axisCells, axis.cell(tile) >= 0 ? distances[0][axis.cell(tile)]
+				: axis.nearest(distances[0], tile, longestChebyshev / SeaGrid.CELL + 1));
+			rotatedCells = Math.min(rotatedCells, rotated.cell(tile) >= 0 ? distances[1][rotated.cell(tile)]
+				: rotated.nearest(distances[1], tile, longestManhattan / SeaGrid.CELL + 1));
+		}
 		if (axisCells == SeaGrid.UNREACHED || rotatedCells == SeaGrid.UNREACHED) return NO_LINK;
 		double ticks = Math.max(SeaGrid.CELL * (axisCells - 1) / chebyshevSpeed,
 			SeaGrid.CELL * (rotatedCells - 1) / manhattanSpeed);
@@ -632,17 +658,18 @@ public final class SailingSeaEnds implements SeaEnds
 	}
 
 	/**
-	 * Whether a boat setting out from {@code from}, or from {@code mooring}'s berth, from {@code pieces} can arrive at
-	 * some target: one its kind's boats can sail to from there, by pieces of sea its parts let it enter. Never false
-	 * for a boat that can.
+	 * Whether a boat setting out from the tiles {@code from} — where it casts off from {@code mooring}, if not null —
+	 * in {@code pieces} can arrive at some target: one its kind's boats can sail to from there, by pieces of sea its
+	 * parts let it enter. Never false for a boat that can.
 	 */
-	private boolean reachesATarget(SailingVessel vessel, BoatHull hull, int from, SailingMooring mooring, int[] pieces)
+	private boolean reachesATarget(SailingVessel vessel, BoatHull hull, int[] from, SailingMooring mooring, int[] pieces)
 	{
 		if (vessel.kind() != null && hull != null)
 		{
 			SailingReach reach = SailingReach.load();
-			boolean may = mooring == null ? reach.mayReach(vessel.kind(), from, seaTargets, arrivalReach(hull))
-				: reach.mayReachFrom(vessel.kind(), mooring, seaTargets, arrivalReach(hull));
+			boolean may = mooring != null && reach.mayReachFrom(vessel.kind(), mooring, seaTargets, arrivalReach(hull));
+			for (int i = 0; i < from.length && !may && mooring == null; i++)
+				may = reach.mayReach(vessel.kind(), from[i], seaTargets, arrivalReach(hull));
 			if (!may) return false;
 		}
 		java.util.Set<Integer> near = new java.util.TreeSet<>();
@@ -653,26 +680,40 @@ public final class SailingSeaEnds implements SeaEnds
 	/** Whether a boat setting out from the start, from {@code pieces}, can dock at {@code mooring}; see above. */
 	private boolean reaches(SailingVessel vessel, BoatHull hull, int[] pieces, SailingMooring mooring)
 	{
-		if (vessel.kind() != null && hull != null && !SailingReach.load().mayReach(vessel.kind(), start,
-			new int[] {mooring.berthTile()}, SailingMooring.DOCKING_RANGE)) return false;
-		return waters.connects(vessel, pieces, waters.berthPieces(mooring));
+		if (vessel.kind() != null && hull != null)
+		{
+			boolean may = false;
+			for (int i = 0; i < startTiles.length && !may; i++)
+				may = SailingReach.load().mayReach(vessel.kind(), startTiles[i], new int[] {mooring.berthTile()},
+					SailingMooring.DOCKING_RANGE);
+			if (!may) return false;
+		}
+		return waters.connects(vessel, pieces, waters.dockingPieces(mooring));
 	}
 
-	// The straight line to the nearest target on body, at top speed, or NO_LINK with none there
-	private int targetBound(SailingVessel vessel, BoatHull hull, int from, int body)
+	// The straight line from the tiles from to the nearest target on the same body of water, at top speed, or NO_LINK
+	// with none there
+	private int targetBound(SailingVessel vessel, BoatHull hull, int[] from)
 	{
 		double least = Double.MAX_VALUE;
-		for (int target : seaTargets)
+		for (int tile : from)
 		{
-			if (body != 0 && waters.body(target) != body) continue;
-			least = Math.min(least, distance(from, target) - arrivalReach(hull));
+			for (int target : seaTargets)
+			{
+				if (waters.body(target) != waters.body(tile)) continue;
+				least = Math.min(least, distance(tile, target) - arrivalReach(hull));
+			}
 		}
 		return least == Double.MAX_VALUE ? NO_LINK : ticks(vessel, least);
 	}
 
-	private boolean opensOnto(SailingMooring mooring, int body)
+	// Whether mooring's berth opens onto the water of one of the tiles
+	private boolean opensOnto(SailingMooring mooring, int[] tiles)
 	{
-		for (int opens : bodies(mooring)) if (opens == 0 || opens == body) return true;
+		for (int opens : bodies(mooring))
+		{
+			for (int tile : tiles) if (opens == 0 || opens == waters.body(tile)) return true;
+		}
 		return false;
 	}
 
@@ -701,6 +742,14 @@ public final class SailingSeaEnds implements SeaEnds
 	private static double arrivalReach(BoatHull hull)
 	{
 		return hull == null ? Math.sqrt(2) : hull.reach() + Math.sqrt(2) / 2;
+	}
+
+	// The least distance from the tiles to b
+	private static double distance(int[] tiles, int b)
+	{
+		double least = Double.MAX_VALUE;
+		for (int tile : tiles) least = Math.min(least, distance(tile, b));
+		return least;
 	}
 
 	private static double distance(int a, int b)

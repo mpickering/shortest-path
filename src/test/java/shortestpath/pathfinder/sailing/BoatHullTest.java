@@ -158,21 +158,15 @@ public class BoatHullTest
 	}
 
 	@Test
-	public void testBoatSailsOutOfTilesItsHullSitsOn()
+	public void testABoatOverBlockedTilesCannotMove()
 	{
-		// Moored on the 3x2 shipwreck at (2704-2706, 3050-3051), a raft's hull overlaps blocked tiles
-		// where it starts; like a boat on a blocked tile it can sail out of them with its first move,
-		// but not over other blocked tiles its hull doesn't already cover
+		// On the 3x2 shipwreck at (2704-2706, 3050-3051) a raft's hull overlaps blocked tiles: no boat can be there,
+		// so no move leaves it; a moored boat sets out from where it casts off instead
 		BoatHull raft = hull(RAFT, 0, 0);
-		assertTrue("North over the wreck row its hull sits on", raft.canMove(map, 2705, 3050, 0, NORTH, 0, 3, true));
-		assertTrue("South out of the wreck", raft.canMove(map, 2705, 3050, 0, SOUTH, 0, -3, true));
-		assertFalse("Only the first move gets the escape", raft.canMove(map, 2705, 3050, 0, NORTH, 0, 3));
-		assertFalse("Facing along the wreck, its hull doesn't cover the other row",
-			raft.canMove(map, 2705, 3050, 0, WEST, 0, 3, true));
-
-		int start = WorldPointUtil.packWorldPoint(2705, 3050, 0);
-		int target = WorldPointUtil.packWorldPoint(2705, 3042, 0);
-		findPath(start, target, SailingMoves.forSpeed(1.5), raft);
+		assertFalse(raft.fits(map, 2705, 3050, 0));
+		assertFalse("North over the wreck", raft.canMove(map, 2705, 3050, 0, NORTH, 0, 3));
+		assertFalse("South out of the wreck", raft.canMove(map, 2705, 3050, 0, SOUTH, 0, -3));
+		assertTrue("Clear of it", raft.fits(map, 2705, 3046, 0));
 	}
 
 	@Test

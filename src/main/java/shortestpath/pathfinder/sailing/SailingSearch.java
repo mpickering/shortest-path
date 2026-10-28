@@ -53,7 +53,7 @@ final class SailingSearch
 	private int[] goals;
 	// The heading the boat is facing where the route starts, or -1 when that isn't known: the start node has no
 	// move to face, so without it a target under the hull counts as arrived facing any heading — even one the
-	// boat, berthed, isn't pointing
+	// boat, at rest, isn't pointing
 	private final int initialHeading;
 	// How far from a target the boat's tile can be while arriving, in tiles: next to it diagonally, or with a hull, as
 	// far as the hull reaches plus half a tile's diagonal
@@ -346,8 +346,6 @@ final class SailingSearch
 		// The boat faces the way it sailed into the node — or, on the start node, the way it's pointing, so
 		// carrying straight on isn't a turn but putting about first is
 		final int arrivalHeading = arrivalHeading(graph, node);
-		// The first move gets the hull's berthed-tile escape: a boat can sit over tiles it then sails off
-		final boolean firstMove = graph.moveIndex(node) < 0;
 		final int costSoFar = graph.cost(node);
 		final int plane = z;
 		for (int i = 0; i < moves.size(); i++)
@@ -360,7 +358,7 @@ final class SailingSearch
 			if ((costSoFar + cost >= queuedCost(x + dx, y + dy, z, bankVisited)
 					&& !queueArrival(neighborPacked, i, x + dx, y + dy, z, bankVisited))
 				|| !(hull == null ? canSailLine(map, x, y, z, dx, dy)
-					: hull.canMove(map, x, y, z, moves.heading(i), dx, dy, firstMove)))
+					: hull.canMove(map, x, y, z, moves.heading(i), dx, dy)))
 			{
 				continue;
 			}
@@ -396,9 +394,6 @@ final class SailingSearch
 		final int ny = Math.abs(dy);
 		final int sx = Integer.signum(dx);
 		final int sy = Integer.signum(dy);
-		// From a blocked tile, such as one a moored boat sits on, any open tile next to it can be entered, as when
-		// walking. Every tile after the first is entered through an open side, so it isn't blocked either.
-		boolean fromBlocked = map.isBlocked(x, y, z);
 		int cx = x;
 		int cy = y;
 		int ix = 0;
@@ -409,8 +404,8 @@ final class SailingSearch
 			long decision = (long) (1 + 2 * ix) * ny - (long) (1 + 2 * iy) * nx;
 			if (decision == 0)
 			{
-				if (!canCross(map, cx, cy, z, sx, 0, fromBlocked) || !canCross(map, cx + sx, cy, z, 0, sy, false)
-					|| !canCross(map, cx, cy, z, 0, sy, fromBlocked) || !canCross(map, cx, cy + sy, z, sx, 0, false))
+				if (!canCross(map, cx, cy, z, sx, 0) || !canCross(map, cx + sx, cy, z, 0, sy)
+					|| !canCross(map, cx, cy, z, 0, sy) || !canCross(map, cx, cy + sy, z, sx, 0))
 				{
 					return false;
 				}
@@ -421,7 +416,7 @@ final class SailingSearch
 			}
 			else if (decision < 0)
 			{
-				if (!canCross(map, cx, cy, z, sx, 0, fromBlocked))
+				if (!canCross(map, cx, cy, z, sx, 0))
 				{
 					return false;
 				}
@@ -430,26 +425,21 @@ final class SailingSearch
 			}
 			else
 			{
-				if (!canCross(map, cx, cy, z, 0, sy, fromBlocked))
+				if (!canCross(map, cx, cy, z, 0, sy))
 				{
 					return false;
 				}
 				cy += sy;
 				iy++;
 			}
-			fromBlocked = false;
 		}
 		return true;
 	}
 
 	// Whether a boat can cross from tile (x, y, z) into the tile next to it (ex, ey) away, one of which is 0: through
-	// the open side between them, or from a blocked tile into any open one
-	private static boolean canCross(CollisionMap map, int x, int y, int z, int ex, int ey, boolean fromBlocked)
+	// the open side between them
+	private static boolean canCross(CollisionMap map, int x, int y, int z, int ex, int ey)
 	{
-		if (fromBlocked)
-		{
-			return !map.isBlocked(x + ex, y + ey, z);
-		}
 		if (ey == 0)
 		{
 			return ex < 0 ? map.w(x, y, z) : map.e(x, y, z);

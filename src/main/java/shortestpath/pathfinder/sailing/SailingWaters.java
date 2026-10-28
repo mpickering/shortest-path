@@ -74,8 +74,8 @@ public final class SailingWaters
 	// Per piece (from 1; 0 unused): its restricted area, or null for open water, and the pieces it touches
 	private final List<SeaArea> pieceAreas = new ArrayList<>();
 	private int[][] pieceNeighbours = new int[0][];
-	// The pieces each mooring's berth opens onto
-	private final Map<SailingMooring, int[]> berthPieces = new IdentityHashMap<>();
+	// Where each boat casts off from each mooring, by the mooring and the boat
+	private final Map<List<Object>, int[]> castOffs = new java.util.concurrent.ConcurrentHashMap<>();
 
 	private SailingWaters(SplitFlagMap.RegionExtent extent)
 	{
@@ -128,25 +128,6 @@ public final class SailingWaters
 			waters.berthBodies.put(mooring, opensOnto.stream().mapToInt(Integer::intValue).toArray());
 		}
 		waters.split(map, seeds(), queue);
-		for (SailingMooring mooring : moorings)
-		{
-			int berth = mooring.berthTile();
-			Set<Integer> opensOnto = new TreeSet<>();
-			Set<Integer> dockSide = walkableFrom(map, mooring.landTile(), DOCK_SIDE_STEPS);
-			int x = WorldPointUtil.unpackWorldX(berth), y = WorldPointUtil.unpackWorldY(berth);
-			int plane = WorldPointUtil.unpackWorldPlane(berth);
-			// A boat's first move from the berth can end as far out as any move goes
-			for (int dy = -PIECE_REACH; dy <= PIECE_REACH; dy++)
-			{
-				for (int dx = -PIECE_REACH; dx <= PIECE_REACH; dx++)
-				{
-					int piece = waters.piece(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane));
-					if (piece != 0 && !dockSide.contains(WorldPointUtil.packWorldPoint(x + dx, y + dy, plane)))
-						opensOnto.add(piece);
-				}
-			}
-			waters.berthPieces.put(mooring, opensOnto.stream().mapToInt(Integer::intValue).toArray());
-		}
 		return waters;
 	}
 
@@ -314,24 +295,49 @@ public final class SailingWaters
 	}
 
 	/**
-	 * The pieces {@code mooring}'s berth opens onto, those a boat's first move from it can end in, or {@code null} for
-	 * a mooring this sea was not made from.
+	 * Where {@code vessel} casts off from {@code mooring}: every tile within docking range of its berth the boat can be
+	 * on — sea its hull fits facing some heading, in water its parts let it enter. Boarding puts the boat on any of
+	 * them, as docking takes it from any tile in range; with none, the boat can't set out from there. Made once per
+	 * mooring and boat.
 	 */
-	public int[] berthPieces(SailingMooring mooring)
+	public int[] castOff(CollisionMap map, SailingMooring mooring, SailingVessel vessel)
 	{
-		int[] opens = berthPieces.get(mooring);
-		return opens == null ? null : opens.clone();
+		return castOffs.computeIfAbsent(List.of(mooring, vessel.boundsX(), vessel.boundsY(), vessel.boundsWidth(),
+			vessel.boundsHeight(), vessel.areas()), key ->
+		{
+			BoatHull hull = vessel.hull(0, 0);
+			java.util.function.IntPredicate landing = landing(map, vessel, hull);
+			int berth = mooring.berthTile();
+			int bx = WorldPointUtil.unpackWorldX(berth), by = WorldPointUtil.unpackWorldY(berth);
+			int plane = WorldPointUtil.unpackWorldPlane(berth), range = (int) Math.ceil(SailingMooring.DOCKING_RANGE);
+			List<Integer> tiles = new ArrayList<>();
+			for (int dy = -range; dy <= range; dy++)
+			{
+				for (int dx = -range; dx <= range; dx++)
+				{
+					int tile = WorldPointUtil.packWorldPoint(bx + dx, by + dy, plane);
+					if (!mooring.inDockingRange(tile) || !contains(tile) || !landing.test(tile)) continue;
+					if (hull == null ? blocksBoat(map, bx + dx, by + dy, plane) : !hull.fits(map, bx + dx, by + dy, plane))
+						continue;
+					tiles.add(tile);
+				}
+			}
+			return tiles.stream().mapToInt(Integer::intValue).toArray();
+		}).clone();
 	}
 
-	/**
-	 * The pieces {@code mooring}'s berth opens onto that {@code vessel} may enter: where a boat moored there can set
-	 * out to, since none of its moves may end in water its parts keep it out of. {@code null} as above.
-	 */
-	public int[] berthPieces(SailingMooring mooring, SailingVessel vessel)
+	/** The pieces {@code vessel} casts off into from {@code mooring} ({@link #castOff}). */
+	public int[] castOffPieces(CollisionMap map, SailingMooring mooring, SailingVessel vessel)
 	{
-		int[] opens = berthPieces.get(mooring);
-		return opens == null ? null
-			: java.util.Arrays.stream(opens).filter(piece -> vessel.canEnter(pieceAreas.get(piece))).toArray();
+		Set<Integer> pieces = new TreeSet<>();
+		for (int tile : castOff(map, mooring, vessel)) pieces.add(piece(tile));
+		return pieces.stream().mapToInt(Integer::intValue).toArray();
+	}
+
+	/** The pieces of sea within docking range of {@code mooring}'s berth: where a boat can be to dock there. */
+	public int[] dockingPieces(SailingMooring mooring)
+	{
+		return piecesNear(mooring.berthTile(), SailingMooring.DOCKING_RANGE);
 	}
 
 	/** The pieces of sea within {@code reach} tiles of {@code packedTile}: where a boat can be to arrive there. */

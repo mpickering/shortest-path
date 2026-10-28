@@ -130,4 +130,47 @@ public class SailingTransportsTest
 		}
 		assertTrue(sailed > 12);
 	}
+
+	@Test
+	public void aBoatCastsOffWhereItCouldDock()
+	{
+		CollisionMap map = new CollisionMap(TestWorldData.map());
+		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
+		for (SailingMooring mooring : SailingMoorings.all())
+		{
+			for (SailingVessel.Kind kind : SailingVessel.Kind.values())
+			{
+				SailingVessel vessel = SailingVessel.of(kind, SailingTransports.SPEED).withAreas(shortestpath.sailing.SeaArea.ALL);
+				if (!mooring.fits(vessel)) continue;
+				BoatHull hull = vessel.hull(0, 0);
+				for (int tile : waters.castOff(map, mooring, vessel))
+				{
+					// Never the berth: a boat state, in docking range, its hull clear facing some heading
+					assertTrue(mooring.inDockingRange(tile));
+					assertTrue(waters.allows(vessel, tile));
+					assertTrue(hull.fits(map, shortestpath.WorldPointUtil.unpackWorldX(tile),
+						shortestpath.WorldPointUtil.unpackWorldY(tile), shortestpath.WorldPointUtil.unpackWorldPlane(tile)));
+				}
+			}
+		}
+	}
+
+	@Test
+	public void aSlowBoatLeavesItsBerth()
+	{
+		// At 1.5 every move is short: a skiff moored at the Isle of Bones used to make one move and still have its
+		// stern over the dock. Cast off clear of it, it sails on.
+		CollisionMap map = new CollisionMap(TestWorldData.map());
+		SailingMooring from = mooring("Isle of Bones");
+		for (Object[] leg : new Object[][] {{SailingVessel.Kind.SKIFF, "Charred Island"}, {SailingVessel.Kind.SLOOP, "Port Roberts"}})
+		{
+			SailingVessel vessel = SailingVessel.of((SailingVessel.Kind) leg[0], 1.5).withAreas(shortestpath.sailing.SeaArea.ALL);
+			assertNotNull(leg[0].toString(), SailingRoutes.leg(map, vessel, from, mooring((String) leg[1]), () -> false));
+		}
+	}
+
+	private static SailingMooring mooring(String name)
+	{
+		return SailingMoorings.all().stream().filter(mooring -> mooring.name().equals(name)).findFirst().orElseThrow();
+	}
 }

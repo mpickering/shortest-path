@@ -128,7 +128,7 @@ final class SeaGrid
 
 	/**
 	 * The least of {@code distances} over the water cells within {@code radius} cells of the one holding {@code tile},
-	 * or {@link #UNREACHED}: for a boat on a tile that is not sea, such as a berth, whose first move lands that near.
+	 * or {@link #UNREACHED}: for a boat on a tile in no water cell of this grid, whose first move lands that near.
 	 */
 	int nearest(short[] distances, int tile, int radius)
 	{

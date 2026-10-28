@@ -140,8 +140,7 @@ public final class SailingSolver
 
 	/**
 	 * Sets out from {@code tile} at {@code cost} as well, facing the query's initial heading: another boat state the
-	 * search grows from, such as a berth boarded later. Its first move gets the berthed-tile escape. A source can be
-	 * added at any time; one that reaches settled tiles for less settles them again. Returns its node, the root of
+	 * search grows from, such as where a boat boarded later casts off. A source can be added at any time; one that reaches settled tiles for less settles them again. Returns its node, the root of
 	 * every leg that grows from it, or {@link NodeGraph#NO_NODE} if nothing the search looks for can be reached from it.
 	 */
 	public int addSource(int tile, int cost)
@@ -154,6 +153,15 @@ public final class SailingSolver
 		int x = WorldPointUtil.unpackWorldX(tile), y = WorldPointUtil.unpackWorldY(tile), z = WorldPointUtil.unpackWorldPlane(tile);
 		sailing.setQueuedCost(x, y, z, BankVisitState.CARRIED, cost);
 		return node;
+	}
+
+	/**
+	 * Sets out from every tile of {@code tiles} at {@code cost}: where a boat boarded at a mooring casts off
+	 * ({@link SailingWaters#castOff}).
+	 */
+	public void castOff(int[] tiles, int cost)
+	{
+		for (int tile : tiles) addSource(tile, cost);
 	}
 
 	/** The source (or the start) the leg to {@code node} grows from. */

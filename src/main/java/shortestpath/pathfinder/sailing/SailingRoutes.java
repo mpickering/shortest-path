@@ -15,8 +15,8 @@ import shortestpath.transport.Transport;
  * Fills in the sea between moorings on a route: the router takes each sailing leg as one transport step
  * ({@link SailingTransports}), and the player follows the boat's moves. A leg the router sailed for the player's own
  * boat, because the transport was timed for another ({@code SailingSeaEnds}), is the one it sailed; any other is
- * sailed again here, from the berth to docking range of the next mooring, towards it, and the search finds the leg the
- * transport was timed by, as it times every leg the same way.
+ * sailed again here, from where the boat casts off to docking range of the next mooring, towards it, and the search
+ * finds the leg the transport was timed by, as it times every leg the same way.
  */
 public final class SailingRoutes
 {
@@ -36,7 +36,7 @@ public final class SailingRoutes
 
 	/**
 	 * {@code path} with each sailing transport step preceded by its leg's moves, as {@link Traversal#SAILING}
-	 * steps: the berth, then the boat's tile at the end of each move. The landing step keeps its transport.
+	 * steps: where the boat casts off, then its tile at the end of each move. The landing step keeps its transport.
 	 */
 	public static List<PathStep> expand(CollisionMap map, List<PathStep> path, BooleanSupplier cancelled)
 	{
@@ -81,7 +81,7 @@ public final class SailingRoutes
 		return expanded;
 	}
 
-	/** The leg a boat sails from {@code from}'s berth to docking at {@code to}, or {@code null} if it can't. */
+	/** The leg a boat sails from casting off at {@code from} to docking at {@code to}, or {@code null} if it can't. */
 	public static SailingLeg leg(CollisionMap map, SailingVessel vessel, SailingMooring from, SailingMooring to,
 		BooleanSupplier cancelled)
 	{
@@ -106,7 +106,7 @@ public final class SailingRoutes
 		return leg[0];
 	}
 
-	// The search for the leg a boat sails from from's berth to docking at to, by ticks, towards it
+	// The search for the leg a boat sails from casting off at from to docking at to, by ticks, towards it
 	private static SailingSolver legSolver(CollisionMap map, SailingVessel vessel, SailingMooring from, SailingMooring to)
 	{
 		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
@@ -121,8 +121,11 @@ public final class SailingRoutes
 			double distance = Math.hypot(WorldPointUtil.unpackWorldX(tile) - bx, WorldPointUtil.unpackWorldY(tile) - by);
 			return (int) Math.floor(Math.max(0, distance - SailingMooring.DOCKING_RANGE) / fastest);
 		};
-		SailingQuery query = new SailingQuery(from.berthTile(), -1, moves, hull, SailingObjective.TICKS, new int[0],
-			new int[0], List.of(to), SailingQuery.EdgeGate.NONE, estimate).landingOn(waters.landing(map, vessel, hull));
-		return new SailingSolver(map, query);
+		SailingQuery query = new SailingQuery(WorldPointUtil.UNDEFINED, -1, moves, hull, SailingObjective.TICKS,
+			new int[0], new int[0], List.of(to), SailingQuery.EdgeGate.NONE, estimate)
+			.landingOn(waters.landing(map, vessel, hull));
+		SailingSolver solver = new SailingSolver(map, query);
+		solver.castOff(waters.castOff(map, from, vessel), 0);
+		return solver;
 	}
 }

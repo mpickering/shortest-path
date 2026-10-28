@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 import java.util.zip.CRC32;
 import net.runelite.api.Quest;
 import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.CollisionMap;
 import shortestpath.sailing.SeaArea;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportType;
@@ -37,7 +38,7 @@ public final class SailingTransports
 	/** The boats' base speed the legs are timed at, in tiles per tick. */
 	public static final double SPEED = SailingMoves.ESTIMATED_SPEED;
 	// Bump when the sailing search's rules change, so the files are made again
-	private static final int SEARCH_VERSION = 3;
+	private static final int SEARCH_VERSION = 4;
 	static final String FINGERPRINT = "# Fingerprint: ";
 	private static volatile Map<Integer, SailingMooring> mooringsByLand;
 
@@ -101,15 +102,17 @@ public final class SailingTransports
 
 	/**
 	 * Whether the account can sail {@code transport}: it has a boat of the transport's kind moored at the mooring it
-	 * boards at, whose parts let it into water joining the two berths ({@link SailingWaters#connects}). The moorings'
+	 * boards at, whose parts let it into water joining where it casts off there to where it docks at the other
+	 * ({@link SailingWaters#connects}). The moorings'
 	 * levels and finished quests are the transport's own requirements; the quests they need only started,
 	 * {@code started} answers.
 	 */
-	public static boolean usable(Transport transport, SailingFleet fleet, SailingWaters waters, Predicate<Quest> started)
+	public static boolean usable(Transport transport, SailingFleet fleet, CollisionMap map, SailingWaters waters,
+		Predicate<Quest> started)
 	{
 		SailingMooring from = mooringAt(transport.getOrigin()), to = mooringAt(transport.getDestination());
 		SailingVessel vessel = vessel(transport, fleet);
-		if (vessel == null || !waters.connects(vessel, waters.berthPieces(from, vessel), waters.berthPieces(to)))
+		if (vessel == null || !waters.connects(vessel, waters.castOffPieces(map, from, vessel), waters.dockingPieces(to)))
 			return false;
 		for (Quest quest : from.questsStarted())
 		{
@@ -148,7 +151,8 @@ public final class SailingTransports
 	 * {@code transport} with a duration no more than {@code vessel} takes. With fewer parts it is the transport itself:
 	 * keeping out of water only makes a leg longer. At another speed the moves themselves change (each tick's velocity
 	 * is rounded to quarter tiles), so the time at {@link #SPEED} says nothing sure about the boat's; the bound is then
-	 * the straight line between the berths at the boat's top speed, as for every other leg sailed for a query.
+	 * the straight line between the berths, less the docking range at each end (the boat casts off and docks within
+	 * it), at the boat's top speed, as for every other leg sailed for a query.
 	 */
 	public static Transport boundFor(Transport transport, SailingVessel vessel)
 	{
@@ -157,7 +161,7 @@ public final class SailingTransports
 		double tiles = Math.hypot(
 			WorldPointUtil.unpackWorldX(from.berthTile()) - WorldPointUtil.unpackWorldX(to.berthTile()),
 			WorldPointUtil.unpackWorldY(from.berthTile()) - WorldPointUtil.unpackWorldY(to.berthTile()));
-		int sailed = (int) Math.floor(Math.max(0, tiles - SailingMooring.DOCKING_RANGE) / topSpeed(vessel.moves()));
+		int sailed = (int) Math.floor(Math.max(0, tiles - 2 * SailingMooring.DOCKING_RANGE) / topSpeed(vessel.moves()));
 		return transport.withDuration(SailingMooring.BOARD_TICKS + sailed + SailingMooring.DISEMBARK_TICKS);
 	}
 
