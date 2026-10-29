@@ -1,0 +1,144 @@
+{
+  "map": "Fossil Island Underground",
+  "image": "fossil-island-underground.png",
+  "walkable": 22760,
+  "inGraph": 1174,
+  "excluded": 21586,
+  "walkableWithoutBasemap": 4295,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        3584,
+        10176,
+        3648,
+        10304
+      ],
+      "sourceRects": [
+        [
+          3584,
+          10240,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3584,
+          10176,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1174,
+      "excludedDisplayedTiles": 1505
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        3776,
+        10112,
+        3840,
+        10240
+      ],
+      "sourceRects": [
+        [
+          3776,
+          10112,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 8124
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3584,
+        10176,
+        3648,
+        10304
+      ],
+      "sourceRects": [
+        [
+          3584,
+          10240,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3584,
+          10176,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 836
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        3712,
+        10112,
+        3840,
+        10304
+      ],
+      "sourceRects": [
+        [
+          3712,
+          10240,
+          128,
+          64,
+          0,
+          0
+        ],
+        [
+          3776,
+          10112,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 6826
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        3872,
+        10144,
+        3936,
+        10272
+      ],
+      "sourceRects": [
+        [
+          3872,
+          10144,
+          64,
+          128,
+          -96,
+          -32
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 4295
+    }
+  ]
+}

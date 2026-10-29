@@ -1,0 +1,54 @@
+{
+  "map": "Fremennik Slayer Cave",
+  "image": "fremennik-slayer-cave.png",
+  "walkable": 3188,
+  "inGraph": 2634,
+  "excluded": 554,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2688,
+        9984,
+        2816,
+        10048
+      ],
+      "sourceRects": [
+        [
+          2688,
+          9984,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 2634,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2688,
+        9920,
+        2728,
+        9960
+      ],
+      "sourceRects": [
+        [
+          2688,
+          9920,
+          40,
+          40,
+          0,
+          32
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 554
+    }
+  ]
+}

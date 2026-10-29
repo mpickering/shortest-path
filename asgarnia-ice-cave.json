@@ -1,0 +1,136 @@
+{
+  "map": "Asgarnia Ice Cave",
+  "image": "asgarnia-ice-cave.png",
+  "walkable": 4096,
+  "inGraph": 3368,
+  "excluded": 728,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2912,
+        9632,
+        2944,
+        9664
+      ],
+      "sourceRects": [
+        [
+          2912,
+          9632,
+          32,
+          32,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 225
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        3008,
+        9616,
+        3072,
+        9664
+      ],
+      "sourceRects": [
+        [
+          3008,
+          9616,
+          64,
+          48,
+          -64,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 773,
+      "excludedDisplayedTiles": 25
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        2880,
+        9536,
+        3072,
+        9600
+      ],
+      "sourceRects": [
+        [
+          2984,
+          9560,
+          32,
+          40,
+          0,
+          0
+        ],
+        [
+          2880,
+          9536,
+          104,
+          64,
+          0,
+          0
+        ],
+        [
+          3016,
+          9536,
+          56,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 2595,
+      "excludedDisplayedTiles": 449
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3080,
+        9536,
+        3152,
+        9600
+      ],
+      "sourceRects": [
+        [
+          3080,
+          9536,
+          72,
+          64,
+          -64,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 27
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        2984,
+        9536,
+        3016,
+        9560
+      ],
+      "sourceRects": [
+        [
+          2984,
+          9536,
+          32,
+          24,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2
+    }
+  ]
+}

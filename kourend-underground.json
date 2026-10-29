@@ -1,0 +1,324 @@
+{
+  "map": "Kourend Underground",
+  "image": "kourend-underground.png",
+  "walkable": 26723,
+  "inGraph": 14578,
+  "excluded": 12145,
+  "walkableWithoutBasemap": 938,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        1584,
+        9856,
+        1920,
+        10176
+      ],
+      "sourceRects": [
+        [
+          1792,
+          10112,
+          128,
+          64,
+          -64,
+          0
+        ],
+        [
+          1728,
+          9984,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          1792,
+          9856,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          1664,
+          9960,
+          64,
+          152,
+          0,
+          0
+        ],
+        [
+          1600,
+          10048,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          1584,
+          9952,
+          80,
+          96,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 8531,
+      "excludedDisplayedTiles": 1629
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        1280,
+        9792,
+        1472,
+        9920
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9856,
+          128,
+          64,
+          128,
+          192
+        ],
+        [
+          1408,
+          9792,
+          64,
+          64,
+          0,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 2406,
+      "excludedDisplayedTiles": 1143
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        1536,
+        9856,
+        1600,
+        9920
+      ],
+      "sourceRects": [
+        [
+          1536,
+          9856,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1110,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        1632,
+        9792,
+        1728,
+        9856
+      ],
+      "sourceRects": [
+        [
+          1632,
+          9808,
+          32,
+          48,
+          0,
+          0
+        ],
+        [
+          1664,
+          9792,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1140,
+      "excludedDisplayedTiles": 156
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1584,
+        9952,
+        1728,
+        10112
+      ],
+      "sourceRects": [
+        [
+          1600,
+          10048,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          1584,
+          9952,
+          80,
+          96,
+          0,
+          0
+        ],
+        [
+          1664,
+          9960,
+          64,
+          152,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 757
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        1280,
+        9952,
+        1344,
+        10016
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9952,
+          64,
+          64,
+          128,
+          96
+        ]
+      ],
+      "includedDisplayedTiles": 687,
+      "excludedDisplayedTiles": 616
+    },
+    {
+      "plane": 1,
+      "section": "C",
+      "drawnBounds": [
+        1792,
+        9856,
+        1856,
+        9984
+      ],
+      "sourceRects": [
+        [
+          1792,
+          9856,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 475
+    },
+    {
+      "plane": 1,
+      "section": "D",
+      "drawnBounds": [
+        1440,
+        9856,
+        1504,
+        9920
+      ],
+      "sourceRects": [
+        [
+          1440,
+          9856,
+          64,
+          64,
+          32,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1467
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        1280,
+        10048,
+        1344,
+        10112
+      ],
+      "sourceRects": [
+        [
+          1280,
+          10048,
+          64,
+          64,
+          128,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 99,
+      "excludedDisplayedTiles": 2569
+    },
+    {
+      "plane": 2,
+      "section": "B",
+      "drawnBounds": [
+        1440,
+        9952,
+        1504,
+        10016
+      ],
+      "sourceRects": [
+        [
+          1440,
+          9952,
+          64,
+          64,
+          32,
+          -32
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2035
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        1440,
+        10048,
+        1504,
+        10112
+      ],
+      "sourceRects": [
+        [
+          1440,
+          10048,
+          64,
+          64,
+          32,
+          -128
+        ]
+      ],
+      "includedDisplayedTiles": 605,
+      "excludedDisplayedTiles": 1298
+    }
+  ]
+}

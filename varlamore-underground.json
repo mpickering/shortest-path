@@ -1,0 +1,312 @@
+{
+  "map": "Varlamore Underground",
+  "image": "varlamore-underground.png",
+  "walkable": 19056,
+  "inGraph": 2834,
+  "excluded": 16222,
+  "walkableWithoutBasemap": 8421,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        1280,
+        9664,
+        1408,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9664,
+          128,
+          128,
+          -64,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 1834,
+      "excludedDisplayedTiles": 624
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        1600,
+        9472,
+        1728,
+        9600
+      ],
+      "sourceRects": [
+        [
+          1600,
+          9472,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2450
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        1792,
+        9472,
+        1856,
+        9600
+      ],
+      "sourceRects": [
+        [
+          1792,
+          9472,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 806,
+      "excludedDisplayedTiles": 842
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        1280,
+        9472,
+        1336,
+        9536
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9472,
+          56,
+          64,
+          -64,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1048
+    },
+    {
+      "plane": 0,
+      "section": "E",
+      "drawnBounds": [
+        1368,
+        9408,
+        1400,
+        9440
+      ],
+      "sourceRects": [
+        [
+          1368,
+          9408,
+          32,
+          32,
+          0,
+          24
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 38
+    },
+    {
+      "plane": 0,
+      "section": "F",
+      "drawnBounds": [
+        1280,
+        9280,
+        1536,
+        9344
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9280,
+          256,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 194,
+      "excludedDisplayedTiles": 827
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1280,
+        9664,
+        1408,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9664,
+          128,
+          128,
+          -64,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 445
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        1472,
+        9408,
+        1728,
+        9600
+      ],
+      "sourceRects": [
+        [
+          1600,
+          9472,
+          128,
+          128,
+          0,
+          0
+        ],
+        [
+          1536,
+          9408,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          1472,
+          9472,
+          64,
+          40,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 5069
+    },
+    {
+      "plane": 1,
+      "section": "C",
+      "drawnBounds": [
+        1792,
+        9472,
+        1856,
+        9600
+      ],
+      "sourceRects": [
+        [
+          1792,
+          9472,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2060
+    },
+    {
+      "plane": 1,
+      "section": "D",
+      "drawnBounds": [
+        1280,
+        9472,
+        1336,
+        9536
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9472,
+          56,
+          64,
+          -64,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 414
+    },
+    {
+      "plane": 1,
+      "section": "E",
+      "drawnBounds": [
+        1280,
+        9280,
+        1536,
+        9344
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9280,
+          256,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2402
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        1280,
+        9280,
+        1536,
+        9344
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9280,
+          256,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        1280,
+        9280,
+        1536,
+        9344
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9280,
+          256,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "map": "Ancient Cavern",
+  "image": "ancient-cavern.png",
+  "walkable": 1877,
+  "inGraph": 1550,
+  "excluded": 327,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        1728,
+        5312,
+        1792,
+        5376
+      ],
+      "sourceRects": [
+        [
+          1728,
+          5312,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1165,
+      "excludedDisplayedTiles": 2
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1792,
+        5312,
+        1856,
+        5440
+      ],
+      "sourceRects": [
+        [
+          1792,
+          5312,
+          64,
+          128,
+          -64,
+          -64
+        ]
+      ],
+      "includedDisplayedTiles": 385,
+      "excludedDisplayedTiles": 325
+    }
+  ]
+}

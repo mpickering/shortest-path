@@ -1,0 +1,188 @@
+{
+  "map": "Unquiet Ocean Underground",
+  "image": "unquiet-ocean-underground.png",
+  "walkable": 12893,
+  "inGraph": 1221,
+  "excluded": 11672,
+  "walkableWithoutBasemap": 5765,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        3072,
+        8768,
+        3264,
+        8896
+      ],
+      "sourceRects": [
+        [
+          3072,
+          8832,
+          128,
+          64,
+          0,
+          0
+        ],
+        [
+          3200,
+          8768,
+          64,
+          64,
+          0,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 1221,
+      "excludedDisplayedTiles": 872
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2688,
+        8768,
+        2816,
+        8832
+      ],
+      "sourceRects": [
+        [
+          2688,
+          8768,
+          128,
+          64,
+          -64,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2989
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        2752,
+        8576,
+        2816,
+        8704
+      ],
+      "sourceRects": [
+        [
+          2752,
+          8576,
+          64,
+          128,
+          -192,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1476
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3072,
+        8768,
+        3328,
+        8896
+      ],
+      "sourceRects": [
+        [
+          3264,
+          8832,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3200,
+          8768,
+          64,
+          64,
+          0,
+          64
+        ],
+        [
+          3072,
+          8832,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 5290
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        2688,
+        8768,
+        2816,
+        8832
+      ],
+      "sourceRects": [
+        [
+          2688,
+          8768,
+          128,
+          64,
+          -64,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 971
+    },
+    {
+      "plane": 1,
+      "section": "C",
+      "drawnBounds": [
+        2752,
+        8576,
+        2816,
+        8704
+      ],
+      "sourceRects": [
+        [
+          2752,
+          8576,
+          64,
+          128,
+          -192,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 47
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        2688,
+        8768,
+        2816,
+        8832
+      ],
+      "sourceRects": [
+        [
+          2688,
+          8768,
+          128,
+          64,
+          -64,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 27
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "map": "Yanille Underground",
+  "image": "yanille-underground.png",
+  "walkable": 4302,
+  "inGraph": 1080,
+  "excluded": 3222,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2520,
+        9424,
+        2640,
+        9536
+      ],
+      "sourceRects": [
+        [
+          2560,
+          9496,
+          8,
+          40,
+          0,
+          0
+        ],
+        [
+          2568,
+          9472,
+          56,
+          64,
+          0,
+          0
+        ],
+        [
+          2624,
+          9472,
+          16,
+          16,
+          -16,
+          88
+        ],
+        [
+          2520,
+          9424,
+          48,
+          48,
+          40,
+          120
+        ]
+      ],
+      "includedDisplayedTiles": 1080,
+      "excludedDisplayedTiles": 804
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2304,
+        9408,
+        2432,
+        9472
+      ],
+      "sourceRects": [
+        [
+          2304,
+          9408,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2418
+    }
+  ]
+}

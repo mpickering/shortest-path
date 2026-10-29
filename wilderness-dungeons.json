@@ -1,0 +1,270 @@
+{
+  "map": "Wilderness Dungeons",
+  "image": "wilderness-dungeons.png",
+  "walkable": 23158,
+  "inGraph": 15874,
+  "excluded": 7284,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2944,
+        10240,
+        3128,
+        10376
+      ],
+      "sourceRects": [
+        [
+          3072,
+          10320,
+          56,
+          56,
+          -576,
+          -5640
+        ],
+        [
+          3008,
+          10240,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          2944,
+          10304,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1836,
+      "excludedDisplayedTiles": 518
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        3200,
+        10304,
+        3264,
+        10368
+      ],
+      "sourceRects": [
+        [
+          3200,
+          10304,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 540,
+      "excludedDisplayedTiles": 5
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        3328,
+        10240,
+        3392,
+        10368
+      ],
+      "sourceRects": [
+        [
+          3328,
+          10240,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1640
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        3088,
+        10048,
+        3264,
+        10288
+      ],
+      "sourceRects": [
+        [
+          3088,
+          10240,
+          48,
+          48,
+          -840,
+          -5568
+        ],
+        [
+          3136,
+          10048,
+          128,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 8372,
+      "excludedDisplayedTiles": 1386
+    },
+    {
+      "plane": 0,
+      "section": "E",
+      "drawnBounds": [
+        3328,
+        10048,
+        3456,
+        10176
+      ],
+      "sourceRects": [
+        [
+          3328,
+          10048,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 5086,
+      "excludedDisplayedTiles": 1337
+    },
+    {
+      "plane": 0,
+      "section": "F",
+      "drawnBounds": [
+        2928,
+        10072,
+        2992,
+        10128
+      ],
+      "sourceRects": [
+        [
+          2928,
+          10072,
+          64,
+          56,
+          80,
+          40
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1233
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3264,
+        10048,
+        3456,
+        10240
+      ],
+      "sourceRects": [
+        [
+          3264,
+          10176,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3328,
+          10048,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 266
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        3392,
+        10176,
+        3456,
+        10240
+      ],
+      "sourceRects": [
+        [
+          3392,
+          10176,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 356
+    },
+    {
+      "plane": 2,
+      "section": "B",
+      "drawnBounds": [
+        3280,
+        10064,
+        3320,
+        10096
+      ],
+      "sourceRects": [
+        [
+          3280,
+          10064,
+          40,
+          32,
+          -320,
+          -5696
+        ]
+      ],
+      "includedDisplayedTiles": 40,
+      "excludedDisplayedTiles": 451
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        2992,
+        10112,
+        3024,
+        10152
+      ],
+      "sourceRects": [
+        [
+          2992,
+          10128,
+          16,
+          24,
+          48,
+          24
+        ],
+        [
+          3008,
+          10112,
+          16,
+          40,
+          48,
+          24
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 92
+    }
+  ]
+}

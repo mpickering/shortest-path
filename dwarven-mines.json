@@ -1,0 +1,64 @@
+{
+  "map": "Dwarven Mines",
+  "image": "dwarven-mines.png",
+  "walkable": 5325,
+  "inGraph": 4295,
+  "excluded": 1030,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2960,
+        9664,
+        3136,
+        9856
+      ],
+      "sourceRects": [
+        [
+          2960,
+          9800,
+          32,
+          56,
+          0,
+          0
+        ],
+        [
+          2992,
+          9792,
+          16,
+          64,
+          0,
+          0
+        ],
+        [
+          3008,
+          9664,
+          64,
+          192,
+          0,
+          0
+        ],
+        [
+          3072,
+          9664,
+          64,
+          64,
+          640,
+          -4032
+        ],
+        [
+          3000,
+          9704,
+          8,
+          24,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 4295,
+      "excludedDisplayedTiles": 1030
+    }
+  ]
+}

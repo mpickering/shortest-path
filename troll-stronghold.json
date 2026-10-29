@@ -1,0 +1,76 @@
+{
+  "map": "Troll Stronghold",
+  "image": "troll-stronghold.png",
+  "walkable": 2586,
+  "inGraph": 2460,
+  "excluded": 126,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        10048,
+        2880,
+        10112
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10048,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 962,
+      "excludedDisplayedTiles": 72
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2880,
+        10080,
+        2944,
+        10144
+      ],
+      "sourceRects": [
+        [
+          2880,
+          10080,
+          64,
+          64,
+          -64,
+          -32
+        ]
+      ],
+      "includedDisplayedTiles": 664,
+      "excludedDisplayedTiles": 49
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2944,
+        10112,
+        3008,
+        10176
+      ],
+      "sourceRects": [
+        [
+          2944,
+          10112,
+          64,
+          64,
+          -128,
+          -64
+        ]
+      ],
+      "includedDisplayedTiles": 834,
+      "excludedDisplayedTiles": 5
+    }
+  ]
+}

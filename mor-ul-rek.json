@@ -1,0 +1,40 @@
+{
+  "map": "Mor Ul Rek",
+  "image": "mor-ul-rek.png",
+  "walkable": 10090,
+  "inGraph": 5726,
+  "excluded": 4364,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2368,
+        4992,
+        2560,
+        5184
+      ],
+      "sourceRects": [
+        [
+          2368,
+          5056,
+          192,
+          128,
+          0,
+          0
+        ],
+        [
+          2464,
+          4992,
+          64,
+          64,
+          -224,
+          320
+        ]
+      ],
+      "includedDisplayedTiles": 5726,
+      "excludedDisplayedTiles": 4364
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "map": "Neypotzli",
+  "image": "neypotzli.png",
+  "walkable": 18487,
+  "inGraph": 0,
+  "excluded": 18487,
+  "walkableWithoutBasemap": 120,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        1344,
+        9528,
+        1536,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1408,
+          9664,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          1344,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ],
+        [
+          1472,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ],
+        [
+          1408,
+          9608,
+          64,
+          56,
+          0,
+          0
+        ],
+        [
+          1344,
+          9528,
+          40,
+          72,
+          0,
+          0
+        ],
+        [
+          1504,
+          9536,
+          32,
+          64,
+          0,
+          0
+        ],
+        [
+          1384,
+          9544,
+          8,
+          56,
+          0,
+          0
+        ],
+        [
+          1496,
+          9544,
+          8,
+          56,
+          0,
+          0
+        ],
+        [
+          1488,
+          9560,
+          8,
+          40,
+          0,
+          0
+        ],
+        [
+          1480,
+          9568,
+          8,
+          32,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 11784
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1344,
+        9544,
+        1536,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1472,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ],
+        [
+          1408,
+          9544,
+          64,
+          56,
+          0,
+          64
+        ],
+        [
+          1344,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 6573
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        1344,
+        9600,
+        1408,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1344,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 104
+    },
+    {
+      "plane": 2,
+      "section": "B",
+      "drawnBounds": [
+        1472,
+        9600,
+        1536,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1472,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 16
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        1344,
+        9600,
+        1408,
+        9792
+      ],
+      "sourceRects": [
+        [
+          1344,
+          9600,
+          64,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 10
+    }
+  ]
+}

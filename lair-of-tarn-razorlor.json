@@ -1,0 +1,84 @@
+{
+  "map": "Lair of Tarn Razorlor",
+  "image": "lair-of-tarn-razorlor.png",
+  "walkable": 1846,
+  "inGraph": 1236,
+  "excluded": 610,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        3136,
+        4544,
+        3208,
+        4640
+      ],
+      "sourceRects": [
+        [
+          3168,
+          4608,
+          40,
+          32,
+          -32,
+          32
+        ],
+        [
+          3136,
+          4544,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 714,
+      "excludedDisplayedTiles": 265
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3232,
+        4544,
+        3296,
+        4608
+      ],
+      "sourceRects": [
+        [
+          3232,
+          4544,
+          64,
+          64,
+          -96,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 363,
+      "excludedDisplayedTiles": 288
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        3328,
+        4544,
+        3392,
+        4608
+      ],
+      "sourceRects": [
+        [
+          3328,
+          4544,
+          64,
+          64,
+          -192,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 159,
+      "excludedDisplayedTiles": 57
+    }
+  ]
+}

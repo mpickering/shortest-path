@@ -1,0 +1,150 @@
+{
+  "map": "Waterbirth Dungeon",
+  "image": "waterbirth-dungeon.png",
+  "walkable": 8238,
+  "inGraph": 264,
+  "excluded": 7974,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2432,
+        10112,
+        2560,
+        10176
+      ],
+      "sourceRects": [
+        [
+          2432,
+          10112,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 3218
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2544,
+        9728,
+        2736,
+        9792
+      ],
+      "sourceRects": [
+        [
+          2544,
+          9728,
+          192,
+          64,
+          -752,
+          -5376
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1190
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        2608,
+        9640,
+        2720,
+        9696
+      ],
+      "sourceRects": [
+        [
+          2664,
+          9640,
+          56,
+          56,
+          224,
+          -5280
+        ],
+        [
+          2608,
+          9640,
+          56,
+          56,
+          280,
+          -5216
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1400
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2544,
+        9824,
+        2736,
+        9888
+      ],
+      "sourceRects": [
+        [
+          2544,
+          9824,
+          192,
+          64,
+          -752,
+          -5472
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 796
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2544,
+        9920,
+        2736,
+        9984
+      ],
+      "sourceRects": [
+        [
+          2544,
+          9920,
+          192,
+          64,
+          -752,
+          -5568
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1014
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        2544,
+        10016,
+        2736,
+        10080
+      ],
+      "sourceRects": [
+        [
+          2544,
+          10016,
+          192,
+          64,
+          -752,
+          -5664
+        ]
+      ],
+      "includedDisplayedTiles": 264,
+      "excludedDisplayedTiles": 356
+    }
+  ]
+}

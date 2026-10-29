@@ -1,0 +1,166 @@
+{
+  "map": "Ardent Ocean Underground",
+  "image": "ardent-ocean-underground.png",
+  "walkable": 15932,
+  "inGraph": 10178,
+  "excluded": 5754,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2624,
+        9408,
+        2880,
+        9664
+      ],
+      "sourceRects": [
+        [
+          2624,
+          9536,
+          104,
+          64,
+          0,
+          0
+        ],
+        [
+          2624,
+          9408,
+          128,
+          128,
+          0,
+          0
+        ],
+        [
+          2752,
+          9520,
+          64,
+          96,
+          0,
+          0
+        ],
+        [
+          2816,
+          9472,
+          64,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 9898,
+      "excludedDisplayedTiles": 3303
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2816,
+        9344,
+        2880,
+        9408
+      ],
+      "sourceRects": [
+        [
+          2816,
+          9344,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 280,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        3008,
+        9344,
+        3072,
+        9408
+      ],
+      "sourceRects": [
+        [
+          3008,
+          9344,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 604
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        3080,
+        9352,
+        3112,
+        9408
+      ],
+      "sourceRects": [
+        [
+          3080,
+          9352,
+          32,
+          56,
+          -1584,
+          -4744
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 25
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2880,
+        9408,
+        2944,
+        9472
+      ],
+      "sourceRects": [
+        [
+          2880,
+          9408,
+          64,
+          64,
+          -64,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 4
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2560,
+        9472,
+        2624,
+        9600
+      ],
+      "sourceRects": [
+        [
+          2560,
+          9472,
+          64,
+          128,
+          64,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1818
+    }
+  ]
+}

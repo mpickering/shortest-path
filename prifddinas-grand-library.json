@@ -1,0 +1,76 @@
+{
+  "map": "Prifddinas Grand Library",
+  "image": "prifddinas-grand-library.png",
+  "walkable": 9066,
+  "inGraph": 0,
+  "excluded": 9066,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2560,
+        6080,
+        2688,
+        6208
+      ],
+      "sourceRects": [
+        [
+          2560,
+          6080,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 3040
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2752,
+        6080,
+        2880,
+        6208
+      ],
+      "sourceRects": [
+        [
+          2752,
+          6080,
+          128,
+          128,
+          -192,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 3572
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2944,
+        6080,
+        3072,
+        6208
+      ],
+      "sourceRects": [
+        [
+          2944,
+          6080,
+          128,
+          128,
+          -384,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2454
+    }
+  ]
+}

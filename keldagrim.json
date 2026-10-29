@@ -1,0 +1,132 @@
+{
+  "map": "Keldagrim",
+  "image": "keldagrim.png",
+  "walkable": 8561,
+  "inGraph": 7971,
+  "excluded": 590,
+  "walkableWithoutBasemap": 305,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        10072,
+        2944,
+        10240
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10120,
+          40,
+          120,
+          0,
+          0
+        ],
+        [
+          2816,
+          10080,
+          24,
+          40,
+          -56,
+          48
+        ],
+        [
+          2856,
+          10112,
+          88,
+          128,
+          0,
+          0
+        ],
+        [
+          2840,
+          10072,
+          24,
+          32,
+          -56,
+          48
+        ]
+      ],
+      "includedDisplayedTiles": 6386,
+      "excludedDisplayedTiles": 64
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        10072,
+        2944,
+        10240
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10120,
+          40,
+          120,
+          0,
+          0
+        ],
+        [
+          2816,
+          10080,
+          24,
+          40,
+          -56,
+          48
+        ],
+        [
+          2856,
+          10112,
+          88,
+          128,
+          0,
+          0
+        ],
+        [
+          2840,
+          10072,
+          24,
+          32,
+          -56,
+          48
+        ]
+      ],
+      "includedDisplayedTiles": 908,
+      "excludedDisplayedTiles": 435
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        10112,
+        2944,
+        10240
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10120,
+          40,
+          120,
+          0,
+          0
+        ],
+        [
+          2856,
+          10112,
+          88,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 677,
+      "excludedDisplayedTiles": 91
+    }
+  ]
+}

@@ -1,0 +1,230 @@
+{
+  "map": "Northern Ocean Underground",
+  "image": "northern-ocean-underground.png",
+  "walkable": 23356,
+  "inGraph": 8182,
+  "excluded": 15174,
+  "walkableWithoutBasemap": 9279,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2368,
+        10368,
+        2496,
+        10496
+      ],
+      "sourceRects": [
+        [
+          2368,
+          10368,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 3160,
+      "excludedDisplayedTiles": 351
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2816,
+        10432,
+        2944,
+        10496
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10432,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2122
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        2624,
+        10368,
+        2688,
+        10432
+      ],
+      "sourceRects": [
+        [
+          2624,
+          10368,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 454,
+      "excludedDisplayedTiles": 443
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        2816,
+        10304,
+        2880,
+        10368
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10304,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 274,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 0,
+      "section": "E",
+      "drawnBounds": [
+        2496,
+        10240,
+        2624,
+        10304
+      ],
+      "sourceRects": [
+        [
+          2496,
+          10240,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 2643,
+      "excludedDisplayedTiles": 80
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2368,
+        10368,
+        2496,
+        10496
+      ],
+      "sourceRects": [
+        [
+          2368,
+          10368,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 11534
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        2816,
+        10432,
+        2944,
+        10496
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10432,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 7
+    },
+    {
+      "plane": 1,
+      "section": "C",
+      "drawnBounds": [
+        2816,
+        10304,
+        2880,
+        10368
+      ],
+      "sourceRects": [
+        [
+          2816,
+          10304,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 85
+    },
+    {
+      "plane": 1,
+      "section": "D",
+      "drawnBounds": [
+        2368,
+        10240,
+        2432,
+        10304
+      ],
+      "sourceRects": [
+        [
+          2368,
+          10240,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1651,
+      "excludedDisplayedTiles": 8
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2112,
+        10304,
+        2176,
+        10368
+      ],
+      "sourceRects": [
+        [
+          2112,
+          10304,
+          64,
+          64,
+          192,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 544
+    }
+  ]
+}

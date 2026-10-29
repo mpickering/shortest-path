@@ -1,0 +1,98 @@
+{
+  "map": "Stronghold of Security",
+  "image": "stronghold-of-security.png",
+  "walkable": 5779,
+  "inGraph": 5761,
+  "excluded": 18,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        1856,
+        5184,
+        1920,
+        5248
+      ],
+      "sourceRects": [
+        [
+          1856,
+          5184,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1397,
+      "excludedDisplayedTiles": 2
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        1888,
+        5088,
+        1952,
+        5152
+      ],
+      "sourceRects": [
+        [
+          1888,
+          5088,
+          64,
+          64,
+          96,
+          96
+        ]
+      ],
+      "includedDisplayedTiles": 1592,
+      "excludedDisplayedTiles": 2
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        1920,
+        4992,
+        1984,
+        5056
+      ],
+      "sourceRects": [
+        [
+          1920,
+          4992,
+          64,
+          64,
+          192,
+          256
+        ]
+      ],
+      "includedDisplayedTiles": 1294,
+      "excludedDisplayedTiles": 2
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        1952,
+        4896,
+        2016,
+        4960
+      ],
+      "sourceRects": [
+        [
+          1952,
+          4896,
+          64,
+          64,
+          352,
+          288
+        ]
+      ],
+      "includedDisplayedTiles": 1478,
+      "excludedDisplayedTiles": 12
+    }
+  ]
+}

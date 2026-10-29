@@ -1,0 +1,34 @@
+map	walkable	in_graph	missing	missing_components	largest_missing_component	missing_in_components_ge_20	missing_components_ge_20
+Ancient Cavern	1877	1550	327	16	276	276	1
+Ardent Ocean Underground	15932	10178	5754	160	1551	5309	36
+Asgarnia Ice Cave	4096	3368	728	132	85	273	5
+Cam Torum	6022	2492	3530	215	156	2768	41
+Dorgesh-Kaan	5501	5256	245	19	144	179	2
+Dwarven Mines	5325	4295	1030	36	204	937	16
+Feldip Hills Underground	6182	3246	2936	284	965	2013	6
+Fossil Island Underground	22760	1174	21586	518	8124	19678	40
+Fremennik Slayer Cave	3188	2634	554	2	293	554	2
+Ghorrock Prison	3601	0	3601	50	2994	3401	2
+God Wars Dungeon	7280	3941	3339	21	889	3310	9
+Kebos Underground	7334	0	7334	142	1757	6787	16
+Keldagrim	8561	7971	590	23	305	456	3
+Kharidian Desert Underground	9016	4285	4731	68	3418	4479	5
+Kourend Underground	26723	14578	12145	995	2247	8494	49
+Lair of Tarn Razorlor	1846	1236	610	22	108	504	12
+Misthalin Underground	14700	11540	3160	94	845	2772	20
+Mor Ul Rek	10090	5726	4364	5	2224	4360	4
+Morytania Underground	18730	11294	7436	501	1614	5490	22
+Neypotzli	18487	0	18487	331	2863	17157	35
+Northern Ocean Underground	23356	8182	15174	164	10949	14665	16
+Prifddinas Grand Library	9066	0	9066	24	3572	9057	21
+Prifddinas Underground	8622	4549	4073	325	2386	2986	3
+Shrouded Ocean Underground	10389	0	10389	225	3628	9704	6
+Stronghold of Security	5779	5761	18	7	5	0	0
+Taverley Underground	22503	13780	8723	542	1646	5827	31
+Troll Stronghold	2586	2460	126	7	49	113	3
+Unquiet Ocean Underground	12893	1221	11672	421	2981	10367	20
+Varlamore Underground	19056	2834	16222	620	4190	14226	47
+Waterbirth Dungeon	8238	264	7974	27	1542	7954	23
+Western Ocean Underground	5333	0	5333	178	1749	4716	4
+Wilderness Dungeons	23158	15874	7284	925	1233	4221	8
+Yanille Underground	4302	1080	3222	14	1897	3169	5

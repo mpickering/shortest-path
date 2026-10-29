@@ -1,0 +1,148 @@
+{
+  "map": "Cam Torum",
+  "image": "cam-torum.png",
+  "walkable": 6022,
+  "inGraph": 2492,
+  "excluded": 3530,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1384,
+        9472,
+        1536,
+        9608
+      ],
+      "sourceRects": [
+        [
+          1424,
+          9600,
+          32,
+          8,
+          0,
+          0
+        ],
+        [
+          1408,
+          9472,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          1472,
+          9512,
+          64,
+          24,
+          0,
+          0
+        ],
+        [
+          1384,
+          9536,
+          24,
+          64,
+          0,
+          0
+        ],
+        [
+          1472,
+          9536,
+          56,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 2492,
+      "excludedDisplayedTiles": 1528
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        1384,
+        9472,
+        1528,
+        9608
+      ],
+      "sourceRects": [
+        [
+          1424,
+          9600,
+          32,
+          8,
+          0,
+          0
+        ],
+        [
+          1408,
+          9472,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          1384,
+          9536,
+          24,
+          64,
+          0,
+          0
+        ],
+        [
+          1472,
+          9536,
+          56,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 664
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        1384,
+        9472,
+        1528,
+        9600
+      ],
+      "sourceRects": [
+        [
+          1472,
+          9536,
+          56,
+          64,
+          0,
+          0
+        ],
+        [
+          1408,
+          9472,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          1384,
+          9536,
+          24,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1338
+    }
+  ]
+}

@@ -1,0 +1,334 @@
+{
+  "map": "Morytania Underground",
+  "image": "morytania-underground.png",
+  "walkable": 18730,
+  "inGraph": 11294,
+  "excluded": 7436,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        3456,
+        9600,
+        3728,
+        9984
+      ],
+      "sourceRects": [
+        [
+          3456,
+          9920,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3520,
+          9856,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          3584,
+          9792,
+          128,
+          64,
+          0,
+          0
+        ],
+        [
+          3648,
+          9856,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3712,
+          9856,
+          16,
+          16,
+          -40,
+          96
+        ],
+        [
+          3584,
+          9664,
+          64,
+          128,
+          -64,
+          64
+        ],
+        [
+          3576,
+          9744,
+          8,
+          16,
+          -64,
+          64
+        ],
+        [
+          3648,
+          9600,
+          64,
+          128,
+          -64,
+          64
+        ],
+        [
+          3712,
+          9696,
+          16,
+          16,
+          16,
+          -24
+        ]
+      ],
+      "includedDisplayedTiles": 3797,
+      "excludedDisplayedTiles": 3593
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        3376,
+        9848,
+        3440,
+        9912
+      ],
+      "sourceRects": [
+        [
+          3376,
+          9848,
+          64,
+          64,
+          16,
+          8
+        ]
+      ],
+      "includedDisplayedTiles": 393,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        3464,
+        9800,
+        3520,
+        9856
+      ],
+      "sourceRects": [
+        [
+          3512,
+          9824,
+          8,
+          24,
+          0,
+          0
+        ],
+        [
+          3480,
+          9800,
+          32,
+          48,
+          0,
+          0
+        ],
+        [
+          3464,
+          9824,
+          16,
+          32,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 469,
+      "excludedDisplayedTiles": 2
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        3520,
+        9728,
+        3560,
+        9752
+      ],
+      "sourceRects": [
+        [
+          3520,
+          9728,
+          40,
+          24,
+          -40,
+          128
+        ]
+      ],
+      "includedDisplayedTiles": 138,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 0,
+      "section": "E",
+      "drawnBounds": [
+        3456,
+        9640,
+        3520,
+        9704
+      ],
+      "sourceRects": [
+        [
+          3456,
+          9640,
+          64,
+          64,
+          0,
+          24
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1622
+    },
+    {
+      "plane": 0,
+      "section": "F",
+      "drawnBounds": [
+        3456,
+        9560,
+        3520,
+        9600
+      ],
+      "sourceRects": [
+        [
+          3456,
+          9560,
+          64,
+          40,
+          0,
+          40
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 74
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3712,
+        9664,
+        3904,
+        9856
+      ],
+      "sourceRects": [
+        [
+          3712,
+          9712,
+          16,
+          144,
+          0,
+          0
+        ],
+        [
+          3728,
+          9688,
+          48,
+          168,
+          0,
+          0
+        ],
+        [
+          3712,
+          9696,
+          16,
+          16,
+          16,
+          -24
+        ],
+        [
+          3776,
+          9664,
+          128,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 4645,
+      "excludedDisplayedTiles": 1859
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        3776,
+        9664,
+        3904,
+        9856
+      ],
+      "sourceRects": [
+        [
+          3776,
+          9664,
+          128,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 201,
+      "excludedDisplayedTiles": 7
+    },
+    {
+      "plane": 3,
+      "section": "A",
+      "drawnBounds": [
+        3392,
+        9920,
+        3456,
+        9984
+      ],
+      "sourceRects": [
+        [
+          3392,
+          9920,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 1651,
+      "excludedDisplayedTiles": 4
+    },
+    {
+      "plane": 3,
+      "section": "B",
+      "drawnBounds": [
+        3776,
+        9664,
+        3904,
+        9856
+      ],
+      "sourceRects": [
+        [
+          3776,
+          9664,
+          128,
+          192,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 275
+    }
+  ]
+}

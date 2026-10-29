@@ -1,0 +1,76 @@
+{
+  "map": "Dorgesh-Kaan",
+  "image": "dorgesh-kaan.png",
+  "walkable": 5501,
+  "inGraph": 5256,
+  "excluded": 245,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2688,
+        5248,
+        2752,
+        5376
+      ],
+      "sourceRects": [
+        [
+          2688,
+          5248,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 2402,
+      "excludedDisplayedTiles": 46
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2752,
+        5312,
+        2816,
+        5440
+      ],
+      "sourceRects": [
+        [
+          2752,
+          5312,
+          64,
+          128,
+          -64,
+          -64
+        ]
+      ],
+      "includedDisplayedTiles": 2700,
+      "excludedDisplayedTiles": 164
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        5376,
+        2880,
+        5504
+      ],
+      "sourceRects": [
+        [
+          2816,
+          5376,
+          64,
+          128,
+          -128,
+          -128
+        ]
+      ],
+      "includedDisplayedTiles": 154,
+      "excludedDisplayedTiles": 35
+    }
+  ]
+}

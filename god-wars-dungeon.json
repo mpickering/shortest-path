@@ -1,0 +1,136 @@
+{
+  "map": "God Wars Dungeon",
+  "image": "god-wars-dungeon.png",
+  "walkable": 7280,
+  "inGraph": 3941,
+  "excluded": 3339,
+  "walkableWithoutBasemap": 6,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2888,
+        5216,
+        2944,
+        5256
+      ],
+      "sourceRects": [
+        [
+          2888,
+          5216,
+          56,
+          40,
+          -8,
+          32
+        ]
+      ],
+      "includedDisplayedTiles": 66,
+      "excludedDisplayedTiles": 342
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2816,
+        5152,
+        2944,
+        5200
+      ],
+      "sourceRects": [
+        [
+          2816,
+          5152,
+          128,
+          48,
+          0,
+          32
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1431
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2936,
+        5264,
+        2976,
+        5304
+      ],
+      "sourceRects": [
+        [
+          2936,
+          5264,
+          40,
+          40,
+          -32,
+          8
+        ]
+      ],
+      "includedDisplayedTiles": 135,
+      "excludedDisplayedTiles": 0
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        2816,
+        5152,
+        2944,
+        5200
+      ],
+      "sourceRects": [
+        [
+          2816,
+          5152,
+          128,
+          48,
+          0,
+          32
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 6
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        5248,
+        2944,
+        5376
+      ],
+      "sourceRects": [
+        [
+          2920,
+          5312,
+          24,
+          64,
+          0,
+          0
+        ],
+        [
+          2880,
+          5280,
+          40,
+          96,
+          0,
+          0
+        ],
+        [
+          2816,
+          5248,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 3740,
+      "excludedDisplayedTiles": 1560
+    }
+  ]
+}

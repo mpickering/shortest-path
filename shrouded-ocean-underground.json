@@ -1,0 +1,120 @@
+{
+  "map": "Shrouded Ocean Underground",
+  "image": "shrouded-ocean-underground.png",
+  "walkable": 10389,
+  "inGraph": 0,
+  "excluded": 10389,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2112,
+        9280,
+        2176,
+        9344
+      ],
+      "sourceRects": [
+        [
+          2112,
+          9280,
+          64,
+          64,
+          -192,
+          128
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 113
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2240,
+        9216,
+        2304,
+        9280
+      ],
+      "sourceRects": [
+        [
+          2240,
+          9216,
+          64,
+          64,
+          -128,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 3653
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        1920,
+        9152,
+        2112,
+        9216
+      ],
+      "sourceRects": [
+        [
+          1920,
+          9152,
+          192,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2735
+    },
+    {
+      "plane": 0,
+      "section": "D",
+      "drawnBounds": [
+        2176,
+        8960,
+        2240,
+        9024
+      ],
+      "sourceRects": [
+        [
+          2176,
+          8960,
+          64,
+          64,
+          0,
+          -256
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 3867
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1920,
+        9152,
+        2112,
+        9216
+      ],
+      "sourceRects": [
+        [
+          1920,
+          9152,
+          192,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 21
+    }
+  ]
+}

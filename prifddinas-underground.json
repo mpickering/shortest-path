@@ -1,0 +1,70 @@
+{
+  "map": "Prifddinas Underground",
+  "image": "prifddinas-underground.png",
+  "walkable": 8622,
+  "inGraph": 4549,
+  "excluded": 4073,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        3136,
+        12352,
+        3328,
+        12480
+      ],
+      "sourceRects": [
+        [
+          3264,
+          12416,
+          64,
+          64,
+          -256,
+          -6400
+        ],
+        [
+          3136,
+          12352,
+          128,
+          128,
+          0,
+          0
+        ],
+        [
+          3264,
+          12352,
+          64,
+          64,
+          0,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 4420,
+      "excludedDisplayedTiles": 4073
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        3216,
+        12488,
+        3240,
+        12512
+      ],
+      "sourceRects": [
+        [
+          3216,
+          12488,
+          24,
+          24,
+          -192,
+          -6376
+        ]
+      ],
+      "includedDisplayedTiles": 129,
+      "excludedDisplayedTiles": 0
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "map": "Feldip Hills Underground",
+  "image": "feldip-hills-underground.png",
+  "walkable": 6182,
+  "inGraph": 3246,
+  "excluded": 2936,
+  "walkableWithoutBasemap": 17,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2008,
+        9064,
+        2040,
+        9096
+      ],
+      "sourceRects": [
+        [
+          2008,
+          9064,
+          32,
+          32,
+          496,
+          216
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 355
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1856,
+        8960,
+        2112,
+        9088
+      ],
+      "sourceRects": [
+        [
+          1856,
+          9024,
+          128,
+          64,
+          0,
+          0
+        ],
+        [
+          1856,
+          8960,
+          256,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 3246,
+      "excludedDisplayedTiles": 2581
+    }
+  ]
+}

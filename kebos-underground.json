@@ -1,0 +1,206 @@
+{
+  "map": "Kebos Underground",
+  "image": "kebos-underground.png",
+  "walkable": 7334,
+  "inGraph": 0,
+  "excluded": 7334,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        1216,
+        10112,
+        1408,
+        10304
+      ],
+      "sourceRects": [
+        [
+          1368,
+          10240,
+          40,
+          64,
+          0,
+          0
+        ],
+        [
+          1344,
+          10208,
+          24,
+          96,
+          0,
+          0
+        ],
+        [
+          1280,
+          10240,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          1216,
+          10112,
+          128,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2716
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        1152,
+        10032,
+        1216,
+        10096
+      ],
+      "sourceRects": [
+        [
+          1152,
+          10032,
+          64,
+          64,
+          64,
+          16
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 178
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        1280,
+        9904,
+        1344,
+        9968
+      ],
+      "sourceRects": [
+        [
+          1280,
+          9904,
+          64,
+          64,
+          0,
+          16
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 706
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        1112,
+        10120,
+        1216,
+        10232
+      ],
+      "sourceRects": [
+        [
+          1136,
+          10200,
+          24,
+          32,
+          152,
+          40
+        ],
+        [
+          1160,
+          10120,
+          32,
+          112,
+          152,
+          40
+        ],
+        [
+          1192,
+          10128,
+          8,
+          96,
+          152,
+          40
+        ],
+        [
+          1128,
+          10136,
+          32,
+          64,
+          152,
+          40
+        ],
+        [
+          1200,
+          10136,
+          16,
+          88,
+          152,
+          40
+        ],
+        [
+          1112,
+          10144,
+          16,
+          40,
+          152,
+          40
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2156
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        1280,
+        10000,
+        1344,
+        10064
+      ],
+      "sourceRects": [
+        [
+          1280,
+          10000,
+          64,
+          64,
+          0,
+          48
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 505
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        1120,
+        10240,
+        1216,
+        10296
+      ],
+      "sourceRects": [
+        [
+          1120,
+          10240,
+          96,
+          56,
+          144,
+          -64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1073
+    }
+  ]
+}

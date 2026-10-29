@@ -1,0 +1,76 @@
+{
+  "map": "Western Ocean Underground",
+  "image": "western-ocean-underground.png",
+  "walkable": 5333,
+  "inGraph": 0,
+  "excluded": 5333,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2048,
+        9984,
+        2112,
+        10048
+      ],
+      "sourceRects": [
+        [
+          2048,
+          9984,
+          64,
+          64,
+          0,
+          64
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1114
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2240,
+        9792,
+        2304,
+        9920
+      ],
+      "sourceRects": [
+        [
+          2240,
+          9792,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1857
+    },
+    {
+      "plane": 0,
+      "section": "C",
+      "drawnBounds": [
+        1984,
+        9664,
+        2048,
+        9728
+      ],
+      "sourceRects": [
+        [
+          1984,
+          9664,
+          64,
+          64,
+          -64,
+          -192
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 2362
+    }
+  ]
+}

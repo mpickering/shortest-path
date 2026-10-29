@@ -1,0 +1,248 @@
+{
+  "map": "Taverley Underground",
+  "image": "taverley-underground.png",
+  "walkable": 22503,
+  "inGraph": 13780,
+  "excluded": 8723,
+  "walkableWithoutBasemap": 1331,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        2808,
+        9664,
+        3008,
+        10008
+      ],
+      "sourceRects": [
+        [
+          2840,
+          9984,
+          40,
+          24,
+          64,
+          -32
+        ],
+        [
+          2816,
+          9920,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          2880,
+          9920,
+          24,
+          64,
+          0,
+          0
+        ],
+        [
+          2816,
+          9856,
+          128,
+          64,
+          0,
+          0
+        ],
+        [
+          2808,
+          9808,
+          136,
+          48,
+          0,
+          0
+        ],
+        [
+          2808,
+          9800,
+          144,
+          8,
+          0,
+          0
+        ],
+        [
+          2808,
+          9792,
+          168,
+          8,
+          0,
+          0
+        ],
+        [
+          2880,
+          9664,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          2944,
+          9704,
+          56,
+          24,
+          0,
+          0
+        ],
+        [
+          2816,
+          9728,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          2944,
+          9728,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 10980,
+      "excludedDisplayedTiles": 2854
+    },
+    {
+      "plane": 0,
+      "section": "B",
+      "drawnBounds": [
+        2656,
+        9856,
+        2720,
+        9912
+      ],
+      "sourceRects": [
+        [
+          2656,
+          9856,
+          64,
+          56,
+          -1376,
+          -8632
+        ]
+      ],
+      "includedDisplayedTiles": 310,
+      "excludedDisplayedTiles": 1511
+    },
+    {
+      "plane": 1,
+      "section": "A",
+      "drawnBounds": [
+        2816,
+        9856,
+        2944,
+        9984
+      ],
+      "sourceRects": [
+        [
+          2816,
+          9920,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          2816,
+          9856,
+          128,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1143
+    },
+    {
+      "plane": 1,
+      "section": "B",
+      "drawnBounds": [
+        2752,
+        9600,
+        3008,
+        9792
+      ],
+      "sourceRects": [
+        [
+          2944,
+          9728,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          2880,
+          9664,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          2816,
+          9728,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          2752,
+          9600,
+          192,
+          64,
+          0,
+          192
+        ],
+        [
+          2944,
+          9608,
+          32,
+          48,
+          0,
+          192
+        ]
+      ],
+      "includedDisplayedTiles": 2490,
+      "excludedDisplayedTiles": 2033
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        2880,
+        9664,
+        3008,
+        9792
+      ],
+      "sourceRects": [
+        [
+          2944,
+          9728,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          2880,
+          9664,
+          64,
+          128,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 0,
+      "excludedDisplayedTiles": 1182
+    }
+  ]
+}

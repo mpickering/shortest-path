@@ -1,0 +1,110 @@
+{
+  "map": "Misthalin Underground",
+  "image": "misthalin-underground.png",
+  "walkable": 14700,
+  "inGraph": 11540,
+  "excluded": 3160,
+  "walkableWithoutBasemap": 0,
+  "panels": [
+    {
+      "plane": 0,
+      "section": "A",
+      "drawnBounds": [
+        3072,
+        9536,
+        3328,
+        10008
+      ],
+      "sourceRects": [
+        [
+          3104,
+          9984,
+          32,
+          24,
+          0,
+          0
+        ],
+        [
+          3072,
+          9728,
+          64,
+          256,
+          0,
+          0
+        ],
+        [
+          3136,
+          9728,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3200,
+          9728,
+          64,
+          192,
+          0,
+          0
+        ],
+        [
+          3136,
+          9792,
+          64,
+          128,
+          0,
+          0
+        ],
+        [
+          3264,
+          9856,
+          64,
+          64,
+          0,
+          0
+        ],
+        [
+          3072,
+          9536,
+          192,
+          192,
+          0,
+          0
+        ],
+        [
+          3264,
+          9600,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 11116,
+      "excludedDisplayedTiles": 2917
+    },
+    {
+      "plane": 2,
+      "section": "A",
+      "drawnBounds": [
+        3200,
+        9472,
+        3264,
+        9536
+      ],
+      "sourceRects": [
+        [
+          3200,
+          9472,
+          64,
+          64,
+          0,
+          0
+        ]
+      ],
+      "includedDisplayedTiles": 424,
+      "excludedDisplayedTiles": 243
+    }
+  ]
+}

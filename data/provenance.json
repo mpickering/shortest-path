@@ -1,0 +1,10 @@
+{
+  "pluginCommit": "7cad13c5",
+  "collisionZipSha256": "945c6be16e223855ba423ace425a0663d8552d6c9973a972cfea845ae28a1927",
+  "basemap": "https://tiles.collisionlab.world/standard/2746-549df720fe90",
+  "tileVersion": "2746-549df720fe90",
+  "mapCount": 33,
+  "maskCountsVerifiedAgainstAudit": true,
+  "publishedTileHashesVerified": true,
+  "notes": "Green is structural routing-graph membership, not account-specific availability. Red may include unused or instanced floor. No issues created."
+}
