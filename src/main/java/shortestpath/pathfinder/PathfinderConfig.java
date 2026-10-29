@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +63,7 @@ import shortestpath.transport.TransportTypeConfig;
 import shortestpath.requirement.model.TransportItems;
 import shortestpath.requirement.model.VarRequirement;
 import shortestpath.requirement.model.Unlock;
+import shortestpath.sailing.SailingBoat;
 import shortestpath.sailing.SailingService;
 import shortestpath.sailing.SailingState;
 
@@ -292,6 +294,8 @@ public class PathfinderConfig
 	 */
 	@Getter
 	private volatile boolean sailingMoves;
+	/** Whether the player's own boats are sailed: "Sail on boats" on, logged in. */
+	private volatile boolean sailingBoats;
 	/**
 	 * Speed sailing moves are built for: the boat's base speed in tiles per tick, or an estimate when it
 	 * can't be read. Speed boosts are random and temporary, so they are left out.
@@ -457,17 +461,45 @@ public class PathfinderConfig
 	}
 
 	/**
-	 * The player's boats as far as the game shows them. On a boat with sailing moves on, the boat aboard, from the
-	 * sailing snapshot. The boats the player owns and where they are moored are not read yet, so on foot this is
-	 * {@link SailingFleet#NONE}: no boat is assumed to be waiting at any mooring. An account model that knows its boats
-	 * overrides this.
+	 * The player's boats as far as the game shows them, with "Sail on boats" on: each boat they own, from its slot's
+	 * varbits, moored at its dock with its own parts and its hull's base speed; and on a boat, the boat aboard, from
+	 * the sailing snapshot, which is then not at its dock. An account model that knows its boats overrides this.
 	 */
 	protected SailingFleet sailingFleet()
 	{
-		SailingState state = sailing.getState();
-		if (!sailingMoves || !state.hasBoat() || !state.hasBounds() || state.getBoatPoint() == WorldPointUtil.UNDEFINED)
+		if (!sailingBoats)
 		{
 			return SailingFleet.NONE;
+		}
+		SailingState state = sailing.getState();
+		List<SailingVessel> vessels = new ArrayList<>();
+		Map<SailingVessel, Integer> docks = new IdentityHashMap<>();
+		for (SailingBoat boat : state.getBoats())
+		{
+			SailingVessel.Kind kind = boatKind(boat.getType());
+			if (kind == null || boat.getSlot() == state.getBoardedSlot())
+			{
+				continue;
+			}
+			double speed = boat.getBaseSpeed() > 0 ? boat.getBaseSpeed() / 128.0 : SailingMoves.ESTIMATED_SPEED;
+			SailingVessel vessel = SailingVessel.of(kind, speed).withAreas(boat.getSeaAreas());
+			vessels.add(vessel);
+			docks.put(vessel, boat.getDock());
+		}
+		SailingFleet.BoatLocations locations = (mooring, vessel) ->
+		{
+			Integer dock = docks.get(vessel);
+			return dock != null && dock == mooring.dock();
+		};
+		return new SailingFleet(vessels, locations, aboard(state));
+	}
+
+	// The boat the player is aboard, with sailing moves on, or null
+	private SailingFleet.Aboard aboard(SailingState state)
+	{
+		if (!sailingMoves || !state.hasBoat() || !state.hasBounds() || state.getBoatPoint() == WorldPointUtil.UNDEFINED)
+		{
+			return null;
 		}
 		SailingVessel.Kind kind = null;
 		for (SailingVessel.Kind candidate : SailingVessel.Kind.values())
@@ -484,8 +516,23 @@ public class PathfinderConfig
 			state.getBoundsHeight(), sailingSpeed).withAreas(state.getSeaAreas());
 		// One of the 16 headings 128 angle units apart, from the boat's target orientation
 		int heading = state.getHeading() < 0 ? -1 : Math.floorMod((state.getHeading() + 64) / 128, 16);
-		return new SailingFleet(List.of(), SailingFleet.BoatLocations.UNKNOWN,
-			new SailingFleet.Aboard(state.getBoatPoint(), heading, vessel, state.getPivotX(), state.getPivotY()));
+		return new SailingFleet.Aboard(state.getBoatPoint(), heading, vessel, state.getPivotX(), state.getPivotY());
+	}
+
+	// The kind of boat a slot's type varbit names: 0 a raft, 1 a skiff, 2 a sloop; null for any other
+	private static SailingVessel.Kind boatKind(int type)
+	{
+		switch (type)
+		{
+			case 0:
+				return SailingVessel.Kind.RAFT;
+			case 1:
+				return SailingVessel.Kind.SKIFF;
+			case 2:
+				return SailingVessel.Kind.SLOOP;
+			default:
+				return null;
+		}
 	}
 
 	public boolean hasDestination(String destinationType)
@@ -617,12 +664,14 @@ public class PathfinderConfig
 		// stale read (e.g. after logging out aboard a boat) can never keep the
 		// search sailing when there is no boat
 		sailingMoves = false;
+		sailingBoats = false;
 		sailingSpeed = SailingMoves.ESTIMATED_SPEED;
 		sailing.refresh(playerStateSource);
 		if (GameState.LOGGED_IN.equals(playerStateSource.gameState()))
 		{
 			SailingState sailingState = sailing.getState();
 			sailingMoves = sailingState.isAboard() && effective.bool(ConfigKey.USE_SAILING_MOVES);
+			sailingBoats = effective.bool(ConfigKey.USE_SAILING_MOVES);
 			// The game stores the base speed in 1/128ths of a tile per tick; a read above any real
 			// boat's speed is a stale or mis-scaled varbit rather than a fast boat — the moves it
 			// would build are so long nothing can sail them — so estimate instead

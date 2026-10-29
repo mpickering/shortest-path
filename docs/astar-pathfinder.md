@@ -124,7 +124,15 @@ and the `ExtractCollisionMap` workflow makes them again with each new
 collision map, before the routing cuts, whose fingerprint covers the whole
 zip.
 `PathfinderConfig` keeps a sailing transport only when the account has a boat
-of its kind moored where it boards; the live plugin assumes none on foot. Once
+of its kind moored where it boards. The live plugin reads the player's boats
+from their slots' varbits (`SailingService.boats`): each owned boat's type, the
+dock it is moored at (`moorings.tsv`'s `Dock` column, the game's dock ids), its
+hull's base speed and the restricted areas its own parts allow. The fitted
+parts are option numbers in the boat type's lists in the cache's `sailing_boat`
+table: an adamant keel or helm or better for crystal-flecked water and kelp,
+oak and linen sails or better for Tempor Tantrum, the eternal brazier for the
+icy seas, and the inoculation station hotspot for fetid water. The boat the
+player is aboard is the one last boarded, and is not at its dock. Once
 a route is found, `SailingRoutes` fills in each leg's moves for drawing.
 
 Some of the sea is restricted (`SeaArea`): Tempor Tantrum, the northern icy

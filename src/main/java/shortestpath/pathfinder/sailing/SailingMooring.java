@@ -46,11 +46,20 @@ public final class SailingMooring
 	private final Set<Quest> questsStarted;
 	/** The boats that fit; every boat when the source names none. */
 	private final Set<SailingVessel.Kind> vessels;
+	/** The game's id for the dock, which a boat's port varbit holds; -1 if unknown. */
+	private final int dock;
 
 	public SailingMooring(int id, String name, int landTile, int berthTile, DestinationRequirements requirements,
 		Set<Quest> questsStarted, Set<SailingVessel.Kind> vessels)
 	{
+		this(id, name, landTile, berthTile, requirements, questsStarted, vessels, -1);
+	}
+
+	public SailingMooring(int id, String name, int landTile, int berthTile, DestinationRequirements requirements,
+		Set<Quest> questsStarted, Set<SailingVessel.Kind> vessels, int dock)
+	{
 		this.id = id;
+		this.dock = dock;
 		this.name = name;
 		this.landTile = landTile;
 		this.berthTile = berthTile;

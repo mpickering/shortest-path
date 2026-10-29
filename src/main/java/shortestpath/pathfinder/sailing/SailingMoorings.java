@@ -94,8 +94,10 @@ public final class SailingMoorings
 			SkillLevels levels = skills.parse(field(header, fields, "Skills"));
 			DestinationRequirements requirements = new DestinationRequirements(levels,
 				quests(field(header, fields, "Quests")), null, null);
+			String dock = field(header, fields, "Dock");
 			moorings.add(new SailingMooring(moorings.size(), name, land, berth, requirements,
-				quests(field(header, fields, "Quests started")), vessels(field(header, fields, "Vessels"))));
+				quests(field(header, fields, "Quests started")), vessels(field(header, fields, "Vessels")),
+				dock.isEmpty() ? -1 : Integer.parseInt(dock)));
 		}
 		return List.copyOf(moorings);
 	}

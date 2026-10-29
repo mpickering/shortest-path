@@ -77,6 +77,35 @@ public class SailingServiceTest
 	}
 
 	@Test
+	public void eachOwnedBoatIsReadFromItsSlot()
+	{
+		stubVarbits(0, 0, 0, 0);
+		// Slot 1: a skiff at dock 21 with an adamant keel, a mithril helm, wooden sails, the eternal brazier, an
+		// inoculation station and a camphor hull
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_OWNED)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_TYPE)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_PORT)).thenReturn(21);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_KEEL)).thenReturn(4);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_STEERING)).thenReturn(3);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_BRAZIER)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_HOTSPOT_5)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_HULL)).thenReturn(4);
+		// Slot 3: a raft at dock 0 with oak sails and a rune helm; slot 2 is not owned
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_3_OWNED)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_3_SAIL)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_3_STEERING)).thenReturn(5);
+		SailingService service = SailingService.forTesting();
+
+		service.refresh(source());
+
+		assertEquals(java.util.List.of(
+			new SailingBoat(1, 1, 21, java.util.EnumSet.of(SeaArea.CRYSTALLINE, SeaArea.NORTHERN, SeaArea.FETID), 320),
+			new SailingBoat(3, 0, 0, java.util.EnumSet.of(SeaArea.TEMPOR_TANTRUM, SeaArea.KELP), 192)),
+			service.getState().getBoats());
+		assertEquals("not aboard", 0, service.getState().getBoardedSlot());
+	}
+
+	@Test
 	public void theBoardedBoatEntersTheAreasItsPartsResist()
 	{
 		stubVarbits(1, 192, 384, 96);

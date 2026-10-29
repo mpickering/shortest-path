@@ -22,7 +22,7 @@ public class SailingStateTest
 		int boundsX, int boundsY, int boundsWidth, int boundsHeight,
 		int hullConfigId, int boatPoint, int pivotX, int pivotY, int heading)
 	{
-		return new SailingState(aboard, baseSpeed, speedCap, acceleration, SeaArea.NONE,
+		return new SailingState(aboard, baseSpeed, speedCap, acceleration, SeaArea.NONE, java.util.List.of(), 0,
 			hasBoat, hasBounds, boundsX, boundsY, boundsWidth, boundsHeight,
 			hullConfigId, boatPoint, pivotX, pivotY, heading);
 	}
