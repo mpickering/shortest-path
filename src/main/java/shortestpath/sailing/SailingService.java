@@ -1,7 +1,9 @@
 package shortestpath.sailing;
 
 import java.util.EnumMap;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -133,6 +135,78 @@ public class SailingService
 	 */
 	static final int STORM_RESISTANCE_TO_ENTER = 1;
 
+	/**
+	 * Each boat slot's varbits, slot 1 first: whether it is owned, its type, the dock it is moored at, then the option
+	 * fitted in each slot of the boat that decides where it may sail (see {@link #boat}).
+	 */
+	private static final int[][] SLOT_VARBITS = {
+		{VarbitID.SAILING_BOAT_1_OWNED, VarbitID.SAILING_BOAT_1_TYPE, VarbitID.SAILING_BOAT_1_PORT, VarbitID.SAILING_BOAT_1_KEEL, VarbitID.SAILING_BOAT_1_HULL, VarbitID.SAILING_BOAT_1_SAIL, VarbitID.SAILING_BOAT_1_STEERING, VarbitID.SAILING_BOAT_1_BRAZIER, VarbitID.SAILING_BOAT_1_HOTSPOT_5, VarbitID.SAILING_BOAT_1_HOTSPOT_9},
+		{VarbitID.SAILING_BOAT_2_OWNED, VarbitID.SAILING_BOAT_2_TYPE, VarbitID.SAILING_BOAT_2_PORT, VarbitID.SAILING_BOAT_2_KEEL, VarbitID.SAILING_BOAT_2_HULL, VarbitID.SAILING_BOAT_2_SAIL, VarbitID.SAILING_BOAT_2_STEERING, VarbitID.SAILING_BOAT_2_BRAZIER, VarbitID.SAILING_BOAT_2_HOTSPOT_5, VarbitID.SAILING_BOAT_2_HOTSPOT_9},
+		{VarbitID.SAILING_BOAT_3_OWNED, VarbitID.SAILING_BOAT_3_TYPE, VarbitID.SAILING_BOAT_3_PORT, VarbitID.SAILING_BOAT_3_KEEL, VarbitID.SAILING_BOAT_3_HULL, VarbitID.SAILING_BOAT_3_SAIL, VarbitID.SAILING_BOAT_3_STEERING, VarbitID.SAILING_BOAT_3_BRAZIER, VarbitID.SAILING_BOAT_3_HOTSPOT_5, VarbitID.SAILING_BOAT_3_HOTSPOT_9},
+		{VarbitID.SAILING_BOAT_4_OWNED, VarbitID.SAILING_BOAT_4_TYPE, VarbitID.SAILING_BOAT_4_PORT, VarbitID.SAILING_BOAT_4_KEEL, VarbitID.SAILING_BOAT_4_HULL, VarbitID.SAILING_BOAT_4_SAIL, VarbitID.SAILING_BOAT_4_STEERING, VarbitID.SAILING_BOAT_4_BRAZIER, VarbitID.SAILING_BOAT_4_HOTSPOT_5, VarbitID.SAILING_BOAT_4_HOTSPOT_9},
+		{VarbitID.SAILING_BOAT_5_OWNED, VarbitID.SAILING_BOAT_5_TYPE, VarbitID.SAILING_BOAT_5_PORT, VarbitID.SAILING_BOAT_5_KEEL, VarbitID.SAILING_BOAT_5_HULL, VarbitID.SAILING_BOAT_5_SAIL, VarbitID.SAILING_BOAT_5_STEERING, VarbitID.SAILING_BOAT_5_BRAZIER, VarbitID.SAILING_BOAT_5_HOTSPOT_5, VarbitID.SAILING_BOAT_5_HOTSPOT_9}
+	};
+	private static final int OWNED = 0, TYPE = 1, PORT = 2, KEEL = 3, HULL = 4, SAIL = 5, STEERING = 6, BRAZIER = 7,
+		HOTSPOT_5 = 8, HOTSPOT_9 = 9;
+	/** The boat types the router sails, as the slots' type varbit and the sailing_boat table number them. */
+	private static final int RAFT = 0, SKIFF = 1, SLOOP = 2;
+	/** The first keel and helm option, in each boat's option list, that resists crystals and kelp: adamant. */
+	private static final int ADAMANT_OPTION = 4;
+	/**
+	 * Each hull option's base speed, in 1/128ths of a tile per tick, the same for every boat type: wooden, oak, teak,
+	 * mahogany, camphor, ironwood, rosewood (the hull's facility stats in the cache).
+	 */
+	private static final int[] HULL_BASE_SPEEDS = {192, 192, 256, 256, 320, 320, 384};
+
+	/**
+	 * The boats the player owns, from their slots' varbits. The fitted parts are option numbers in the boat type's
+	 * lists in the cache (sailing_boat's keel, sail, steering and brazier options, from 0, and its hotspots' facility
+	 * options, from 1 with 0 for none), which give the restricted areas:
+	 * <ul>
+	 * <li>crystal-flecked water: an adamant keel or better (option 4 on; a raft has no keel);</li>
+	 * <li>tangled kelp: an adamant helm or better (steering option 4 on);</li>
+	 * <li>Tempor Tantrum: oak mast and linen sails or better (sail option 1 on, storm resistance 1 or 2);</li>
+	 * <li>the icy seas: the eternal brazier (brazier option 1);</li>
+	 * <li>fetid water: the inoculation station, the only option of a skiff's hotspot 5 and a sloop's hotspot 9.</li>
+	 * </ul>
+	 */
+	static List<SailingBoat> boats(PlayerStateSource source)
+	{
+		List<SailingBoat> boats = new ArrayList<>();
+		for (int slot = 1; slot <= SLOT_VARBITS.length; slot++)
+		{
+			int[] varbits = SLOT_VARBITS[slot - 1];
+			if (source.varbit(varbits[OWNED]) == 0) continue;
+			int[] values = new int[varbits.length];
+			for (int i = 0; i < varbits.length; i++) values[i] = source.varbit(varbits[i]);
+			boats.add(boat(slot, values));
+		}
+		return boats;
+	}
+
+	// One slot's boat from its varbits' values
+	private static SailingBoat boat(int slot, int[] values)
+	{
+		int type = values[TYPE];
+		Set<SeaArea> areas = EnumSet.noneOf(SeaArea.class);
+		if (type != RAFT && values[KEEL] >= ADAMANT_OPTION) areas.add(SeaArea.CRYSTALLINE);
+		if (values[STEERING] >= ADAMANT_OPTION) areas.add(SeaArea.KELP);
+		if (values[SAIL] >= 1) areas.add(SeaArea.TEMPOR_TANTRUM);
+		if (values[BRAZIER] >= 1) areas.add(SeaArea.NORTHERN);
+		if ((type == SKIFF && values[HOTSPOT_5] == 1) || (type == SLOOP && values[HOTSPOT_9] == 1))
+			areas.add(SeaArea.FETID);
+		int hull = values[HULL];
+		int speed = hull >= 0 && hull < HULL_BASE_SPEEDS.length ? HULL_BASE_SPEEDS[hull] : 0;
+		return new SailingBoat(slot, type, values[PORT], areas, speed);
+	}
+
+	private static boolean isBoatVarbit(int varbitId)
+	{
+		if (varbitId == VarbitID.SAILING_LAST_PERSONAL_BOAT_BOARDED) return true;
+		for (int[] varbits : SLOT_VARBITS) for (int varbit : varbits) if (varbit == varbitId) return true;
+		return false;
+	}
+
 	/** The restricted sea areas the boarded boat's parts let it enter, from the side panel's resistances. */
 	static Set<SeaArea> seaAreas(PlayerStateSource source)
 	{
@@ -173,6 +247,9 @@ public class SailingService
 		int speedCap = loggedIn ? source.varbit(VarbitID.SAILING_SIDEPANEL_BOAT_SPEEDCAP) : 0;
 		int acceleration = loggedIn ? source.varbit(VarbitID.SAILING_SIDEPANEL_BOAT_ACCELERATION) : 0;
 		Set<SeaArea> seaAreas = aboard ? seaAreas(source) : SeaArea.NONE;
+		List<SailingBoat> boats = loggedIn ? boats(source) : List.of();
+		// The slot of the personal boat last boarded: the one aboard, while aboard, which is then not at its dock
+		int boardedSlot = aboard ? source.varbit(VarbitID.SAILING_LAST_PERSONAL_BOAT_BOARDED) : 0;
 
 		Player localPlayer = !loggedIn || client == null ? null : client.getLocalPlayer();
 		WorldEntity boat = localPlayer == null ? null : WorldPointUtil.boat(client, localPlayer);
@@ -196,7 +273,7 @@ public class SailingService
 			: (boatLp.getY() & (Perspective.LOCAL_TILE_SIZE - 1)) - Perspective.LOCAL_HALF_TILE_SIZE;
 		int heading = boat == null ? -1 : boat.getTargetOrientation();
 
-		publish(new SailingState(aboard, baseSpeed, speedCap, acceleration, seaAreas,
+		publish(new SailingState(aboard, baseSpeed, speedCap, acceleration, seaAreas, boats, boardedSlot,
 			hasBoat, hasBounds, boundsX, boundsY, boundsWidth, boundsHeight,
 			hullConfigId, boatPoint, pivotX, pivotY, heading));
 	}
@@ -225,7 +302,8 @@ public class SailingService
 			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_BASESPEED
 			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_SPEEDCAP
 			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_ACCELERATION
-			&& !AREA_VARBITS.containsValue(varbitId))
+			&& !AREA_VARBITS.containsValue(varbitId)
+			&& !isBoatVarbit(varbitId))
 		{
 			return;
 		}
