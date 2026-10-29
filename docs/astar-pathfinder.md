@@ -142,8 +142,10 @@ straight line between the berths, less the docking range at each end, at the
 boat's top speed. So the tables grow
 with the moorings, not with the ways a boat can be fitted out. `PathfinderConfig`
 prices each leg for the account's boat, and drops one where no water the boat
-may enter joins where it casts off to where it docks. The live plugin doesn't read a boat's parts yet, so it
-takes the boat the player is aboard to have them all.
+may enter joins where it casts off to where it docks. For the boat the player is aboard, the live plugin reads
+its parts from the side panel's resistances (`SailingService.seaAreas`): one each for fetid, crystal-flecked,
+kelp and icy water, and a storm resistance level for Tempor Tantrum, where any level above none is taken to be
+enough (not yet checked in game).
 
 A start aboard a boat, targets at sea, and legs between moorings timed for
 another boat attach to the search through `SeaEnds` links: from the start to
