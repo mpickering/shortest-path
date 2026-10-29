@@ -1,5 +1,8 @@
 package shortestpath.sailing;
 
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -34,7 +37,7 @@ import shortestpath.settings.Effect;
  * <p>The producer contract mirrors the other domain services: capture happens
  * at refresh, and change facts are minted at observation points and declared
  * to the injected {@link RefreshCoordinator} — {@link #onVarbitChanged} is
- * the observation arm, re-capturing on the four sailing varbit events and
+ * the observation arm, re-capturing on the sailing varbit events and
  * declaring a {@link SailingChange} only when the route-relevant fields
  * moved. Capture only ever reads; nothing here writes back to the
  * engine.
@@ -114,11 +117,42 @@ public class SailingService
 	}
 
 	/**
+	 * The side panel's resistance varbits, by the restricted sea area each lets the boarded boat enter: each is set
+	 * when the boat has the part the area needs (an inoculation station, an adamant keel, an adamant helm, an eternal
+	 * brazier). Tempor Tantrum's is a level, the mast and sails' tier; see {@link #STORM_RESISTANCE_TO_ENTER}.
+	 */
+	private static final Map<SeaArea, Integer> AREA_VARBITS = new EnumMap<>(Map.of(
+		SeaArea.FETID, VarbitID.SAILING_SIDEPANEL_BOAT_FETIDWATER_RESISTANT,
+		SeaArea.CRYSTALLINE, VarbitID.SAILING_SIDEPANEL_BOAT_CRYSTALFLECKED_RESISTANT,
+		SeaArea.KELP, VarbitID.SAILING_SIDEPANEL_BOAT_TANGLEDKELP_RESISTANT,
+		SeaArea.NORTHERN, VarbitID.SAILING_SIDEPANEL_BOAT_ICYSEAS_RESISTANT,
+		SeaArea.TEMPOR_TANTRUM, VarbitID.SAILING_SIDEPANEL_BOAT_STORMRESISTANCE));
+	/**
+	 * The storm resistance a boat needs to sail Tempor Tantrum's stormy seas: the wiki asks for oak and linen sails or
+	 * better, and the plain wooden ones are taken to resist nothing. Not yet checked in game.
+	 */
+	static final int STORM_RESISTANCE_TO_ENTER = 1;
+
+	/** The restricted sea areas the boarded boat's parts let it enter, from the side panel's resistances. */
+	static Set<SeaArea> seaAreas(PlayerStateSource source)
+	{
+		Set<SeaArea> areas = EnumSet.noneOf(SeaArea.class);
+		AREA_VARBITS.forEach((area, varbit) ->
+		{
+			int needed = area == SeaArea.TEMPOR_TANTRUM ? STORM_RESISTANCE_TO_ENTER : 1;
+			if (source.varbit(varbit) >= needed) areas.add(area);
+		});
+		return areas;
+	}
+
+	/**
 	 * Captures the sailing inputs into one immutable snapshot and publishes
-	 * it. The varbit side reads all four sailing varbits whenever the source
+	 * it. The varbit side reads the sailing varbits whenever the source
 	 * reports {@link GameState#LOGGED_IN} — deliberately not gated on the
 	 * aboard flag, since the side-panel reads are unconditional today —
-	 * and clears to zero otherwise, matching the existing reset. The entity
+	 * and clears to zero otherwise, matching the existing reset; only the
+	 * resistances are read aboard alone, as they describe the boarded boat.
+	 * The entity
 	 * side resolves the boat, its hull bounds, packed point, in-tile pivot
 	 * and target orientation through the {@link WorldPointUtil} statics; it
 	 * runs only while the source reports {@link GameState#LOGGED_IN}, since
@@ -138,6 +172,7 @@ public class SailingService
 		int baseSpeed = loggedIn ? source.varbit(VarbitID.SAILING_SIDEPANEL_BOAT_BASESPEED) : 0;
 		int speedCap = loggedIn ? source.varbit(VarbitID.SAILING_SIDEPANEL_BOAT_SPEEDCAP) : 0;
 		int acceleration = loggedIn ? source.varbit(VarbitID.SAILING_SIDEPANEL_BOAT_ACCELERATION) : 0;
+		Set<SeaArea> seaAreas = aboard ? seaAreas(source) : SeaArea.NONE;
 
 		Player localPlayer = !loggedIn || client == null ? null : client.getLocalPlayer();
 		WorldEntity boat = localPlayer == null ? null : WorldPointUtil.boat(client, localPlayer);
@@ -161,13 +196,13 @@ public class SailingService
 			: (boatLp.getY() & (Perspective.LOCAL_TILE_SIZE - 1)) - Perspective.LOCAL_HALF_TILE_SIZE;
 		int heading = boat == null ? -1 : boat.getTargetOrientation();
 
-		publish(new SailingState(aboard, baseSpeed, speedCap, acceleration,
+		publish(new SailingState(aboard, baseSpeed, speedCap, acceleration, seaAreas,
 			hasBoat, hasBounds, boundsX, boundsY, boundsWidth, boundsHeight,
 			hullConfigId, boatPoint, pivotX, pivotY, heading));
 	}
 
 	/**
-	 * Consumes a varbit event: one of the four sailing varbits re-captures
+	 * Consumes a varbit event: one of the sailing varbits re-captures
 	 * and publishes a fresh snapshot, then declares a {@link SailingChange}
 	 * carrying {@link Effect#ROUTE_INVALIDATING} when the new state differs
 	 * on any route-relevant field — boarding or disembarking changes whether
@@ -189,7 +224,8 @@ public class SailingService
 		if (varbitId != VarbitID.SAILING_BOARDED_BOAT
 			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_BASESPEED
 			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_SPEEDCAP
-			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_ACCELERATION)
+			&& varbitId != VarbitID.SAILING_SIDEPANEL_BOAT_ACCELERATION
+			&& !AREA_VARBITS.containsValue(varbitId))
 		{
 			return;
 		}

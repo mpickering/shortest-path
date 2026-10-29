@@ -77,6 +77,42 @@ public class SailingServiceTest
 	}
 
 	@Test
+	public void theBoardedBoatEntersTheAreasItsPartsResist()
+	{
+		stubVarbits(1, 192, 384, 96);
+		when(client.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_FETIDWATER_RESISTANT)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_STORMRESISTANCE)).thenReturn(2);
+		SailingService service = SailingService.forTesting();
+
+		service.refresh(source());
+
+		assertEquals(java.util.EnumSet.of(SeaArea.FETID, SeaArea.TEMPOR_TANTRUM), service.getState().getSeaAreas());
+	}
+
+	@Test
+	public void aBoatWithoutPartsEntersNoRestrictedArea()
+	{
+		stubVarbits(1, 192, 384, 96);
+		SailingService service = SailingService.forTesting();
+
+		service.refresh(source());
+
+		assertEquals(SeaArea.NONE, service.getState().getSeaAreas());
+	}
+
+	@Test
+	public void theResistancesAreOnlyReadAboard()
+	{
+		stubVarbits(0, 192, 384, 96);
+		when(client.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_ICYSEAS_RESISTANT)).thenReturn(1);
+		SailingService service = SailingService.forTesting();
+
+		service.refresh(source());
+
+		assertEquals(SeaArea.NONE, service.getState().getSeaAreas());
+	}
+
+	@Test
 	public void detachedInstanceCapturesVarbitsButNoEntityState()
 	{
 		stubVarbits(1, 192, 384, 96);
@@ -312,6 +348,23 @@ public class SailingServiceTest
 		SailingChange change = captor.getValue();
 		assertEquals("varbit:" + VarbitID.SAILING_BOARDED_BOAT, change.getKey());
 		assertTrue(change.getEffects().contains(Effect.ROUTE_INVALIDATING));
+	}
+
+	@Test
+	public void fittingAPartDeclaresARouteInvalidatingFact()
+	{
+		stubVarbits(1, 192, 384, 96);
+		RefreshCoordinator coordinator = mock(RefreshCoordinator.class);
+		SailingService service = SailingService.forTesting(client, coordinator);
+		service.refresh(source());
+
+		// The route keeps out of water the boat's parts don't let it into, so a new part is material.
+		when(client.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_CRYSTALFLECKED_RESISTANT)).thenReturn(1);
+		service.onVarbitChanged(VarbitID.SAILING_SIDEPANEL_BOAT_CRYSTALFLECKED_RESISTANT);
+
+		ArgumentCaptor<SailingChange> captor = ArgumentCaptor.forClass(SailingChange.class);
+		verify(coordinator).sailingChanged(captor.capture());
+		assertTrue(captor.getValue().getEffects().contains(Effect.ROUTE_INVALIDATING));
 	}
 
 	@Test
