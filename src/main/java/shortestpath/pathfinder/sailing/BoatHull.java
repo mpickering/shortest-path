@@ -43,8 +43,8 @@ public final class BoatHull
 	private final int boundsWidth;
 	private final int boundsHeight;
 	// Where the boat sits within its tile, in local units from the tile's centre
-	private final int pivotX;
-	private final int pivotY;
+	@Getter @Accessors(fluent = true) private final int pivotX;
+	@Getter @Accessors(fluent = true) private final int pivotY;
 
 	// Tiles the hull covers, relative to the tile it starts on: {first row, then each row's first and last column}.
 	// Concurrent: the search fills it on the pathfinding thread while the client thread's arrival

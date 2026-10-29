@@ -1,29 +1,32 @@
 package shortestpath.pathfinder.sailing;
 
+import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import net.runelite.api.Quest;
 import net.runelite.api.Skill;
-import shortestpath.PrimitiveIntList;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
-import shortestpath.pathfinder.TestWorldData;
+import shortestpath.pathfinder.SplitFlagMap;
 import shortestpath.sailing.SeaArea;
 
 /**
- * Writes the sailing transports ({@link SailingTransports}): for each boat kind at {@link SailingTransports#SPEED},
- * the ticks from casting off at each mooring to docking at every other mooring it can, from searches by cost over the whole sea
- * per berth; and the sea each kind reaches from them, in components ({@link SailingReach}). Run it with the
- * {@code sailingTimes} task whenever the collision map, the moorings or the sailing moves change;
- * {@code SailingTransportsTest} says when the committed files are stale.
+ * Writes the sailing data, from the collision map and the moorings: the collision map's sailing layer
+ * ({@link SailingLayerBuilder}: the sea, and each boat kind's pieces of it), then the sailing transports
+ * ({@link SailingTransports}): for each boat kind at {@link SailingTransports#SPEED}, the ticks from casting off at
+ * each mooring to docking at every other mooring it can, from one search by cost over the whole sea per berth. Run it
+ * with the {@code sailingTimes} task whenever the collision map, the moorings or the sailing moves change, before the
+ * routing cuts (whose fingerprint covers the whole collision map); {@code SailingTransportsTest} says when the
+ * committed data is stale.
  * <p>
  * Each berth is searched once per kind, with every restricted {@link SeaArea} the kind can be fitted for open, and
  * each row names the areas its leg sails through: for a boat with those parts at that speed the row's time is the
@@ -38,8 +41,21 @@ public final class SailingTimesGenerator
 	public static void main(String[] args) throws Exception
 	{
 		Path resources = Path.of(args.length > 0 ? args[0] : "src/main/resources");
+		Path zipPath = resources.resolve("collision-map.zip");
+		byte[] zip = Files.readAllBytes(zipPath);
 		List<SailingMooring> moorings = SailingMoorings.all();
-		CollisionMap shared = new CollisionMap(TestWorldData.map());
+		long started = System.nanoTime();
+		String fingerprint = SailingTransports.fingerprint(zip, moorings);
+		int threads = Math.max(1, Runtime.getRuntime().availableProcessors());
+		SortedMap<String, byte[]> layer = SailingLayerBuilder.build(SplitFlagMap.fromZip(new ByteArrayInputStream(zip)),
+			moorings, fingerprint, threads);
+		byte[] written = SailingLayerBuilder.withLayer(zip, layer);
+		Files.write(zipPath, written);
+		System.err.printf("wrote %s (%d KB) at %.1f s%n", zipPath, written.length / 1024, (System.nanoTime() - started) / 1e9);
+
+		SplitFlagMap flags = SplitFlagMap.fromZip(new ByteArrayInputStream(written));
+		CollisionMap shared = new CollisionMap(flags);
+		SailingWaters waters = SailingWaters.of(shared);
 		// Moorings whose land tile is blocked can be neither boarded nor landed at
 		List<SailingMooring> usable = new ArrayList<>();
 		for (SailingMooring mooring : moorings)
@@ -48,30 +64,20 @@ public final class SailingTimesGenerator
 			if (!shared.isBlocked(WorldPointUtil.unpackWorldX(land), WorldPointUtil.unpackWorldY(land),
 				WorldPointUtil.unpackWorldPlane(land))) usable.add(mooring);
 		}
-		// The sea and each hull's part of it, made once before the searches share them
-		SailingWaters.prepare(shared);
-		String fingerprint = SailingTransports.fingerprint(moorings);
-		long started = System.nanoTime();
-		SailingReach.Builder reach = new SailingReach.Builder(fingerprint);
-		ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, Runtime.getRuntime().availableProcessors() / 2));
+		ExecutorService pool = Executors.newFixedThreadPool(Math.max(1, threads / 2));
 		try
 		{
 			for (SailingVessel.Kind kind : SailingVessel.Kind.values())
 			{
 				SailingVessel vessel = SailingVessel.of(kind, SailingTransports.SPEED);
-				List<Future<Object[]>> rows = new ArrayList<>();
+				List<Future<String>> rows = new ArrayList<>();
 				for (SailingMooring from : usable)
 				{
-					if (from.fits(vessel)) rows.add(pool.submit(() -> legsFrom(vessel, from, usable)));
+					if (from.fits(vessel))
+						rows.add(pool.submit(() -> legsFrom(new CollisionMap(flags), waters, vessel, from, usable)));
 				}
 				StringBuilder file = new StringBuilder(SailingTransports.header(fingerprint));
-				for (Future<Object[]> row : rows)
-				{
-					Object[] legs = row.get();
-					file.append((String) legs[0]);
-					reach.addMooring(kind, (SailingMooring) legs[2], (int[]) legs[1]);
-				}
-				pockets(vessel.withAreas(SeaArea.ALL), reach);
+				for (Future<String> row : rows) file.append(row.get());
 				Path out = resources.resolve(SailingTransports.resource(kind).substring(1));
 				Files.writeString(out, file.toString(), StandardCharsets.UTF_8);
 				System.err.printf("wrote %s at %.1f s%n", out, (System.nanoTime() - started) / 1e9);
@@ -81,24 +87,18 @@ public final class SailingTimesGenerator
 		{
 			pool.shutdownNow();
 		}
-		Path out = resources.resolve(SailingReach.RESOURCE.substring(1));
-		Files.write(out, reach.build().write());
-		System.err.printf("wrote %s at %.1f s%n", out, (System.nanoTime() - started) / 1e9);
 	}
 
-	// The rows for the moorings a boat leaving from's berth can dock at, the tiles its moves end on with every area
-	// open, and the mooring
-	private static Object[] legsFrom(SailingVessel vessel, SailingMooring from, List<SailingMooring> moorings)
+	// The rows for the moorings a boat leaving from's berth can dock at
+	private static String legsFrom(CollisionMap map, SailingWaters waters, SailingVessel vessel, SailingMooring from,
+		List<SailingMooring> moorings)
 	{
-		CollisionMap map = new CollisionMap(TestWorldData.map());
-		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
 		List<SailingMooring> exits = new ArrayList<>();
 		for (SailingMooring to : moorings)
 		{
 			if (to != from && to.fits(vessel)) exits.add(to);
 		}
-		PrimitiveIntList reached = new PrimitiveIntList(1 << 20);
-		List<Object[]> legs = search(map, waters, vessel.withAreas(SeaArea.ALL), from, exits, reached);
+		List<Object[]> legs = search(map, waters, vessel.withAreas(SeaArea.ALL), from, exits);
 		StringBuilder rows = new StringBuilder("# " + from.name() + "\n");
 		for (int i = 0; i < exits.size(); i++)
 		{
@@ -111,74 +111,15 @@ public final class SailingTimesGenerator
 				.append(SailingMooring.BOARD_TICKS + (int) legs.get(i)[1] + SailingMooring.DISEMBARK_TICKS).append('\t')
 				.append(to.name()).append('\n');
 		}
-		int[] tiles = new int[reached.size()];
-		for (int i = 0; i < tiles.length; i++) tiles[i] = reached.get(i);
-		return new Object[] {rows.toString(), tiles, from};
+		return rows.toString();
 	}
 
 	/**
-	 * The tiles reached from each pocket of water {@code vessel} can sail that no mooring's boat reaches: a search from
-	 * a tile of the pocket, then from a tile no search has reached yet, until every tile the boat can end a move on has
-	 * been reached by one. A pocket's search goes no further than the moorings' tiles: beyond them, what they reach.
-	 */
-	private static void pockets(SailingVessel vessel, SailingReach.Builder reach)
-	{
-		CollisionMap map = new CollisionMap(TestWorldData.map());
-		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
-		BoatHull hull = vessel.hull(0, 0);
-		java.util.function.IntPredicate landing = waters.landing(map, vessel, hull);
-		PrimitiveIntList unreached = new PrimitiveIntList(1 << 16);
-		// Only tiles the boat can be on: one whose hull overlaps a blocked tile facing every way is no state at all
-		waters.forEachTile(tile ->
-		{
-			if (landing.test(tile) && !reach.reached(vessel.kind(), tile) && hull.fits(map,
-				WorldPointUtil.unpackWorldX(tile), WorldPointUtil.unpackWorldY(tile), WorldPointUtil.unpackWorldPlane(tile)))
-				unreached.add(tile);
-		});
-		int pockets = 0;
-		for (int i = 0; i < unreached.size(); i++)
-		{
-			int start = unreached.get(i);
-			if (reach.reached(vessel.kind(), start)) continue;
-			PrimitiveIntList tiles = new PrimitiveIntList(64), edges = new PrimitiveIntList(16);
-			tiles.add(start);
-			SailingQuery query = new SailingQuery(start, -1, vessel.moves(), hull, SailingObjective.TICKS, new int[0],
-				new int[0], List.of(), SailingQuery.EdgeGate.NONE).landingOn(tile ->
-				{
-					if (!landing.test(tile)) return false;
-					if (!reach.reachedFromMooring(vessel.kind(), tile)) return true;
-					// The moorings' water: what they reach, the pocket's boat reaches from here, so no further
-					edges.add(tile);
-					return false;
-				});
-			SailingSolver solver = new SailingSolver(map, query);
-			solver.advance(Integer.MAX_VALUE, () -> false, new SailingSolver.Listener()
-			{
-				@Override
-				public boolean settled(int node, int tile, int cost)
-				{
-					tiles.add(tile);
-					return true;
-				}
-			});
-			solver.release();
-			int[] pocket = new int[tiles.size()];
-			for (int t = 0; t < pocket.length; t++) pocket[t] = tiles.get(t);
-			int[] came = new int[edges.size()];
-			for (int t = 0; t < came.length; t++) came[t] = edges.get(t);
-			reach.addPocket(vessel.kind(), pocket, came);
-			pockets++;
-		}
-		System.err.printf("%s: %d pockets no mooring reaches, %d tiles%n", vessel.kind(), pockets, unreached.size());
-	}
-
-	/**
-	 * One search by cost from where {@code vessel} casts off at {@code from}, adding every tile a move ends on to
-	 * {@code reached}. Per exit, in order: the restricted areas its leg sails through and its ticks, or {@code null}
-	 * if the boat can't dock there.
+	 * One search by cost from where {@code vessel} casts off at {@code from}. Per exit, in order: the restricted areas
+	 * its leg sails through and its ticks, or {@code null} if the boat can't dock there.
 	 */
 	private static List<Object[]> search(CollisionMap map, SailingWaters waters, SailingVessel vessel,
-		SailingMooring from, List<SailingMooring> exits, PrimitiveIntList reached)
+		SailingMooring from, List<SailingMooring> exits)
 	{
 		BoatHull hull = vessel.hull(0, 0);
 		// The boat casts off anywhere in docking range of the berth it fits, facing any way; every move ends on sea its
@@ -190,13 +131,6 @@ public final class SailingTimesGenerator
 		List<Object[]> legs = new ArrayList<>(java.util.Collections.nCopies(exits.size(), null));
 		solver.advance(Integer.MAX_VALUE, () -> false, new SailingSolver.Listener()
 		{
-			@Override
-			public boolean settled(int node, int tile, int cost)
-			{
-				reached.add(tile);
-				return true;
-			}
-
 			@Override
 			public boolean exit(int exit, int node)
 			{

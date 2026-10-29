@@ -886,7 +886,7 @@ public class PathfinderConfig
 		requirements = new Requirements(context, policy, requirementHooks);
 		// Sailing between moorings needs a boat of the transport's kind moored where it boards, and takes that boat's time
 		SailingFleet fleet = sailingFleet();
-		SailingWaters waters = fleet.vessels().isEmpty() ? null : SailingWaters.of(getMap(), SailingMoorings.all());
+		SailingWaters waters = fleet.vessels().isEmpty() ? null : SailingWaters.of(getMap());
 		TransportAvailability.Builder withoutBank = new TransportAvailability.Builder(allTransports.length);
 		TransportAvailability.Builder withBank = new TransportAvailability.Builder(allTransports.length);
 		for (Transport transport : allTransports)

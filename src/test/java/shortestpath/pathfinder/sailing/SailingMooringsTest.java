@@ -36,7 +36,7 @@ public class SailingMooringsTest
 	{
 		CollisionMap map = new CollisionMap(TestWorldData.map());
 		List<SailingMooring> moorings = SailingMoorings.all();
-		SailingWaters sea = SailingWaters.of(map, moorings);
+		SailingWaters sea = SailingWaters.of(map);
 		for (SailingMooring mooring : moorings)
 		{
 			int land = mooring.landTile();
@@ -59,7 +59,7 @@ public class SailingMooringsTest
 	public void theSeaIsWaterNotLand()
 	{
 		CollisionMap map = new CollisionMap(TestWorldData.map());
-		SailingWaters sea = SailingWaters.of(map, SailingMoorings.all());
+		SailingWaters sea = SailingWaters.of(map);
 		assertTrue(sea.contains(point(3045, 3180)));
 		assertTrue("the Mudskipper Point dive site", sea.contains(point(2979, 3085)));
 		assertTrue("past the Elid Delta islands", sea.contains(point(3273, 2738)));
@@ -68,11 +68,12 @@ public class SailingMooringsTest
 		assertFalse("Dognose Island's mooring", sea.contains(point(3060, 2638)));
 		assertTrue(sea.tileCount() > 1_000_000);
 		List<SailingMooring> moorings = SailingMoorings.all();
-		int[] sarim = sea.berthBodies(byName(moorings, "Port Sarim"));
-		assertEquals(1, sarim.length);
-		assertEquals("Port Sarim and Dognose Island are on the same sea", sarim[0],
-			sea.berthBodies(byName(moorings, "Dognose Island"))[0]);
-		assertEquals(sarim[0], sea.body(point(2979, 3085)));
+		SailingVessel raft = SailingVessel.of(SailingVessel.Kind.RAFT, SailingTransports.SPEED)
+			.withAreas(shortestpath.sailing.SeaArea.ALL);
+		int[] sarim = sea.castOff(map, byName(moorings, "Port Sarim"), raft);
+		assertTrue("Port Sarim and Dognose Island are on the same sea", sea.connects(raft, raft.hull(0, 0), sarim,
+			sea.dockingTiles(byName(moorings, "Dognose Island"))));
+		assertTrue(sea.connects(raft, raft.hull(0, 0), sarim, SailingWaters.tilesNear(point(2979, 3085), 1)));
 	}
 
 	@Test(expected = IllegalStateException.class)

@@ -30,9 +30,9 @@ import shortestpath.transport.Transport;
  * time as far as its bound needs, and only once nothing cheaper is left; the crossings from one berth share that
  * search.
  * <p>
- * A link the boat can't sail is never offered, so no search runs to find that out: the moorings whose boats reach
- * each tile ({@link SailingReach}) tell a channel its hull can't get through, and the pieces of sea
- * ({@link SailingWaters#connects}) a restricted area its parts don't let it enter.
+ * A link the boat can't sail is never offered, so no search runs to find that out: the pieces of its kind's sea
+ * ({@link SailingWaters#connects}), made with the collision map, tell a channel its hull can't get through and a
+ * restricted area its parts don't let it enter.
  */
 public final class SailingSeaEnds implements SeaEnds
 {
@@ -93,7 +93,7 @@ public final class SailingSeaEnds implements SeaEnds
 		SailingQuery.EdgeGate gate)
 	{
 		this.map = map;
-		this.waters = SailingWaters.of(map, SailingMoorings.all());
+		this.waters = SailingWaters.of(map);
 		this.seaTargets = seaTargets.clone();
 		this.gate = gate;
 		this.fleet = capability.fleet();
@@ -111,19 +111,19 @@ public final class SailingSeaEnds implements SeaEnds
 		{
 			SailingVessel vessel = aboard.vessel();
 			BoatHull hull = vessel.hull(aboard.pivotX(), aboard.pivotY());
-			int[] pieces = piecesOf(startTiles);
 			List<Integer> links = new ArrayList<>();
 			for (SailingMooring mooring : landable)
 			{
-				if (!capability.canDock(mooring, vessel) || !opensOnto(mooring, startTiles)) continue;
-				if (!reaches(vessel, hull, pieces, mooring)) continue;
+				if (!capability.canDock(mooring, vessel)) continue;
+				// Beyond a channel the hull can't get through or water it can't enter: no search would dock
+				if (!waters.connects(vessel, hull, startTiles, waters.dockingTiles(mooring))) continue;
 				int bound = SailingMooring.DISEMBARK_TICKS
 					+ ticks(vessel, distance(startTiles, mooring.berthTile()) - SailingMooring.DOCKING_RANGE);
 				links.add(add(START, mooring, vessel, hull, aboard.heading(), bound));
 			}
 			startLinks = links.stream().mapToInt(Integer::intValue).toArray();
 			int bound = targetBound(vessel, hull, startTiles);
-			if (bound != NO_LINK && reachesATarget(vessel, hull, startTiles, null, pieces))
+			if (bound != NO_LINK && reachesATarget(vessel, hull, startTiles))
 				directLink = add(DIRECT, null, vessel, hull, aboard.heading(), bound);
 		}
 		if (this.seaTargets.length > 0)
@@ -138,7 +138,7 @@ public final class SailingSeaEnds implements SeaEnds
 					int sailed = targetBound(vessel, hull, castOff);
 					if (sailed == NO_LINK) continue;
 					// Beyond a channel the hull can't get through or water it can't enter: no search would arrive
-					if (!reachesATarget(vessel, hull, castOff, mooring, piecesOf(castOff))) continue;
+					if (!reachesATarget(vessel, hull, castOff)) continue;
 					// Round the land between, cell by cell over the hull's own water
 					int cells = cellTicks(vessel, hull, castOff);
 					if (cells == NO_LINK) continue;
@@ -600,21 +600,13 @@ public final class SailingSeaEnds implements SeaEnds
 		return nearest == null ? EMPTY : waters.castOff(map, nearest, vessel);
 	}
 
-	// The pieces of sea the tiles lie in
-	private int[] piecesOf(int[] tiles)
-	{
-		java.util.Set<Integer> pieces = new java.util.TreeSet<>();
-		for (int tile : tiles) pieces.add(waters.piece(tile));
-		return pieces.stream().mapToInt(Integer::intValue).toArray();
-	}
-
 	/**
 	 * A bound on the ticks from the tiles {@code from} to arriving at a target, from the hull's coarse water grids (see
 	 * {@link SeaGrid}), or {@link #NO_LINK} if they join no target.
 	 */
 	private int cellTicks(SailingVessel vessel, BoatHull hull, int[] from)
 	{
-		HullSea sea = waters.forHull(map, hull);
+		HullSea sea = waters.forHull(map, vessel, hull);
 		short[][] distances = arrivalCells.computeIfAbsent(sea, key ->
 		{
 			short[][] least = null;
@@ -658,70 +650,31 @@ public final class SailingSeaEnds implements SeaEnds
 	}
 
 	/**
-	 * Whether a boat setting out from the tiles {@code from} — where it casts off from {@code mooring}, if not null —
-	 * in {@code pieces} can arrive at some target: one its kind's boats can sail to from there, by pieces of sea its
-	 * parts let it enter. Never false for a boat that can.
+	 * Whether a boat setting out from the tiles {@code from} might arrive at some target: by pieces of its kind's sea
+	 * its parts let it enter ({@link SailingWaters#connects}). Never false for a boat that can.
 	 */
-	private boolean reachesATarget(SailingVessel vessel, BoatHull hull, int[] from, SailingMooring mooring, int[] pieces)
+	private boolean reachesATarget(SailingVessel vessel, BoatHull hull, int[] from)
 	{
-		if (vessel.kind() != null && hull != null)
-		{
-			SailingReach reach = SailingReach.load();
-			boolean may = mooring != null && reach.mayReachFrom(vessel.kind(), mooring, seaTargets, arrivalReach(hull));
-			for (int i = 0; i < from.length && !may && mooring == null; i++)
-				may = reach.mayReach(vessel.kind(), from[i], seaTargets, arrivalReach(hull));
-			if (!may) return false;
-		}
+		return waters.connects(vessel, hull, from, arrivalTiles(hull));
+	}
+
+	// The tiles a boat with hull can be on to arrive at a target
+	private int[] arrivalTiles(BoatHull hull)
+	{
 		java.util.Set<Integer> near = new java.util.TreeSet<>();
-		for (int target : seaTargets) for (int piece : waters.piecesNear(target, arrivalReach(hull))) near.add(piece);
-		return !near.isEmpty() && waters.connects(vessel, pieces, near.stream().mapToInt(Integer::intValue).toArray());
+		for (int target : seaTargets) for (int tile : SailingWaters.tilesNear(target, arrivalReach(hull))) near.add(tile);
+		return near.stream().mapToInt(Integer::intValue).toArray();
 	}
 
-	/** Whether a boat setting out from the start, from {@code pieces}, can dock at {@code mooring}; see above. */
-	private boolean reaches(SailingVessel vessel, BoatHull hull, int[] pieces, SailingMooring mooring)
-	{
-		if (vessel.kind() != null && hull != null)
-		{
-			boolean may = false;
-			for (int i = 0; i < startTiles.length && !may; i++)
-				may = SailingReach.load().mayReach(vessel.kind(), startTiles[i], new int[] {mooring.berthTile()},
-					SailingMooring.DOCKING_RANGE);
-			if (!may) return false;
-		}
-		return waters.connects(vessel, pieces, waters.dockingPieces(mooring));
-	}
-
-	// The straight line from the tiles from to the nearest target on the same body of water, at top speed, or NO_LINK
-	// with none there
+	// The straight line from the tiles from to the nearest target, at top speed, or NO_LINK with no target
 	private int targetBound(SailingVessel vessel, BoatHull hull, int[] from)
 	{
 		double least = Double.MAX_VALUE;
 		for (int tile : from)
 		{
-			for (int target : seaTargets)
-			{
-				if (waters.body(target) != waters.body(tile)) continue;
-				least = Math.min(least, distance(tile, target) - arrivalReach(hull));
-			}
+			for (int target : seaTargets) least = Math.min(least, distance(tile, target) - arrivalReach(hull));
 		}
 		return least == Double.MAX_VALUE ? NO_LINK : ticks(vessel, least);
-	}
-
-	// Whether mooring's berth opens onto the water of one of the tiles
-	private boolean opensOnto(SailingMooring mooring, int[] tiles)
-	{
-		for (int opens : bodies(mooring))
-		{
-			for (int tile : tiles) if (opens == 0 || opens == waters.body(tile)) return true;
-		}
-		return false;
-	}
-
-	// The bodies a berth opens onto; 0 for any when the sea was not made with it
-	private int[] bodies(SailingMooring mooring)
-	{
-		int[] opens = waters.berthBodies(mooring);
-		return opens == null ? new int[] {0} : opens;
 	}
 
 	private static int ticks(SailingVessel vessel, double tiles)

@@ -90,6 +90,13 @@ public final class SailingVessel
 		return new SailingVessel(kind, boundsX, boundsY, boundsWidth, boundsHeight, speed, areas);
 	}
 
+	/** Whether the boat is of a standard kind, with that kind's bounds. */
+	public boolean standard()
+	{
+		return kind != null && boundsX == kind.boundsX && boundsY == kind.boundsY && boundsWidth == kind.boundsWidth
+			&& boundsHeight == kind.boundsHeight;
+	}
+
 	/** Whether the boat may sail into {@code area}; {@code null} is open water. */
 	public boolean canEnter(SeaArea area)
 	{
