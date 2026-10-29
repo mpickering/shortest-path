@@ -39,7 +39,6 @@ import javax.swing.JPanel;
 import javax.swing.ListCellRenderer;
 import javax.swing.JScrollPane;
 import javax.swing.JSpinner;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
@@ -681,21 +680,21 @@ public class ShortestPathPanelLayoutTest
 
 
 	@Test
-	public void numberBoxesKeepTheirLimits()
+	public void numberSettingsKeepTheirLimits() throws Exception
 	{
-		newPanel();
-		CategoryPanel general = panel.categories().get(0);
-		assertLimits(general, "Recalculate Distance", -1, 20000);
-		assertLimits(general, "Finish Distance", -1, 50);
-		assertLimits(general, "Calculation Cutoff", 1, 30);
-		assertLimits(general, "A* Heuristic Weight", 100, 300);
+		assertLimits("recalculateDistance", -1, 20000);
+		assertLimits("reachedDistance", -1, 50);
+		assertLimits("calculationCutoff", 1, 30);
+		assertLimits("aStarHeuristicWeight", 100, 300);
 	}
 
-	private static void assertLimits(CategoryPanel category, String display, int min, int max)
+	private static void assertLimits(String method, int min, int max) throws Exception
 	{
-		SpinnerNumberModel model = (SpinnerNumberModel) spinnerIn(rowByDisplay(category, display).component).getModel();
-		assertEquals(display + " min", min, model.getMinimum());
-		assertEquals(display + " max", max, model.getMaximum());
+		net.runelite.client.config.Range range = ShortestPathConfig.class.getMethod(method)
+			.getAnnotation(net.runelite.client.config.Range.class);
+		assertNotNull(method, range);
+		assertEquals(method + " min", min, range.min());
+		assertEquals(method + " max", max, range.max());
 	}
 
 	@Test
@@ -887,7 +886,7 @@ public class ShortestPathPanelLayoutTest
 
 	private JCheckBox ownedCheckbox()
 	{
-		Container header = headerOf(panel.categories().get(2));
+		Container header = headerOf(panel.categories().get(1));
 		return (JCheckBox) ((BorderLayout) header.getLayout()).getLayoutComponent(BorderLayout.EAST);
 	}
 

@@ -10,6 +10,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Keybind;
+import net.runelite.client.config.Range;
 import shortestpath.settings.TeleportationItem;
 
 @ConfigGroup(ShortestPathPlugin.CONFIG_GROUP)
@@ -100,6 +101,7 @@ public interface ShortestPathConfig extends Config
 		return false;
 	}
 
+	@Range(min = -1, max = 20000)
 	@ConfigItem(
 		keyName = "recalculateDistance",
 		name = "Recalculate Distance",
@@ -112,6 +114,7 @@ public interface ShortestPathConfig extends Config
 		return 10;
 	}
 
+	@Range(min = -1, max = 50)
 	@ConfigItem(
 		keyName = "finishDistance",
 		name = "Finish Distance",
@@ -124,6 +127,7 @@ public interface ShortestPathConfig extends Config
 		return 5;
 	}
 
+	@Range(min = 0, max = 20000)
 	@ConfigItem(
 		keyName = "unreachableTargetDistanceThreshold",
 		name = "Unreachable Target Distance",
@@ -149,6 +153,7 @@ public interface ShortestPathConfig extends Config
 		return true;
 	}
 
+	@Range(min = 1, max = 30)
 	@ConfigItem(
 		keyName = "calculationCutoff",
 		name = "Calculation Cutoff",
@@ -176,6 +181,7 @@ public interface ShortestPathConfig extends Config
 		return TeleportationItem.INVENTORY_NON_CONSUMABLE;
 	}
 
+	@Range(min = 100, max = 300)
 	@ConfigItem(
 		keyName = "aStarHeuristicWeight",
 		name = "A* Heuristic Weight",
@@ -277,6 +283,7 @@ public interface ShortestPathConfig extends Config
 		return false;
 	}
 
+	@Range(min = 0, max = 10000)
 	@ConfigItem(
 		keyName = "costBankVisit",
 		name = "Bank Visit Threshold",
