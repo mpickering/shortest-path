@@ -78,7 +78,8 @@ public class DebugMapOverlay extends Overlay
 		hoverPoint = WorldPointUtil.UNDEFINED;
 		hoverRows = List.of();
 		if (!settings.display().drawMap() || !(settings.display().drawCollisionMap() || settings.display().drawTransports() || settings.configured().debugLayers().contains(shortestpath.DebugLayer.TARGETS)
-			|| settings.configured().debugLayers().contains(shortestpath.DebugLayer.TELEPORTS)))
+			|| settings.configured().debugLayers().contains(shortestpath.DebugLayer.TELEPORTS)
+			|| settings.configured().debugLayers().contains(shortestpath.DebugLayer.BANK_APPROACHES)))
 		{
 			return null;
 		}
@@ -107,12 +108,40 @@ public class DebugMapOverlay extends Overlay
 			renderTeleports(graphics, clip, cursor);
 		}
 
+		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.BANK_APPROACHES))
+		{
+			renderBankApproaches(graphics, clip, cursor);
+		}
+
 		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.TARGETS))
 		{
 			renderTargets(graphics, cursor);
 		}
 
 		return null;
+	}
+
+	private void renderBankApproaches(Graphics2D graphics, Area clip, Point cursor)
+	{
+		int size = Math.max(3, Math.round(canvas.pixelsPerTile()));
+		double hoveredDistance = canvas.hoverRadius();
+		for (int point : annotator.getBankApproachTiles())
+		{
+			int x = canvas.x(point);
+			int y = canvas.y(point);
+			if (!clip.contains(x, y)) continue;
+			boolean accessible = annotator.bankAccessible(point);
+			graphics.setColor(accessible ? Color.CYAN : COLOR_UNAVAILABLE);
+			graphics.fillRect(x - size / 2, y - size / 2, size, size);
+			double distance = canvas.distance(point, cursor);
+			if (distance <= hoveredDistance)
+			{
+				hoveredDistance = distance;
+				hoverPoint = point;
+				hoverRows = List.of("Bank approach: " + WorldPointUtil.unpackWorldPoint(point),
+					accessible ? "Requirements met" : "Unavailable");
+			}
+		}
 	}
 
 	private void renderTeleports(Graphics2D graphics, Area clip, Point cursor)

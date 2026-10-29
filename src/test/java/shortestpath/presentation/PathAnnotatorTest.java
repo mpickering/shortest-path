@@ -56,6 +56,22 @@ public class PathAnnotatorTest
 	}
 
 	@Test
+	public void bankApproachLayerUsesRoutingDestinationsAndEligibility()
+	{
+		assertTrue(annotator.getBankApproachTiles().isEmpty());
+		assertFalse(annotator.bankAccessible(LANDING));
+		PathfinderConfig config = mock(PathfinderConfig.class);
+		int bank = WorldPointUtil.packWorldPoint(3269, 3164, 0);
+		int lockedBank = WorldPointUtil.packWorldPoint(1399, 2925, 0);
+		when(config.getDestinations("bank")).thenReturn(Set.of(bank, lockedBank));
+		when(config.bankAccessible(bank)).thenReturn(true);
+		annotator.attach(config);
+		assertEquals(Set.of(bank, lockedBank), annotator.getBankApproachTiles());
+		assertTrue(annotator.bankAccessible(bank));
+		assertFalse(annotator.bankAccessible(lockedBank));
+	}
+
+	@Test
 	public void testFormatTransportDisplay()
 	{
 		pohService.putFromDialogLine("3: Lumbridge");

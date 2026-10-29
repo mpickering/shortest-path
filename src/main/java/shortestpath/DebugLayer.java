@@ -13,6 +13,7 @@ public enum DebugLayer
 	LOCATIONS("Location list (minimap)"),
 	TELEPORTS("Teleport destinations"),
 	TRANSPORTS("Transports"),
+	BANK_APPROACHES("Bank approach tiles"),
 	COLLISION_MAP("Collision map"),
 	CLICK_POINTS("Click points");
 

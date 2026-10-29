@@ -79,6 +79,11 @@ public class DebugSceneOverlay extends Overlay
 			renderTeleports(graphics, client.getMouseCanvasPosition());
 		}
 
+		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.BANK_APPROACHES))
+		{
+			renderBankApproaches(graphics, client.getMouseCanvasPosition());
+		}
+
 		if (settings.configured().debugLayers().contains(shortestpath.DebugLayer.TARGETS))
 		{
 			renderTargets(graphics, client.getMouseCanvasPosition());
@@ -237,6 +242,27 @@ public class DebugSceneOverlay extends Overlay
 				WorldPointUtil.unpackWorldY(point)))
 			{
 				fillTile(graphics, point, COLOR_CLICK_POINT);
+			}
+		}
+	}
+
+	private void renderBankApproaches(Graphics2D graphics, Point cursor)
+	{
+		for (int point : annotator.getBankApproachTiles())
+		{
+			boolean accessible = annotator.bankAccessible(point);
+			Color colour = accessible ? Color.CYAN : COLOR_UNAVAILABLE;
+			for (Polygon poly : SceneTiles.polygons(client, point))
+			{
+				graphics.setColor(withAlpha(colour, 70));
+				graphics.fill(poly);
+				graphics.setColor(colour);
+				graphics.draw(poly);
+				if (cursor != null && poly.contains(cursor.getX(), cursor.getY()))
+				{
+					tooltipManager.add(new Tooltip("Bank approach: " + WorldPointUtil.unpackWorldPoint(point)
+						+ (accessible ? " (requirements met)" : " (unavailable)")));
+				}
 			}
 		}
 	}

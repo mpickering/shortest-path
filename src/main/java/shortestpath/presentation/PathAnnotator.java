@@ -452,6 +452,18 @@ public class PathAnnotator
 			: BankPickupResult.format(client, pathfinderConfig.getBankPickup(path, pathIndex, search));
 	}
 
+	/** The bank destination tiles at which routing can record a bank visit. */
+	public Set<Integer> getBankApproachTiles()
+	{
+		Set<Integer> banks = getDestinations("bank");
+		return banks == null ? Set.of() : banks;
+	}
+
+	public boolean bankAccessible(int point)
+	{
+		return pathfinderConfig != null && pathfinderConfig.bankAccessible(point);
+	}
+
 	public Set<Integer> getDestinations(String destinationType)
 	{
 		return pathfinderConfig == null ? null : pathfinderConfig.getDestinations(destinationType);

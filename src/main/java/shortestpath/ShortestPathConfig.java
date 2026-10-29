@@ -598,6 +598,7 @@ public interface ShortestPathConfig extends Config
 			+ "blue = usable after banking, orange = unavailable<br>"
 			+ "Transports: a dot on each transport origin, white = available, orange = unavailable; "
 			+ "hover one for its routes<br>"
+			+ "Bank approach tiles: cyan = bank requirements met, orange = unavailable<br>"
 			+ "Collision map: blocked tiles, walls (solid) and doors (dashed)<br>"
 			+ "Click points: exact route click points in the game view<br>"
 			+ "Location list (minimap): cyan markers for the sidebar’s current category and search results",
