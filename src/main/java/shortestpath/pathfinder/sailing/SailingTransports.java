@@ -102,8 +102,8 @@ public final class SailingTransports
 
 	/**
 	 * Whether the account can sail {@code transport}: it has a boat of the transport's kind moored at the mooring it
-	 * boards at, whose parts let it into water joining where it casts off there to where it docks at the other
-	 * ({@link SailingWaters#connects}). The moorings'
+	 * boards at, which can get from where it casts off there to where it docks at the other by water its parts let
+	 * it into ({@link SailingWaters#connects}). The moorings'
 	 * levels and finished quests are the transport's own requirements; the quests they need only started,
 	 * {@code started} answers.
 	 */
@@ -112,8 +112,7 @@ public final class SailingTransports
 	{
 		SailingMooring from = mooringAt(transport.getOrigin()), to = mooringAt(transport.getDestination());
 		SailingVessel vessel = vessel(transport, fleet);
-		if (vessel == null || !waters.connects(vessel, waters.castOffPieces(map, from, vessel), waters.dockingPieces(to)))
-			return false;
+		if (vessel == null || !waters.sails(map, vessel, from, to)) return false;
 		for (Quest quest : from.questsStarted())
 		{
 			if (!started.test(quest)) return false;
@@ -191,9 +190,35 @@ public final class SailingTransports
 	/** What the files are made from: the collision map, the moorings, the speed and the search's rules. */
 	public static String fingerprint(List<SailingMooring> moorings)
 	{
+		return fingerprint(readBytes("/collision-map.zip"), moorings);
+	}
+
+	/**
+	 * What the sailing data is made from, in short: the collision map {@code zip} but for its sailing layer (which is
+	 * made from it), the moorings, and the speed and version of the search that times the legs.
+	 */
+	public static String fingerprint(byte[] zip, List<SailingMooring> moorings)
+	{
 		CRC32 crc = new CRC32();
-		crc.update(readBytes("/collision-map.zip"));
-		crc.update(readBytes(SailingWaters.SEEDS));
+		java.util.SortedMap<String, byte[]> entries = new java.util.TreeMap<>();
+		try (java.util.zip.ZipInputStream in = new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(zip)))
+		{
+			java.util.zip.ZipEntry entry;
+			while ((entry = in.getNextEntry()) != null)
+			{
+				if (!entry.isDirectory() && !entry.getName().startsWith(SailingWaters.LAYER + "/"))
+					entries.put(entry.getName(), in.readAllBytes());
+			}
+		}
+		catch (IOException e)
+		{
+			throw new java.io.UncheckedIOException(e);
+		}
+		for (Map.Entry<String, byte[]> entry : entries.entrySet())
+		{
+			crc.update(entry.getKey().getBytes(StandardCharsets.UTF_8));
+			crc.update(entry.getValue());
+		}
 		StringBuilder data = new StringBuilder();
 		for (SailingMooring mooring : moorings)
 		{

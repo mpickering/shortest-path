@@ -92,7 +92,7 @@ tasks.register('run', JavaExec) {
     args "--developer-mode", "--debug"
 }
 
-// Regenerates the sailing times between moorings (src/main/resources/sailing/sailing-times.tsv)
+// Regenerates the sailing data: the collision map's sailing layer and the sailing transports between moorings
 tasks.register('sailingTimes', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'shortestpath.pathfinder.sailing.SailingTimesGenerator'

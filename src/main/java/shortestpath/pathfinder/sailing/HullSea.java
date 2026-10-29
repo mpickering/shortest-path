@@ -4,29 +4,38 @@ import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.IntPredicate;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 
 /**
- * The sea one hull can end its moves on: the sea tiles none of whose hull core tiles (those the hull covers facing any
- * heading, {@link BoatHull#coreOffsets}) blocks a boat. Every move the hull check allows ends on one, so a search may
- * leave the rest out; and its coarse grids (see {@link SeaGrid}) see the channels too narrow for the hull as land, so
- * bounds made on them see that a big boat goes round.
+ * The sea one hull can end its moves on, with coarse grids of it (see {@link SeaGrid}) that see the channels too
+ * narrow for the hull as land, so bounds made on them see that a big boat goes round. For a boat the sea's pieces
+ * describe, it is the tiles in its kind's pieces ({@link SailingWaters#piece}); for any other, the sea tiles none of
+ * whose hull core tiles (those the hull covers facing any heading, {@link BoatHull#coreOffsets}) blocks a boat. Every
+ * move the hull check allows ends on one, so a search may leave the rest out.
  */
 final class HullSea
 {
 	private final SailingWaters waters;
-	// One byte per tile, 1 where the hull can end a move, per region and plane; null for regions with none
-	private final byte[][] navigable;
+	private final IntPredicate navigable;
 	private final SeaGrid axis, rotated;
 	// Each mooring's docking range for this hull as distances on both grids, made on first ask
 	private final Map<SailingMooring, short[][]> dockingFields = new IdentityHashMap<>();
-	private int tileCount;
 
-	HullSea(SailingWaters waters, CollisionMap map, int[] core)
+	HullSea(SailingWaters waters, IntPredicate navigable)
 	{
 		this.waters = waters;
-		navigable = new byte[waters.regionCount()][];
+		this.navigable = navigable;
+		axis = SeaGrid.of(SeaGrid.Frame.AXIS, this::forEachTile);
+		rotated = SeaGrid.of(SeaGrid.Frame.ROTATED, this::forEachTile);
+	}
+
+	/** The sea none of whose tiles at {@code core} offsets blocks a boat, worked out once per tile. */
+	static HullSea withCore(SailingWaters waters, CollisionMap map, int[] core)
+	{
+		// One byte per tile, 1 where the hull can end a move, per region and plane; null for regions with none
+		byte[][] clear = new byte[waters.regionCount()][];
 		waters.forEachTile(tile ->
 		{
 			int x = WorldPointUtil.unpackWorldX(tile), y = WorldPointUtil.unpackWorldY(tile);
@@ -36,25 +45,20 @@ final class HullSea
 				if (waters.blocksBoat(map, x + core[i], y + core[i + 1], z)) return;
 			}
 			int region = waters.regionOf(tile);
-			if (navigable[region] == null) navigable[region] = new byte[4096];
-			navigable[region][SailingWaters.indexInRegion(tile)] = 1;
-			tileCount++;
+			if (clear[region] == null) clear[region] = new byte[4096];
+			clear[region][SailingWaters.indexInRegion(tile)] = 1;
 		});
-		axis = SeaGrid.of(SeaGrid.Frame.AXIS, this::forEachTile);
-		rotated = SeaGrid.of(SeaGrid.Frame.ROTATED, this::forEachTile);
+		return new HullSea(waters, tile ->
+		{
+			int region = waters.regionOf(tile);
+			return region >= 0 && clear[region] != null && clear[region][SailingWaters.indexInRegion(tile)] != 0;
+		});
 	}
 
 	/** Whether the hull can end a move on {@code tile}. */
 	boolean navigable(int tile)
 	{
-		int region = waters.regionOf(tile);
-		return region >= 0 && navigable[region] != null && navigable[region][SailingWaters.indexInRegion(tile)] != 0;
-	}
-
-	/** Tiles the hull can end a move on. */
-	int tileCount()
-	{
-		return tileCount;
+		return navigable.test(tile);
 	}
 
 	SeaGrid axisGrid()

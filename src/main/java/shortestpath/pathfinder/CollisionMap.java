@@ -27,6 +27,12 @@ public class CollisionMap
 		return collisionData != null ? collisionData : this;
 	}
 
+	/** The collision data's layer {@code directory} ({@link SplitFlagMap#layers}); empty for a map without data. */
+	public java.util.Map<String, byte[]> layers(String directory)
+	{
+		return collisionData != null ? collisionData.layers(directory) : java.util.Map.of();
+	}
+
 	public byte getRegionPlaneCounts(int regionIndex)
 	{
 		return collisionData.getRegionPlaneCounts(regionIndex);

@@ -295,7 +295,7 @@ public class AStarSailingRoutesTest
 		assertTrue(sailingTransport(through).getSeaAreas().contains(SeaArea.TEMPOR_TANTRUM));
 		// The filled-in leg keeps out of the water the boat can't enter
 		CollisionMap map = new CollisionMap(TestWorldData.map());
-		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
+		SailingWaters waters = SailingWaters.of(map);
 		for (PathStep step : round.getPath())
 		{
 			if (step.getTraversal() == Traversal.SAILING) assertNull(waters.area(step.getPackedPosition()));

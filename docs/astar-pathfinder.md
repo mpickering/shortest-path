@@ -101,22 +101,37 @@ with a search by cost over the whole sea from where the boat casts off at each,
 and writes them to
 `transports/sailing_*.tsv`. The legs are timed for a boat with every part its
 kind can take, at 2 tiles a tick.
-The same searches give `sailing/sea-reach.bin`, the sea each boat kind can
-reach, numbered in components: moorings whose boats reach a common tile are one
-component. `SailingTransportsTest` fails when either is stale, and the
-`ExtractCollisionMap` workflow makes them again with each new collision map.
+
+Everything else sailing needs is per tile, so it is in the collision map, made
+when the map is, and only read at runtime (`SailingWaters`):
+
+- `sea-areas/<region>`, from the collision map dumper: a byte per tile naming
+  the restricted area it is in (below), read from the game's water textures,
+  with `sea-areas/legend` naming the numbers.
+- `sailing/sea`, a bit per tile: the sea, every open tile reachable by open
+  tile edges from the water side of a berth.
+- `sailing/<KIND>`: each boat kind's pieces of the sea, from every move the
+  kind's hull clears at its tile's centre, at any base speed up to 8 tiles a
+  tick. A piece is a strongly connected part of those moves within one area:
+  from any of its tiles the boat can get to any other. Every other move leads
+  from one piece to another, so every route a boat of the kind sails follows
+  those links, whatever its speed. Boats are longer one way than the other,
+  so near coasts many moves go only one way, and the links keep that.
+
+`SailingTimesGenerator` writes the sailing layer into `collision-map.zip`,
+then times the legs on it. `SailingTransportsTest` fails when either is stale,
+and the `ExtractCollisionMap` workflow makes them again with each new
+collision map, before the routing cuts, whose fingerprint covers the whole
+zip.
 `PathfinderConfig` keeps a sailing transport only when the account has a boat
 of its kind moored where it boards; the live plugin assumes none on foot. Once
 a route is found, `SailingRoutes` fills in each leg's moves for drawing.
 
 Some of the sea is restricted (`SeaArea`): Tempor Tantrum, the northern icy
 waters and crystal-flecked, fetid and kelp water, which a boat enters only with
-a part fitted. Each is a family of water textures in the cache. The collision
-map dumper marks the edges round each one with the boundary flag a door has,
-leaving the movement flags alone, and writes `sailing/sea-areas.tsv`, a tile of
-each piece of restricted sea per region. `SailingWaters` splits the sea into
-pieces at those edges and names each from its tiles. A boat's moves end only in
-pieces its parts let it enter (`SailingVessel.areas`). Each row's `Sea areas`
+a part fitted. Each is a family of water textures in the cache, which the
+collision map's `sea-areas` layer records per tile. A boat's moves end only in
+water its parts let it enter (`SailingVessel.areas`). Each row's `Sea areas`
 column names the areas its leg sails through. For a boat with the parts for
 them, at the speed the legs are timed at, the row's time is the boat's own; for
 any other boat it only bounds it, and the boat's own leg is sailed when the
@@ -141,7 +156,8 @@ on its cost, which `SailingSeaEnds` raises step by step (a distance field from
 the targets, then the leg's own search, whose frontier also bounds the leg)
 until the leg is sailed, so only legs that could end up on the route are
 searched, and only as far as cheaper routes leave room for. A link that can't be
-sailed is never offered, so no search runs to find that out: a boat sailing
-from one component of its kind's sea only reaches that component, and which
-pieces of sea touch, within a move of each other, makes a graph of a few dozen
-nodes that tells whether its parts let it get from one piece to another.
+sailed is never offered, so no search runs to find that out: a boat goes only
+along the links between its kind's pieces, entering only pieces its parts let
+it into (`SailingWaters.connects`). The pieces describe a boat of a
+standard kind at its tile's centre at a base speed in whole 128ths of a tile
+per tick; for any other boat they can't tell, and every link is offered.

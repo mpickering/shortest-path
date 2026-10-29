@@ -4,7 +4,7 @@
 # 2.0 tiles per tick with every move ending on sea the hull fits, and stepping off (8 ticks).
 # Skills and Quests: both moorings' docking requirements. Sea areas: the restricted sea areas the leg sails
 # through, with every part the boat can be fitted with.
-# Fingerprint: b84ccfa0 speed 2.0 search 4
+# Fingerprint: c3f82031 speed 2.0 search 4
 # Port Sarim
 3050 3192 0	3069 2986 0				130	The Pandemonium
 3050 3192 0	1726 3453 0	5 Sailing		TEMPOR_TANTRUM;FETID;CRYSTALLINE	960	Hosidius

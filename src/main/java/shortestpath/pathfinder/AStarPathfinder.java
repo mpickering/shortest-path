@@ -24,7 +24,6 @@ import shortestpath.pathfinder.astar.SiteGraph;
 import shortestpath.pathfinder.sailing.BoatHull;
 import shortestpath.pathfinder.sailing.PreparedSailingCapability;
 import shortestpath.pathfinder.sailing.SailingFleet;
-import shortestpath.pathfinder.sailing.SailingMoorings;
 import shortestpath.pathfinder.sailing.SailingPathfinder;
 import shortestpath.pathfinder.sailing.SailingRoutes;
 import shortestpath.pathfinder.sailing.SailingSeaEnds;
@@ -485,7 +484,7 @@ public final class AStarPathfinder implements ActiveSearch
 			if (sailing.active())
 			{
 				phaseStarted = System.nanoTime();
-				SailingWaters waters = SailingWaters.of(collision, SailingMoorings.all());
+				SailingWaters waters = SailingWaters.of(collision);
 				int[] seaTargets = targets.points().stream().filter(waters::contains).mapToInt(Integer::intValue)
 					.toArray();
 				SailingSeaEnds ends = new SailingSeaEnds(collision, sailing, start, seaTargets,

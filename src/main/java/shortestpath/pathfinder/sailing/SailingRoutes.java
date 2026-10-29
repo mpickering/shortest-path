@@ -109,7 +109,7 @@ public final class SailingRoutes
 	// The search for the leg a boat sails from casting off at from to docking at to, by ticks, towards it
 	private static SailingSolver legSolver(CollisionMap map, SailingVessel vessel, SailingMooring from, SailingMooring to)
 	{
-		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
+		SailingWaters waters = SailingWaters.of(map);
 		BoatHull hull = vessel.hull(0, 0);
 		SailingMoves moves = vessel.moves();
 		double fastest = SailingTransports.topSpeed(moves);

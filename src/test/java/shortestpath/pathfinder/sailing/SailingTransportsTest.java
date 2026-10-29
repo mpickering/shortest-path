@@ -29,8 +29,8 @@ public class SailingTransportsTest
 			assertEquals(SailingTransports.resource(kind) + " is stale: run ./gradlew sailingTimes", expected,
 				SailingTransports.fingerprintOf(contents));
 		}
-		assertEquals(SailingReach.RESOURCE + " is stale: run ./gradlew sailingTimes", expected,
-			SailingReach.load().fingerprint());
+		assertEquals("the collision map's sailing layer is stale: run ./gradlew sailingTimes", expected,
+			SailingWaters.of(new CollisionMap(TestWorldData.map())).inputs());
 	}
 
 	@Test
@@ -38,9 +38,16 @@ public class SailingTransportsTest
 	{
 		// Lum Lagoon, behind a channel the sloop's hull can't get through
 		int lagoon = shortestpath.WorldPointUtil.packWorldPoint(3277, 3135, 0);
-		SailingReach reach = SailingReach.load();
-		assertTrue(reach.reachesNear(SailingVessel.Kind.RAFT, lagoon, 3));
-		assertFalse(reach.reachesNear(SailingVessel.Kind.SLOOP, lagoon, 3));
+		CollisionMap map = new CollisionMap(TestWorldData.map());
+		SailingWaters waters = SailingWaters.of(map);
+		SailingMooring sarim = SailingMoorings.all().stream().filter(m -> m.name().equals("Port Sarim")).findFirst()
+			.orElseThrow();
+		for (SailingVessel.Kind kind : new SailingVessel.Kind[] {SailingVessel.Kind.RAFT, SailingVessel.Kind.SLOOP})
+		{
+			SailingVessel vessel = SailingVessel.of(kind, SailingTransports.SPEED).withAreas(shortestpath.sailing.SeaArea.ALL);
+			assertEquals(kind.toString(), kind == SailingVessel.Kind.RAFT, waters.connects(vessel, vessel.hull(0, 0),
+				waters.castOff(map, sarim, vessel), SailingWaters.tilesNear(lagoon, 3)));
+		}
 	}
 
 	@Test
@@ -135,7 +142,7 @@ public class SailingTransportsTest
 	public void aBoatCastsOffWhereItCouldDock()
 	{
 		CollisionMap map = new CollisionMap(TestWorldData.map());
-		SailingWaters waters = SailingWaters.of(map, SailingMoorings.all());
+		SailingWaters waters = SailingWaters.of(map);
 		for (SailingMooring mooring : SailingMoorings.all())
 		{
 			for (SailingVessel.Kind kind : SailingVessel.Kind.values())
