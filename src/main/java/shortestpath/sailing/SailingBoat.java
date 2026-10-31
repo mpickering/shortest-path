@@ -25,13 +25,21 @@ public final class SailingBoat
 	private final Set<SeaArea> seaAreas;
 	/** Base speed in 1/128ths of a tile per tick, from the hull. */
 	private final int baseSpeed;
+	/** Coins to recover this boat, or -1 when its price is unknown. */
+	private final int recoveryCost;
 
 	public SailingBoat(int slot, int type, int dock, Set<SeaArea> seaAreas, int baseSpeed)
+	{
+		this(slot, type, dock, seaAreas, baseSpeed, -1);
+	}
+
+	public SailingBoat(int slot, int type, int dock, Set<SeaArea> seaAreas, int baseSpeed, int recoveryCost)
 	{
 		this.slot = slot;
 		this.type = type;
 		this.dock = dock;
 		this.seaAreas = seaAreas.isEmpty() ? SeaArea.NONE : Collections.unmodifiableSet(EnumSet.copyOf(seaAreas));
 		this.baseSpeed = baseSpeed;
+		this.recoveryCost = recoveryCost;
 	}
 }

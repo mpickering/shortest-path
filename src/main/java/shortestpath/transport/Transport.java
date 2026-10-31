@@ -270,6 +270,14 @@ public class Transport
 		return copy;
 	}
 
+	public Transport withDisplayInfo(String info)
+	{
+		Transport copy = new Transport();
+		copy.copyFrom(this);
+		copy.displayInfo = info;
+		return copy;
+	}
+
 	/**
 	 * Hands back a shared immutable empty set when the builder accumulated nothing, so empty
 	 * requirement sets do not allocate a {@code HashSet}/{@code HashMap} per transport. A non-empty

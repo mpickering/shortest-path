@@ -20,6 +20,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.ItemID;
 import shortestpath.requirement.model.DestinationRequirements;
 import shortestpath.poh.JewelleryBoxTier;
 import shortestpath.requirement.model.ItemRequirement;
@@ -30,6 +31,7 @@ import shortestpath.settings.ConfigKey;
 import shortestpath.settings.EffectiveConfig;
 import shortestpath.settings.TeleportationItem;
 import shortestpath.items.ItemStateService;
+import shortestpath.items.OwnedItems;
 import shortestpath.leagues.LeagueModeState;
 import shortestpath.pathfinder.astar.PreparedRoutingAccount;
 import shortestpath.WorldPointUtil;
@@ -296,6 +298,7 @@ public class PathfinderConfig
 	private volatile boolean sailingMoves;
 	/** Whether the player's own boats are sailed: "Sail on boats" on, logged in. */
 	private volatile boolean sailingBoats;
+	private volatile int boatRecoveryThreshold;
 	/**
 	 * Speed sailing moves are built for: the boat's base speed in tiles per tick, or an estimate when it
 	 * can't be read. Speed boosts are random and temporary, so they are left out.
@@ -473,7 +476,7 @@ public class PathfinderConfig
 		}
 		SailingState state = sailing.getState();
 		List<SailingVessel> vessels = new ArrayList<>();
-		Map<SailingVessel, Integer> docks = new IdentityHashMap<>();
+		Map<SailingVessel, SailingBoat> boats = new IdentityHashMap<>();
 		for (SailingBoat boat : state.getBoats())
 		{
 			SailingVessel.Kind kind = boatKind(boat.getType());
@@ -484,14 +487,21 @@ public class PathfinderConfig
 			double speed = boat.getBaseSpeed() > 0 ? boat.getBaseSpeed() / 128.0 : SailingMoves.ESTIMATED_SPEED;
 			SailingVessel vessel = SailingVessel.of(kind, speed).withAreas(boat.getSeaAreas());
 			vessels.add(vessel);
-			docks.put(vessel, boat.getDock());
+			boats.put(vessel, boat);
 		}
+		int recoveryLimit = boatRecoveryThreshold;
+		long coins = (long) heldItems.carried().getOrDefault(ItemID.COINS, 0)
+			+ OwnedItems.collect(itemState.getBank()).getOrDefault(ItemID.COINS, 0);
 		SailingFleet.BoatLocations locations = (mooring, vessel) ->
 		{
-			Integer dock = docks.get(vessel);
-			return dock != null && dock == mooring.dock();
+			SailingBoat boat = boats.get(vessel);
+			if (boat == null || mooring.dock() < 0) return false;
+			if (boat.getDock() == mooring.dock()) return true;
+			int cost = boat.getRecoveryCost();
+			return mooring.hasShipwright() && cost > 0 && cost <= recoveryLimit && cost <= coins;
 		};
-		return new SailingFleet(vessels, locations, aboard(state));
+		return new SailingFleet(vessels, locations, aboard(state),
+			(mooring, vessel) -> boats.get(vessel).getDock() == mooring.dock() ? 0 : boats.get(vessel).getRecoveryCost());
 	}
 
 	// The boat the player is aboard, with sailing moves on, or null
@@ -584,6 +594,7 @@ public class PathfinderConfig
 
 		// Other settings (useTeleportationItems is now managed by transportTypeConfig)
 		currencyThreshold = effective.num(ConfigKey.CURRENCY_THRESHOLD);
+		boatRecoveryThreshold = Math.max(0, effective.num(ConfigKey.BOAT_RECOVERY_THRESHOLD));
 		// Banked teleport items are only usable from the bankVisited path state, so a
 		// mode that collects bank contents must also enable bank-path traversal —
 		// otherwise the banked items are gathered but can never be offered.
@@ -954,6 +965,11 @@ public class PathfinderConfig
 					continue;
 				}
 				offered = SailingTransports.boundFor(offered, vessel);
+				int recoveryCost = fleet.recoveryCost(SailingTransports.from(offered), vessel);
+				if (recoveryCost > 0)
+				{
+					offered = offered.withDisplayInfo("Recover boat (" + recoveryCost + " gp), then " + offered.getDisplayInfo());
+				}
 			}
 
 			// The named gates run first; a transport failing any of them is

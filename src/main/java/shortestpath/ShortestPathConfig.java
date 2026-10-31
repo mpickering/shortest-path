@@ -75,6 +75,19 @@ public interface ShortestPathConfig extends Config
 		return true;
 	}
 
+	@Range(min = 0)
+	@ConfigItem(
+		keyName = "boatRecoveryThreshold",
+		name = "Boat Recovery Limit (GP)",
+		description = "Maximum coins per boat recovery at a shipwright (0 disables recovery).<br>Recovery can discard cargo.",
+		position = 206,
+		section = sectionSettings
+	)
+	default int boatRecoveryThreshold()
+	{
+		return 0;
+	}
+
 	@ConfigItem(
 		keyName = "currencyThreshold",
 		name = "Currency Threshold",

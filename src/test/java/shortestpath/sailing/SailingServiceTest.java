@@ -29,6 +29,7 @@ import net.runelite.api.WorldEntityConfig;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.DBTableID;
 import shortestpath.WorldPointUtil;
 import shortestpath.requirement.ClientPlayerStateSource;
 import shortestpath.scheduler.RefreshCoordinator;
@@ -103,6 +104,32 @@ public class SailingServiceTest
 			new SailingBoat(3, 0, 0, java.util.EnumSet.of(SeaArea.TEMPOR_TANTRUM, SeaArea.KELP), 192)),
 			service.getState().getBoats());
 		assertEquals("not aboard", 0, service.getState().getBoardedSlot());
+	}
+
+	@Test
+	public void recoveryFeeIncludesHullAndCapsizedOrBottledSurcharge()
+	{
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_RETRIEVAL_COST, 0)).thenReturn(new Object[]{3750});
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_HULL_OPTION, 0)).thenReturn(new Object[]{100, 100, 100, 100, 102});
+		when(client.getDBTableField(100, DBTableID.SailingBoatHull.COL_FACILITY_STATS, 0))
+			.thenReturn(new Object[]{101});
+		when(client.getDBTableField(101, DBTableID.SailingBoatFacilityStats.COL_BOAT_ADDITIONAL_RECOVERY_COST_PERCENTAGE, 0))
+			.thenReturn(new Object[]{10});
+		when(client.getDBTableField(102, DBTableID.SailingBoatHull.COL_FACILITY_STATS, 0))
+			.thenReturn(new Object[]{103});
+		when(client.getDBTableField(103, DBTableID.SailingBoatFacilityStats.COL_BOAT_ADDITIONAL_RECOVERY_COST_PERCENTAGE, 0))
+			.thenReturn(new Object[]{50});
+
+		assertEquals(4125, SailingService.recoveryCost(client, 1, 0, 6));
+		assertEquals(4125, SailingService.recoveryCost(client, 1, 0, 253));
+		assertEquals(6000, SailingService.recoveryCost(client, 1, 0, 254));
+		assertEquals(7875, SailingService.recoveryCost(client, 1, 0, 255));
+		assertEquals(5625, SailingService.recoveryCost(client, 1, 4, 6));
+		assertEquals(-1, SailingService.recoveryCost(client, 3, 0, 6));
+		assertEquals(-1, SailingService.recoveryCost(client, 1, 99, 6));
+		assertEquals(-1, SailingService.recoveryCost(client, 0, 0, 6));
 	}
 
 	@Test

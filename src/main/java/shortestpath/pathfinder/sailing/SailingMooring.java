@@ -49,6 +49,14 @@ public final class SailingMooring
 	/** The game's id for the dock, which a boat's port varbit holds; -1 if unknown. */
 	private final int dock;
 
+	// Shipwright ports from the OSRS Wiki's Shipwright locations table; island moorings cannot recover boats.
+	private static final Set<Integer> SHIPWRIGHT_DOCKS = Set.of(0, 1, 2, 3, 6, 7, 8, 10, 13, 14, 18, 21, 22, 23, 26, 29);
+
+	public boolean hasShipwright()
+	{
+		return SHIPWRIGHT_DOCKS.contains(dock);
+	}
+
 	public SailingMooring(int id, String name, int landTile, int berthTile, DestinationRequirements requirements,
 		Set<Quest> questsStarted, Set<SailingVessel.Kind> vessels)
 	{

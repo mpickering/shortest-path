@@ -30,7 +30,7 @@ public final class PreparedSailingCapability
 	public PreparedSailingCapability onFoot()
 	{
 		return fleet.aboard() == null ? this
-			: new PreparedSailingCapability(new SailingFleet(fleet.vessels(), fleet.locations(), null), moorings);
+			: new PreparedSailingCapability(new SailingFleet(fleet.vessels(), fleet.locations(), null, fleet::recoveryCost), moorings);
 	}
 
 	/** Whether {@code vessel}, moored at {@code mooring}, can be boarded there. */

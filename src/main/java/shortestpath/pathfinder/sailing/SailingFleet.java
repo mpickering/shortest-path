@@ -1,6 +1,7 @@
 package shortestpath.pathfinder.sailing;
 
 import java.util.List;
+import java.util.function.ToIntBiFunction;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 
@@ -8,15 +9,13 @@ import lombok.experimental.Accessors;
  * What the router may assume about the player's boats: the boats it can board, where it can board them, and the boat
  * the player is aboard now, if any. Every fact comes from the account or the game, never from the Sailing level.
  * <p>
- * A boat is a single object in the world: after one sailing leg it is moored where the player left it. Where each
- * boat is moored is not read from the game yet, so the live plugin boards nothing on foot; a benchmark account
- * declares where its boats can be boarded instead.
+ * The live plugin reads each owned boat's dock and allows recovery at shipwrights within the configured limit.
  */
 @Getter
 @Accessors(fluent = true)
 public final class SailingFleet
 {
-	/** Where an account's boats can be boarded from the mooring they are at. */
+	/** Where boats can be boarded, including an allowed recovery to that mooring. */
 	@FunctionalInterface
 	public interface BoatLocations
 	{
@@ -61,11 +60,24 @@ public final class SailingFleet
 	private final BoatLocations locations;
 	/** The boat the player is aboard, or {@code null}. */
 	private final Aboard aboard;
+	private final ToIntBiFunction<SailingMooring, SailingVessel> recoveryCosts;
 
 	public SailingFleet(List<SailingVessel> vessels, BoatLocations locations, Aboard aboard)
+	{
+		this(vessels, locations, aboard, (mooring, vessel) -> 0);
+	}
+
+	public SailingFleet(List<SailingVessel> vessels, BoatLocations locations, Aboard aboard,
+		ToIntBiFunction<SailingMooring, SailingVessel> recoveryCosts)
 	{
 		this.vessels = List.copyOf(vessels);
 		this.locations = locations == null ? BoatLocations.UNKNOWN : locations;
 		this.aboard = aboard;
+		this.recoveryCosts = recoveryCosts;
+	}
+
+	public int recoveryCost(SailingMooring mooring, SailingVessel vessel)
+	{
+		return recoveryCosts.applyAsInt(mooring, vessel);
 	}
 }

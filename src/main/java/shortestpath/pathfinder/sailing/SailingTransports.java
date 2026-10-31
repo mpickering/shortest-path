@@ -101,7 +101,7 @@ public final class SailingTransports
 	}
 
 	/**
-	 * Whether the account can sail {@code transport}: it has a boat of the transport's kind moored at the mooring it
+	 * Whether the account can sail {@code transport}: it has a boat of the transport's kind available at the mooring it
 	 * boards at, which can get from where it casts off there to where it docks at the other by water its parts let
 	 * it into ({@link SailingWaters#connects}). The moorings'
 	 * levels and finished quests are the transport's own requirements; the quests they need only started,
@@ -124,17 +124,22 @@ public final class SailingTransports
 		return true;
 	}
 
-	/** The account's boat that sails {@code transport}: one of its kind moored where it boards, or {@code null}. */
+	/** The account's boat that sails {@code transport}: one of its kind available where it boards, or {@code null}. */
 	public static SailingVessel vessel(Transport transport, SailingFleet fleet)
 	{
 		SailingVessel.Kind kind = kind(transport.getType());
 		SailingMooring from = mooringAt(transport.getOrigin()), to = mooringAt(transport.getDestination());
 		if (kind == null || from == null || to == null || fleet == null) return null;
+		SailingVessel cheapest = null;
 		for (SailingVessel vessel : fleet.vessels())
 		{
-			if (vessel.kind() == kind && fleet.locations().moored(from, vessel)) return vessel;
+			if (vessel.kind() == kind && fleet.locations().moored(from, vessel)
+				&& (cheapest == null || fleet.recoveryCost(from, vessel) < fleet.recoveryCost(from, cheapest)))
+			{
+				cheapest = vessel;
+			}
 		}
-		return null;
+		return cheapest;
 	}
 
 	/**

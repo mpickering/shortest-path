@@ -97,6 +97,7 @@ public enum ConfigKey
 	A_STAR_HEURISTIC_WEIGHT("aStarHeuristicWeight", int.class, 100, Coercion.INT, Effect.ROUTE_INVALIDATING),
 	COLLISION_AWARE_BLOCKED_TARGETS("collisionAwareBlockedTargets", boolean.class, true, Coercion.BOOLEAN, Effect.ROUTE_INVALIDATING),
 	USE_SAILING_MOVES("useSailingMoves", boolean.class, true, Coercion.BOOLEAN, Effect.ROUTE_INVALIDATING),
+	BOAT_RECOVERY_THRESHOLD("boatRecoveryThreshold", int.class, 0, Coercion.INT, Effect.ROUTE_INVALIDATING),
 	SHOW_TRANSPORT_INFO("showTransportInfo", boolean.class, true, Coercion.BOOLEAN, Effect.DISPLAY_ONLY),
 	SHOW_BANK_PICKUP_INFO("showBankPickupInfo", boolean.class, false, Coercion.BOOLEAN, Effect.DISPLAY_ONLY),
 	HIGHLIGHT_BANK_PICKUP_ITEMS("highlightBankPickupItems", boolean.class, true, Coercion.BOOLEAN, Effect.DISPLAY_ONLY),

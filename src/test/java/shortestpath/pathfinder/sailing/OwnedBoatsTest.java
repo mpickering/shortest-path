@@ -5,7 +5,11 @@ import java.util.List;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Skill;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
 import net.runelite.api.gameval.DBTableID;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -16,12 +20,15 @@ import org.junit.runner.RunWith;
 import static org.mockito.ArgumentMatchers.any;
 import org.mockito.Mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
 import org.mockito.junit.MockitoJUnitRunner;
 import shortestpath.TestShortestPathConfig;
 import shortestpath.pathfinder.BankVisitState;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.TestPathfinderConfig;
 import shortestpath.sailing.SeaArea;
+import shortestpath.sailing.SailingService;
+import shortestpath.items.ItemStateService;
 import shortestpath.settings.TeleportationItem;
 import shortestpath.transport.Transport;
 import shortestpath.transport.TransportType;
@@ -49,6 +56,19 @@ public class OwnedBoatsTest
 		when(client.getClientThread()).thenReturn(Thread.currentThread());
 		when(client.getBoostedSkillLevel(any(Skill.class))).thenReturn(99);
 		pathfinderConfig = new TestPathfinderConfig(client, config);
+	}
+
+	@Test
+	public void manualStartPreservesRecoveryFees()
+	{
+		SailingVessel vessel = SailingVessel.of(SailingVessel.Kind.RAFT, 1);
+		SailingMooring mooring = mooring("Catherby");
+		SailingFleet fleet = new SailingFleet(List.of(vessel), SailingFleet.BoatLocations.EVERY_MOORING,
+			new SailingFleet.Aboard(0, 0, vessel, 0, 0), (dock, boat) -> 4125);
+		PreparedSailingCapability onFoot = new PreparedSailingCapability(fleet, List.of(mooring)).onFoot();
+
+		assertTrue(onFoot.fleet().aboard() == null);
+		assertEquals(4125, onFoot.fleet().recoveryCost(mooring, vessel));
 	}
 
 	@Test
@@ -126,6 +146,102 @@ public class OwnedBoatsTest
 		pathfinderConfig.refresh();
 
 		assertTrue(legs(null).isEmpty());
+	}
+
+	@Test
+	public void recoveryUsesAnInclusiveGpLimitAndOnlyShipwrightPorts()
+	{
+		recoverableSkiff(4125);
+		config.set("boatRecoveryThreshold", 4124);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+		assertTrue(canBoardAt("Catherby"));
+
+		config.set("boatRecoveryThreshold", 4125);
+		pathfinderConfig.refresh();
+		assertTrue(canBoardAt("Port Roberts"));
+		assertFalse(canBoardAt("Dognose Island"));
+		assertTrue(legs(null).stream().filter(t -> SailingTransports.from(t).name().equals("Port Roberts"))
+			.anyMatch(t -> t.getDisplayInfo().startsWith("Recover boat (4125 gp)")));
+
+		config.set("boatRecoveryThreshold", 0);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+	}
+
+	@Test
+	public void recoveryRequiresEnoughCoinsAndAKnownFee()
+	{
+		recoverableSkiff(4124);
+		config.set("boatRecoveryThreshold", 4125);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_RETRIEVAL_COST, 0)).thenReturn(null);
+		coins(100000);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+		assertTrue(canBoardAt("Catherby"));
+	}
+
+	@Test
+	public void bankCoinsCanPayRecoveryWithBankTeleportsDisabled()
+	{
+		recoverableSkiff(0);
+		config.set("boatRecoveryThreshold", 4125);
+		ItemContainer bank = mock(ItemContainer.class);
+		when(bank.getItems()).thenReturn(new Item[]{new Item(ItemID.COINS, 4125)});
+		ItemStateService items = ItemStateService.forTesting();
+		items.onContainerChanged(InventoryID.BANK, bank);
+		pathfinderConfig.setItemStateService(items);
+		pathfinderConfig.refresh();
+		assertTrue(canBoardAt("Port Roberts"));
+	}
+
+	@Test
+	public void aBoatAlreadyAtTheDockIsPreferredToPayingRecovery()
+	{
+		recoverableSkiff(4125);
+		config.set("boatRecoveryThreshold", 4125);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_2_OWNED)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_2_TYPE)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_2_PORT)).thenReturn(PORT_ROBERTS);
+		pathfinderConfig.refresh();
+		List<Transport> roberts = new ArrayList<>();
+		for (Transport t : legs(null)) if (SailingTransports.from(t).name().equals("Port Roberts")) roberts.add(t);
+		assertFalse(roberts.isEmpty());
+		assertTrue(roberts.stream().noneMatch(t -> t.getDisplayInfo().startsWith("Recover boat")));
+	}
+
+	private boolean canBoardAt(String name)
+	{
+		PreparedSailingCapability capability = pathfinderConfig.prepareSailingCapability();
+		return capability.fleet().vessels().stream().anyMatch(v -> capability.canBoard(mooring(name), v));
+	}
+
+	private void recoverableSkiff(int coins)
+	{
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_OWNED)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_TYPE)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_PORT)).thenReturn(CATHERBY);
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_RETRIEVAL_COST, 0)).thenReturn(new Object[]{3750});
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_HULL_OPTION, 0)).thenReturn(new Object[]{100});
+		when(client.getDBTableField(100, DBTableID.SailingBoatHull.COL_FACILITY_STATS, 0))
+			.thenReturn(new Object[]{101});
+		when(client.getDBTableField(101, DBTableID.SailingBoatFacilityStats.COL_BOAT_ADDITIONAL_RECOVERY_COST_PERCENTAGE, 0))
+			.thenReturn(new Object[]{10});
+		pathfinderConfig.setSailingService(SailingService.forTesting(client));
+		coins(coins);
+	}
+
+	private void coins(int amount)
+	{
+		ItemContainer inventory = mock(ItemContainer.class);
+		when(inventory.getItems()).thenReturn(new Item[]{new Item(ItemID.COINS, amount)});
+		when(client.getItemContainer(InventoryID.INV)).thenReturn(inventory);
 	}
 
 	// The sailing transports the account is offered
