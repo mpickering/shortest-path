@@ -28,6 +28,12 @@ public final class AStarMinHeap
 	{
 		return poppedPriority;
 	}
+	/** The priority of the entry {@link #poll} would take next, or {@link CostArithmetic#INF} when empty. */
+	public int peekPriority()
+	{
+		return size == 0 ? CostArithmetic.INF : priorities[0];
+	}
+
 	public int cost()
 	{
 		return poppedCost;
