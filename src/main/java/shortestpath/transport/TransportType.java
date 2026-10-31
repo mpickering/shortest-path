@@ -39,6 +39,35 @@ public enum TransportType
 	MINECART,
 	QUETZAL,
 	QUETZAL_WHISTLE,
+	/*
+	 * Sailing the player's own boat between moorings, one type per boat kind; generated from the sea by
+	 * shortest-path-tooling's sailingData task. Which boats the player has, and where, is checked by PathfinderConfig,
+	 * not by config keys.
+	 */
+	SAILING_RAFT
+		{
+			@Override
+			public boolean isSailing()
+			{
+				return true;
+			}
+		},
+	SAILING_SKIFF
+		{
+			@Override
+			public boolean isSailing()
+			{
+				return true;
+			}
+		},
+	SAILING_SLOOP
+		{
+			@Override
+			public boolean isSailing()
+			{
+				return true;
+			}
+		},
 	SEASONAL_TRANSPORTS,
 	SPIRIT_TREE,
 	TELEPORTATION_BOX,
@@ -213,6 +242,12 @@ public enum TransportType
 	public boolean hasCostKey()
 	{
 		return costKey != null;
+	}
+
+	/** Whether this is sailing the player's own boat from one mooring to another. */
+	public boolean isSailing()
+	{
+		return false;
 	}
 
 	/**

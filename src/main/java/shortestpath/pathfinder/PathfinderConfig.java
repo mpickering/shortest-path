@@ -31,7 +31,13 @@ import shortestpath.settings.TeleportationItem;
 import shortestpath.items.ItemStateService;
 import shortestpath.leagues.LeagueModeState;
 import shortestpath.pathfinder.astar.PreparedRoutingAccount;
-import shortestpath.pathfinder.sailing.SailingMoves;
+import shortestpath.pathfinder.sailing.PreparedSailingCapability;
+import shortestpath.pathfinder.sailing.SailingFleet;
+import shortestpath.pathfinder.sailing.SailingFleets;
+import shortestpath.pathfinder.sailing.SailingMooring;
+import shortestpath.pathfinder.sailing.SailingMoorings;
+import shortestpath.pathfinder.sailing.SailingTransports;
+import shortestpath.pathfinder.sailing.SailingWaters;
 import shortestpath.poh.PohService;
 import shortestpath.requirement.ClientPlayerStateSource;
 import shortestpath.requirement.PlayerStateSource;
@@ -55,7 +61,6 @@ import shortestpath.requirement.model.TransportItems;
 import shortestpath.requirement.model.VarRequirement;
 import shortestpath.requirement.model.Unlock;
 import shortestpath.sailing.SailingService;
-import shortestpath.sailing.SailingState;
 
 @SuppressWarnings("SameParameterValue")
 public class PathfinderConfig
@@ -275,17 +280,8 @@ public class PathfinderConfig
 	{
 		return sailing.getState().isAboard();
 	}
-	/**
-	 * On a boat with the option on, search with sailing moves (see {@link SailingMoves}) instead of walking.
-	 */
-	@Getter
-	private volatile boolean sailingMoves;
-	/**
-	 * Speed sailing moves are built for: the boat's base speed in tiles per tick, or an estimate when it
-	 * can't be read. Speed boosts are random and temporary, so they are left out.
-	 */
-	@Getter
-	private volatile double sailingSpeed = SailingMoves.ESTIMATED_SPEED;
+	/** Whether routes sail the player's boats: "Sail on boats" on, logged in. */
+	private volatile boolean sailingBoats;
 
 	public PathfinderConfig(Client client, ShortestPathConfig config)
 	{
@@ -407,6 +403,52 @@ public class PathfinderConfig
 		return PreparedRoutingAccount.compile(
 			getTransportAvailability(BankVisitState.CARRIED), getTransportAvailability(BankVisitState.BANKED), includeBankPath || targetsNeedBank,
 			accessibleBankTiles, bankVisitCost, allowTransports, this::getAdditionalTransportCost);
+	}
+
+	/**
+	 * This query's sailing capability: the account's boats ({@link #sailingFleet}) and the moorings whose
+	 * requirements it meets. {@link PreparedSailingCapability#NONE} unless a boat can be sailed. Client thread
+	 * only, like {@link #prepareAStarRoutingAccount}: requirements read this refresh's account state.
+	 */
+	public PreparedSailingCapability prepareSailingCapability()
+	{
+		SailingFleet fleet = sailingFleet();
+		if (fleet == null || (fleet.aboard() == null && fleet.boats().isEmpty()))
+		{
+			return PreparedSailingCapability.NONE;
+		}
+		Requirements requirements = this.requirements;
+		List<SailingMooring> usable = new ArrayList<>();
+		for (SailingMooring mooring : SailingMoorings.all())
+		{
+			if (requirements != null && !requirements.satisfied(mooring.requirements()))
+			{
+				continue;
+			}
+			boolean started = true;
+			for (Quest quest : mooring.questsStarted())
+			{
+				started &= getQuestState(quest) != QuestState.NOT_STARTED;
+			}
+			if (started)
+			{
+				usable.add(mooring);
+			}
+		}
+		return new PreparedSailingCapability(fleet, usable);
+	}
+
+	/**
+	 * The player's boats as far as the game shows them, with "Sail on boats" on ({@link SailingFleets#fromState}).
+	 * An account model that knows its boats overrides this.
+	 */
+	protected SailingFleet sailingFleet()
+	{
+		if (!sailingBoats)
+		{
+			return SailingFleet.NONE;
+		}
+		return SailingFleets.fromState(sailing.getState());
 	}
 
 	public boolean hasDestination(String destinationType)
@@ -537,19 +579,11 @@ public class PathfinderConfig
 		// boat-state reads and republishes its snapshot here unconditionally, so a
 		// stale read (e.g. after logging out aboard a boat) can never keep the
 		// search sailing when there is no boat
-		sailingMoves = false;
-		sailingSpeed = SailingMoves.ESTIMATED_SPEED;
+		sailingBoats = false;
 		sailing.refresh(playerStateSource);
 		if (GameState.LOGGED_IN.equals(playerStateSource.gameState()))
 		{
-			SailingState sailingState = sailing.getState();
-			sailingMoves = sailingState.isAboard() && effective.bool(ConfigKey.USE_SAILING_MOVES);
-			// The game stores the base speed in 1/128ths of a tile per tick; a read above any real
-			// boat's speed is a stale or mis-scaled varbit rather than a fast boat — the moves it
-			// would build are so long nothing can sail them — so estimate instead
-			double speed = sailingState.getBaseSpeed() / 128.0;
-			sailingSpeed = sailingState.getBaseSpeed() > 0 && speed <= SailingMoves.MAX_SPEED
-				? speed : SailingMoves.ESTIMATED_SPEED;
+			sailingBoats = effective.bool(ConfigKey.USE_SAILING_MOVES);
 			refreshTransports(evaluationTimeMinutes);
 		}
 
@@ -795,6 +829,9 @@ public class PathfinderConfig
 		varbitValues = context.getVarbitValues();
 		varPlayerValues = context.getVarPlayerValues();
 		requirements = new Requirements(context, policy, requirementHooks);
+		// Sailing between moorings needs a boat of the transport's kind moored where it boards, and takes that boat's time
+		SailingFleet fleet = sailingFleet();
+		SailingWaters waters = fleet.boats().isEmpty() ? null : SailingWaters.of(getMap());
 		TransportAvailability.Builder withoutBank = new TransportAvailability.Builder(allTransports.length);
 		TransportAvailability.Builder withBank = new TransportAvailability.Builder(allTransports.length);
 		for (Transport transport : allTransports)
@@ -804,6 +841,17 @@ public class PathfinderConfig
 			// instance goes through every gate and into both availability
 			// views, so downstream consumers share one identity.
 			Transport offered = eligibility.wrapFairyRingStaff(transport);
+
+			if (offered.getType().isSailing())
+			{
+				SailingFleet.Boat boat = SailingTransports.boat(offered, fleet);
+				if (boat == null || !SailingTransports.usable(offered, boat.vessel(), getMap(), waters,
+					quest -> getQuestState(quest) != QuestState.NOT_STARTED))
+				{
+					continue;
+				}
+				offered = SailingTransports.boundFor(offered, boat.vessel());
+			}
 
 			// The named gates run first; a transport failing any of them is
 			// dropped before either item pool is consulted.

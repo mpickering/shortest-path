@@ -1,360 +1,297 @@
 package shortestpath.pathfinder.sailing;
 
 import java.util.Arrays;
+import java.util.function.IntUnaryOperator;
 
 import static net.runelite.api.Constants.REGION_SIZE;
+import shortestpath.PrimitiveIntHashMap;
 import shortestpath.PrimitiveIntList;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.BankVisitState;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.NodeGraph;
 import shortestpath.pathfinder.SplitFlagMap;
-import shortestpath.pathfinder.VisitedTiles;
 
 /**
- * One sailing search's moves, boat, targets and when it counts as arriving (see {@link SailingPathfinder}).
+ * One sailing search's moves, hull, targets and when it counts as arriving (see {@link SailingSolver}).
  * <p>
- * With the boat's hull, the path arrives once a target tile is inside the hull, where the path ends and facing the way
- * it sailed there. Without one, moves land whole tiles away, often several at a time, so a boat can't stop on every
- * tile: at speed 2 every move goes an even number of tiles across and up together, so half of all tiles are out of
- * reach. The path then arrives once the boat is on a target or next to it.
+ * The path arrives on the move whose hull, as it sails, passes over a target tile: the targets are expanded, once,
+ * into the tiles each move can set out from to do so ({@link #arrivingMoves}). The boat passes over the target during
+ * the move, so it may arrive though no move ends with the target under its hull: at 2.5 tiles a tick every move sails
+ * 5 tiles, and a small inlet can lie between where they end.
  * <p>
  * It also remembers the cheapest cost each tile has been queued at, so that a tile is only queued again when a route
- * reaches it for less — or, with a hull, when a costlier move would arrive on a heading none has tried: a dearer one
- * would only be dequeued once the tile is done.
+ * reaches it for less — or when a costlier move would arrive on a heading none has tried: a dearer one would only be
+ * dequeued once the tile is done.
  */
 final class SailingSearch
 {
+	/** An estimate meaning no end of the search can be reached from the tile: the move there isn't queued. */
+	static final int NO_ROUTE = Integer.MAX_VALUE;
+
 	private static final int REGION_SHIFT = Integer.numberOfTrailingZeros(REGION_SIZE);
 	private static final int REGION_MASK = REGION_SIZE - 1;
 	private static final int PLANES = 4;
 	private static final int HEADINGS = 16;
-	// Sailing moves cost the distance they sail (SailingMoves.length), plus a thousandth of a tile per change of
-	// heading, so that of the routes that are equally short the one with the fewest, longest legs wins.
-	private static final int SAILING_COST_PER_TURN = 1;
 
 	final SailingMoves moves;
-	/** The boat's hull, or {@code null} to keep only the boat's centre clear. */
 	final BoatHull hull;
+	// A lower bound on the ticks left from each boat tile; may answer NO_ROUTE
+	private final IntUnaryOperator estimate;
 	private final int[] targets;
-	// The targets plus their fallback tiles: the search can also end by landing on one of them. Set when the
-	// search runs, once its goals are resolved
-	private int[] goals;
-	// The heading the boat is facing where the route starts, or -1 when that isn't known: the start node has no
-	// move to face, so without it a target under the hull counts as arrived facing any heading — even one the
-	// boat, berthed, isn't pointing
+	// The heading the boat is facing where it sets out, or -1 when that isn't known: a source has no move to face, so
+	// without it a target under the hull counts as arrived facing any heading — even one the boat, at rest, isn't
+	// pointing
 	private final int initialHeading;
-	// How far from a target the boat's tile can be while arriving, in tiles: next to it diagonally, or with a hull, as
-	// far as the hull reaches plus half a tile's diagonal
-	private final double arrivalReach;
+	// The targets expanded by the moves: per tile a move can set out from to pass over a target, which moves do, as
+	// one bitmask per target
+	private final PrimitiveIntHashMap<int[]> arrivingMoves;
 	private final SplitFlagMap.RegionExtent extent;
-	// The cheapest cost each tile has been queued at, without and with a bank visited, as one array per region and plane,
-	// made as the search reaches them
-	private final int[][][] queuedCosts = new int[2][][];
+	// The cheapest cost each tile has been queued at, one array per region and plane, made as the search reaches them
+	private final int[][] queuedCosts;
 	// Which moves have already been queued into each tile at a cost that doesn't beat the tile's cheapest, as a bitmask.
 	// A tile's cheapest route may face a way its hull doesn't cover a target in, so a costlier move that would arrive is
 	// still queued — once per move
-	private final int[][][] queuedArrivals = new int[2][][];
+	private final int[][] queuedArrivals;
+	// The cost each tile was settled at, cheapest first; a tile reached for less later is settled again, which lets the
+	// search keep an estimate that is admissible but not consistent
+	private final int[][] settledCosts;
 
-	SailingSearch(SailingMoves moves, BoatHull hull, int[] targets, int[] goals)
+	SailingSearch(SailingMoves moves, BoatHull hull, int[] targets, int initialHeading, IntUnaryOperator estimate)
 	{
-		this(moves, hull, targets, goals, WorldPointUtil.UNDEFINED);
-	}
-
-	SailingSearch(SailingMoves moves, BoatHull hull, int[] targets, int[] goals, int initialHeading)
-	{
+		if (hull == null) throw new NullPointerException("hull");
 		this.moves = moves;
 		this.hull = hull;
 		this.targets = targets;
-		this.goals = goals;
 		this.initialHeading = initialHeading;
-		arrivalReach = hull == null ? Math.sqrt(2) : hull.reach() + Math.sqrt(2) / 2;
+		this.estimate = estimate;
+		arrivingMoves = targets.length == 0 ? null : arrivingMoves(hull, moves, targets);
 		extent = SplitFlagMap.getRegionExtents();
 		int regions = (extent.getWidth() + 1) * (extent.getHeight() + 1) * PLANES;
-		queuedCosts[0] = new int[regions][];
-		queuedCosts[1] = new int[regions][];
-		queuedArrivals[0] = new int[regions][];
-		queuedArrivals[1] = new int[regions][];
-	}
-
-	/** Sets the goal tiles the estimate aims for, once the search has resolved them. */
-	void setGoals(int[] goals)
-	{
-		this.goals = goals;
+		queuedCosts = new int[regions][];
+		queuedArrivals = new int[regions][];
+		settledCosts = new int[regions][];
 	}
 
 	/**
-	 * The heading the boat faces on {@code node}: the way the move that reached it sailed, or the heading it was
-	 * facing where the route began on the start node, which no move reached. -1 means unknown, which lets
-	 * {@link #arrivedTarget} try every heading.
+	 * The heading the boat faces on {@code node}: the way the move that reached it sailed, or on a source, which no
+	 * move reached, the heading the boat was facing there. -1 means unknown, which lets {@link #arrivedAt} try every
+	 * heading.
 	 */
 	int arrivalHeading(NodeGraph graph, int node)
 	{
-		int heading = sailingArrivalHeading(graph, node, moves);
-		return heading < 0 ? initialHeading : heading;
-	}
-
-	// The heading of the sailing move that reached node, or -1 if it wasn't reached by one (such as the search's
-	// start, which faces the boat's own heading instead — see SailingSearch.arrivalHeading).
-	// The move is stored on the node rather than recovered from its displacement, which different headings can share
-	// at low speeds
-	private static int sailingArrivalHeading(NodeGraph graph, int node, SailingMoves moves)
-	{
+		// The move is stored on the node rather than recovered from its displacement, which different headings can
+		// share at low speeds
 		int move = graph.moveIndex(node);
-		return move < 0 ? -1 : moves.heading(move);
+		return move < 0 ? initialHeading : moves.heading(move);
 	}
 
 	/**
-	 * The target the boat, on the tile at {@code packedPosition} and facing {@code heading}, has arrived at: its hull
-	 * covers it, facing any heading if {@code heading} is -1 (unknown); or without a hull, it's on a target or next to
-	 * it. {@link WorldPointUtil#UNDEFINED} if it hasn't arrived.
+	 * Every target expanded into the tiles a move can set out from with the hull passing over it, mapped to which moves
+	 * do so, one bitmask per target.
 	 */
-	int arrivedTarget(int packedPosition, int heading)
+	static PrimitiveIntHashMap<int[]> arrivingMoves(BoatHull hull, SailingMoves moves, int[] targets)
 	{
-		for (int target : targets)
+		PrimitiveIntHashMap<int[]> starts = new PrimitiveIntHashMap<>(256);
+		for (int t = 0; t < targets.length; t++)
 		{
-			if (hull == null)
+			int tx = WorldPointUtil.unpackWorldX(targets[t]), ty = WorldPointUtil.unpackWorldY(targets[t]);
+			int tz = WorldPointUtil.unpackWorldPlane(targets[t]);
+			for (int move = 0; move < moves.size(); move++)
 			{
-				if (WorldPointUtil.distanceBetween(target, packedPosition) <= 1)
+				int[] swept = hull.sweptOffsets(moves.heading(move), moves.dx(move), moves.dy(move));
+				for (int i = 0; i < swept.length; i += 2)
 				{
-					return target;
-				}
-				continue;
-			}
-			if (WorldPointUtil.unpackWorldPlane(target) != WorldPointUtil.unpackWorldPlane(packedPosition))
-			{
-				continue;
-			}
-			int dx = WorldPointUtil.unpackWorldX(target) - WorldPointUtil.unpackWorldX(packedPosition);
-			int dy = WorldPointUtil.unpackWorldY(target) - WorldPointUtil.unpackWorldY(packedPosition);
-			for (int facing = heading < 0 ? 0 : heading; facing < (heading < 0 ? HEADINGS : heading + 1); facing++)
-			{
-				if (hull.covers(facing, dx, dy))
-				{
-					return target;
+					int start = WorldPointUtil.packWorldPoint(tx - swept[i], ty - swept[i + 1], tz);
+					int[] masks = starts.get(start);
+					if (masks == null)
+					{
+						masks = new int[targets.length];
+						starts.put(start, masks);
+					}
+					masks[t] |= 1 << move;
 				}
 			}
+		}
+		return starts;
+	}
+
+	/**
+	 * The target the boat passes over sailing {@code move} from the tile at {@code from}, or
+	 * {@link WorldPointUtil#UNDEFINED}.
+	 */
+	int arrivedByMove(int from, int move)
+	{
+		int[] masks = arrivingMoves == null ? null : arrivingMoves.get(from);
+		if (masks == null) return WorldPointUtil.UNDEFINED;
+		for (int t = 0; t < masks.length; t++)
+		{
+			if ((masks[t] & (1 << move)) != 0) return targets[t];
 		}
 		return WorldPointUtil.UNDEFINED;
 	}
 
 	/**
-	 * A lower bound on the distance left from tile (x, y), in the units of {@link SailingMoves#length}: the nearest
-	 * straight-line distance to a goal tile — which the boat has to land on — or to a target less how far from it the
-	 * boat can arrive. Rounded down, so it never overestimates.
+	 * Whether the boat arrives at {@code target} on {@code node}: by the move that reached it passing over the target,
+	 * or on a source, with the target under its hull already ({@link #arrivedAt(BoatHull, int, int, int)}).
 	 */
-	int estimate(int x, int y)
+	boolean arrivedAt(NodeGraph graph, int node, int target)
 	{
-		// Landing on a goal tile ends the search exactly; a target only needs the boat within
-		// arrival reach of it
-		double tilesLeft = Double.MAX_VALUE;
-		for (int goal : goals)
+		int move = graph.moveIndex(node), previous = graph.previous(node);
+		if (move < 0 || previous == NodeGraph.NO_NODE)
+			return arrivedAt(hull, target, graph.packedPosition(node), arrivalHeading(graph, node));
+		int[] masks = arrivingMoves.get(graph.packedPosition(previous));
+		if (masks == null) return false;
+		for (int t = 0; t < masks.length; t++)
 		{
-			long dx = WorldPointUtil.unpackWorldX(goal) - x;
-			long dy = WorldPointUtil.unpackWorldY(goal) - y;
-			tilesLeft = Math.min(tilesLeft, Math.sqrt(dx * dx + dy * dy));
+			if (targets[t] == target && (masks[t] & (1 << move)) != 0) return true;
 		}
+		return false;
+	}
+
+	/** The target the boat arrives at on {@code node} (see {@link #arrivedAt(NodeGraph, int, int)}), or UNDEFINED. */
+	int arrivedTarget(NodeGraph graph, int node)
+	{
 		for (int target : targets)
 		{
-			long dx = WorldPointUtil.unpackWorldX(target) - x;
-			long dy = WorldPointUtil.unpackWorldY(target) - y;
-			tilesLeft = Math.min(tilesLeft, Math.sqrt(dx * dx + dy * dy) - arrivalReach);
+			if (arrivedAt(graph, node, target)) return target;
 		}
-		if (tilesLeft == Double.MAX_VALUE)
-		{
-			return 0;
-		}
-		return (int) (SailingMoves.LENGTH_UNITS_PER_TILE * Math.max(0, tilesLeft));
+		return WorldPointUtil.UNDEFINED;
 	}
 
 	/**
-	 * The cheapest cost tile (x, y, z) has been queued at so far, or {@link Integer#MAX_VALUE} if it hasn't been; 0 if it's
-	 * off the map, so it never is.
+	 * Whether a boat with {@code hull} on {@code packedPosition} facing {@code heading} (-1 any) has arrived at
+	 * {@code target}: its hull covers it.
 	 */
-	int queuedCost(int x, int y, int z, BankVisitState bankVisited)
+	static boolean arrivedAt(BoatHull hull, int target, int packedPosition, int heading)
+	{
+		if (WorldPointUtil.unpackWorldPlane(target) != WorldPointUtil.unpackWorldPlane(packedPosition)) return false;
+		int dx = WorldPointUtil.unpackWorldX(target) - WorldPointUtil.unpackWorldX(packedPosition);
+		int dy = WorldPointUtil.unpackWorldY(target) - WorldPointUtil.unpackWorldY(packedPosition);
+		for (int facing = heading < 0 ? 0 : heading; facing < (heading < 0 ? HEADINGS : heading + 1); facing++)
+		{
+			if (hull.covers(facing, dx, dy)) return true;
+		}
+		return false;
+	}
+
+	/** The estimate for {@code tile}: a lower bound on the ticks left, or {@link #NO_ROUTE}. */
+	int estimate(int tile)
+	{
+		return estimate.applyAsInt(tile);
+	}
+
+	/**
+	 * The cheapest cost tile (x, y, z) has been queued at so far, or {@link Integer#MAX_VALUE} if it hasn't been; 0 if
+	 * it's off the map, so it never is.
+	 */
+	int queuedCost(int x, int y, int z)
 	{
 		int region = regionIndex(x, y, z);
-		if (region < 0)
-		{
-			return 0;
-		}
-		int[] costs = queuedCosts[bankVisited == BankVisitState.BANKED ? 1 : 0][region];
+		if (region < 0) return 0;
+		int[] costs = queuedCosts[region];
 		return costs == null ? Integer.MAX_VALUE : costs[tileIndex(x, y)];
 	}
 
-	/**
-	 * Notes that tile (x, y, z) is queued at {@code cost}; only lowers the noted cost, so it stays the
-	 * cheapest the tile has been queued at (see {@link #queuedCost}).
-	 */
-	void setQueuedCost(int x, int y, int z, BankVisitState bankVisited, int cost)
+	/** The cost tile (x, y, z) was last settled at, or {@link Integer#MAX_VALUE} if it hasn't been; 0 off the map. */
+	int settledCost(int x, int y, int z)
 	{
 		int region = regionIndex(x, y, z);
-		int[][] byRegion = queuedCosts[bankVisited == BankVisitState.BANKED ? 1 : 0];
+		if (region < 0) return 0;
+		int[] costs = settledCosts[region];
+		return costs == null ? Integer.MAX_VALUE : costs[tileIndex(x, y)];
+	}
+
+	/** Notes that tile (x, y, z) is settled at {@code cost}. */
+	void setSettledCost(int x, int y, int z, int cost)
+	{
+		costsFor(settledCosts, regionIndex(x, y, z))[tileIndex(x, y)] = cost;
+	}
+
+	/**
+	 * Notes that tile (x, y, z) is queued at {@code cost}; only lowers the noted cost, so it stays the cheapest the
+	 * tile has been queued at (see {@link #queuedCost}).
+	 */
+	void setQueuedCost(int x, int y, int z, int cost)
+	{
+		int[] costs = costsFor(queuedCosts, regionIndex(x, y, z));
+		int index = tileIndex(x, y);
+		costs[index] = Math.min(costs[index], cost);
+	}
+
+	/**
+	 * Lets a move reaching tile (x, y, z) at a cost that doesn't beat its cheapest queue anyway when the boat arrives
+	 * on it, passing over a target — the tile's cheapest route may not. Marks the move queued, so each move is let
+	 * through once.
+	 *
+	 * @return whether the move should be queued despite its cost
+	 */
+	boolean queueArrival(boolean arrives, int move, int x, int y, int z)
+	{
+		if (!arrives) return false;
+		int region = regionIndex(x, y, z);
+		if (region < 0) return false;
+		int[] arrivals = queuedArrivals[region];
+		if (arrivals == null)
+		{
+			arrivals = new int[REGION_SIZE * REGION_SIZE];
+			queuedArrivals[region] = arrivals;
+		}
+		int index = tileIndex(x, y);
+		int bit = 1 << move;
+		if ((arrivals[index] & bit) != 0) return false;
+		arrivals[index] |= bit;
+		return true;
+	}
+
+	/** Lets go of the costs noted per tile, and the hull's caches, once the search is done. */
+	void release()
+	{
+		Arrays.fill(queuedCosts, null);
+		Arrays.fill(queuedArrivals, null);
+		Arrays.fill(settledCosts, null);
+		hull.release();
+	}
+
+	/**
+	 * Adds the moves from {@code node} on tile (x, y, z) to {@code out}, each costing its ticks. Sailing moves are
+	 * different lengths, so they are queued by cost. A tile is only queued again if a route reaches it for less, since
+	 * a dearer one would only be dequeued once the tile is done — or if a dearer move would arrive on a heading none
+	 * has tried, since the cheapest route's facing may not cover a target. The cost check comes first, as it costs less
+	 * than the hull's. The whole hull must fit along the move.
+	 */
+	void addNeighbors(CollisionMap map, PrimitiveIntList out, int node, int x, int y, int z, NodeGraph graph)
+	{
+		int costSoFar = graph.cost(node);
+		int from = WorldPointUtil.packWorldPoint(x, y, z);
+		for (int i = 0; i < moves.size(); i++)
+		{
+			int dx = moves.dx(i), dy = moves.dy(i);
+			int cost = moves.ticks(i);
+			// Whether the hull passes over a target on this move: the search has then arrived, wherever it ends
+			boolean arrives = arrivingMoves != null && arrivedByMove(from, i) != WorldPointUtil.UNDEFINED;
+			// A tile queued for no more already has its route; settled tiles are among them
+			if ((costSoFar + cost >= queuedCost(x + dx, y + dy, z) && !queueArrival(arrives, i, x + dx, y + dy, z))
+				|| !hull.canMove(map, x, y, z, moves.heading(i), dx, dy))
+			{
+				continue;
+			}
+			int to = WorldPointUtil.packWorldPoint(x + dx, y + dy, z);
+			// Nothing is left to sail once the boat has arrived, wherever the move ends
+			int estimate = arrives ? 0 : estimate(to);
+			if (estimate == NO_ROUTE) continue;
+			out.add(graph.createWeightedTile(to, node, cost, estimate, BankVisitState.CARRIED, i));
+		}
+	}
+
+	private static int[] costsFor(int[][] byRegion, int region)
+	{
 		if (byRegion[region] == null)
 		{
 			byRegion[region] = new int[REGION_SIZE * REGION_SIZE];
 			Arrays.fill(byRegion[region], Integer.MAX_VALUE);
 		}
-		int index = tileIndex(x, y);
-		byRegion[region][index] = Math.min(byRegion[region][index], cost);
-	}
-
-	/**
-	 * Lets a move reaching tile (x, y, z) at a cost that doesn't beat its cheapest queue anyway when the
-	 * boat would arrive on the move's heading — the tile's cheapest route may face a way its hull doesn't
-	 * cover a target in. Marks the move queued, so each move is let through once. Only for hull searches:
-	 * without a hull arrival doesn't depend on facing.
-	 *
-	 * @return whether the move should be queued despite its cost
-	 */
-	boolean queueArrival(int packedPosition, int move, int x, int y, int z, BankVisitState bankVisited)
-	{
-		if (hull == null || arrivedTarget(packedPosition, moves.heading(move)) == WorldPointUtil.UNDEFINED)
-		{
-			return false;
-		}
-		int region = regionIndex(x, y, z);
-		if (region < 0)
-		{
-			return false;
-		}
-		int[][] byRegion = queuedArrivals[bankVisited == BankVisitState.BANKED ? 1 : 0];
-		int[] arrivals = byRegion[region];
-		if (arrivals == null)
-		{
-			arrivals = new int[REGION_SIZE * REGION_SIZE];
-			byRegion[region] = arrivals;
-		}
-		int index = tileIndex(x, y);
-		int bit = 1 << move;
-		if ((arrivals[index] & bit) != 0)
-		{
-			return false;
-		}
-		arrivals[index] |= bit;
-		return true;
-	}
-
-	/**
-	 * Lets go of the costs noted per tile, and the hull's caches, once the search is done.
-	 */
-	void release()
-	{
-		Arrays.fill(queuedCosts[0], null);
-		Arrays.fill(queuedCosts[1], null);
-		Arrays.fill(queuedArrivals[0], null);
-		Arrays.fill(queuedArrivals[1], null);
-		if (hull != null)
-		{
-			hull.release();
-		}
-	}
-
-	// Sailing moves are different lengths, so they are queued by cost on the pending heap like transports rather than
-	// the FIFO boundary queue, which is only ordered for unit-cost walking edges: each costs the distance it sails, so
-	// the search finds the shortest route rather than the quickest. A tile is only queued again if a route reaches it
-	// for less, since a dearer one would only be dequeued once the tile is done — or, with a hull, if a dearer move
-	// would arrive on a heading none has tried, since the cheapest route's facing may not cover a target. The cost
-	// check comes first, which costs less than the line or hull check. With a hull, the whole boat must fit along the
-	// move, which also keeps its centre clear.
-	void addNeighbors(CollisionMap map, PrimitiveIntList out, int node, int x, int y, int z, BankVisitState bankVisited,
-		VisitedTiles visited, NodeGraph graph)
-	{
-		// The boat faces the way it sailed into the node — or, on the start node, the way it's pointing, so
-		// carrying straight on isn't a turn but putting about first is
-		final int arrivalHeading = arrivalHeading(graph, node);
-		// The first move gets the hull's berthed-tile escape: a boat can sit over tiles it then sails off
-		final boolean firstMove = graph.moveIndex(node) < 0;
-		final int costSoFar = graph.cost(node);
-		for (int i = 0; i < moves.size(); i++)
-		{
-			final int dx = moves.dx(i);
-			final int dy = moves.dy(i);
-			final int neighborPacked = WorldPointUtil.packWorldPoint(x + dx, y + dy, z);
-			final int cost = moves.length(i) + (arrivalHeading >= 0 && arrivalHeading != moves.heading(i) ? SAILING_COST_PER_TURN : 0);
-			if (visited.get(neighborPacked, bankVisited)
-				|| (costSoFar + cost >= queuedCost(x + dx, y + dy, z, bankVisited)
-					&& !queueArrival(neighborPacked, i, x + dx, y + dy, z, bankVisited))
-				|| !(hull == null ? canSailLine(map, x, y, z, dx, dy)
-					: hull.canMove(map, x, y, z, moves.heading(i), dx, dy, firstMove)))
-			{
-				continue;
-			}
-			out.add(graph.createWeightedTile(neighborPacked, node, cost, estimate(x + dx, y + dy), bankVisited, i));
-		}
-	}
-
-	/**
-	 * Whether a straight sailing move from tile (x, y, z) by (dx, dy) tiles only crosses open tiles: every tile the
-	 * line between the tile centres passes through must be one walking step from the previous one, so a move never
-	 * passes over a blocked tile (such as the blocked strip along coastlines). Where the line passes exactly through a
-	 * tile corner, both ways around the corner must be open.
-	 */
-	public static boolean canSailLine(CollisionMap map, int x, int y, int z, int dx, int dy)
-	{
-		final int nx = Math.abs(dx);
-		final int ny = Math.abs(dy);
-		final int sx = Integer.signum(dx);
-		final int sy = Integer.signum(dy);
-		// From a blocked tile, such as one a moored boat sits on, any open tile next to it can be entered, as when
-		// walking. Every tile after the first is entered through an open side, so it isn't blocked either.
-		boolean fromBlocked = map.isBlocked(x, y, z);
-		int cx = x;
-		int cy = y;
-		int ix = 0;
-		int iy = 0;
-		while (ix < nx || iy < ny)
-		{
-			// Compares where the line crosses the next vertical and horizontal tile edges
-			long decision = (long) (1 + 2 * ix) * ny - (long) (1 + 2 * iy) * nx;
-			if (decision == 0)
-			{
-				if (!canCross(map, cx, cy, z, sx, 0, fromBlocked) || !canCross(map, cx + sx, cy, z, 0, sy, false)
-					|| !canCross(map, cx, cy, z, 0, sy, fromBlocked) || !canCross(map, cx, cy + sy, z, sx, 0, false))
-				{
-					return false;
-				}
-				cx += sx;
-				cy += sy;
-				ix++;
-				iy++;
-			}
-			else if (decision < 0)
-			{
-				if (!canCross(map, cx, cy, z, sx, 0, fromBlocked))
-				{
-					return false;
-				}
-				cx += sx;
-				ix++;
-			}
-			else
-			{
-				if (!canCross(map, cx, cy, z, 0, sy, fromBlocked))
-				{
-					return false;
-				}
-				cy += sy;
-				iy++;
-			}
-			fromBlocked = false;
-		}
-		return true;
-	}
-
-	// Whether a boat can cross from tile (x, y, z) into the tile next to it (ex, ey) away, one of which is 0: through
-	// the open side between them, or from a blocked tile into any open one
-	private static boolean canCross(CollisionMap map, int x, int y, int z, int ex, int ey, boolean fromBlocked)
-	{
-		if (fromBlocked)
-		{
-			return !map.isBlocked(x + ex, y + ey, z);
-		}
-		if (ey == 0)
-		{
-			return ex < 0 ? map.w(x, y, z) : map.e(x, y, z);
-		}
-		return ey < 0 ? map.s(x, y, z) : map.n(x, y, z);
+		return byRegion[region];
 	}
 
 	// Index of the region and plane holding tile (x, y, z), or -1 if it's off the map

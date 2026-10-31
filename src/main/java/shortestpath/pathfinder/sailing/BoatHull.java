@@ -35,8 +35,6 @@ public final class BoatHull
 	private static final int REGION_SHIFT = Integer.numberOfTrailingZeros(REGION_SIZE);
 	private static final int REGION_MASK = REGION_SIZE - 1;
 	private static final int PLANES = 4;
-	// A shape with no rows, so no tiles count as covered where a move starts
-	private static final int[] EMPTY_SHAPE = {0};
 
 	// The rectangle in the boat's own frame, in local units (128 per tile): its centre across and along the boat
 	// (the bow is toward negative along) and its size
@@ -45,8 +43,8 @@ public final class BoatHull
 	private final int boundsWidth;
 	private final int boundsHeight;
 	// Where the boat sits within its tile, in local units from the tile's centre
-	private final int pivotX;
-	private final int pivotY;
+	@Getter @Accessors(fluent = true) private final int pivotX;
+	@Getter @Accessors(fluent = true) private final int pivotY;
 
 	// Tiles the hull covers, relative to the tile it starts on: {first row, then each row's first and last column}.
 	// Concurrent: the search fills it on the pathfinding thread while the client thread's arrival
@@ -112,9 +110,14 @@ public final class BoatHull
 	}
 
 	/**
-	 * How far the hull reaches from the centre of the boat's tile, facing any heading, in tiles.
+	 * How far from a target the boat's tile can be as it sets out on a move of {@code moves} that arrives there, in
+	 * tiles: the hull passes over the target somewhere along the move, so as far as the hull reaches, half a tile's
+	 * diagonal, and the move's length.
 	 */
-
+	public double arrivalReach(SailingMoves moves)
+	{
+		return reach + Math.sqrt(2) / 2 + moves.longestMove();
+	}
 
 	/**
 	 * Whether the hull, on a tile facing {@code heading}, covers the tile (dx, dy) tiles from it: overlaps it by more
@@ -128,46 +131,91 @@ public final class BoatHull
 	}
 
 	/**
-	 * Whether the hull, facing {@code heading}, can sail (dx, dy) tiles from tile (x, y, z) without overlapping a tile
-	 * that blocks it anywhere along the way, where it starts and ends included.
+	 * The tiles the hull sweeps sailing (dx, dy) tiles facing {@code heading}, where it starts and ends included, as
+	 * offsets from the tile it starts on: {dx0, dy0, dx1, dy1, ...}. The same tiles a move has to find clear.
 	 */
-	public boolean canMove(CollisionMap map, int x, int y, int z, int heading, int dx, int dy)
+	public int[] sweptOffsets(int heading, int dx, int dy)
 	{
-		return canMove(map, x, y, z, heading, dx, dy, false);
+		int[] shape = shape(heading, dx, dy);
+		int count = 0;
+		for (int row = 0; row < rows(shape); row++) count += shape[2 + 2 * row] - shape[1 + 2 * row] + 1;
+		int[] offsets = new int[2 * count];
+		int i = 0;
+		for (int row = 0; row < rows(shape); row++)
+		{
+			for (int x = shape[1 + 2 * row]; x <= shape[2 + 2 * row]; x++)
+			{
+				offsets[i++] = x;
+				offsets[i++] = shape[0] + row;
+			}
+		}
+		return offsets;
+	}
+
+	/**
+	 * The tiles the hull covers facing every heading, as offsets from the boat's tile: {dx0, dy0, dx1, dy1, ...}. A boat
+	 * can only end a move on a tile none of whose core tiles blocks it.
+	 */
+	public int[] coreOffsets()
+	{
+		int radius = (int) Math.ceil(reach);
+		int[] offsets = new int[8];
+		int count = 0;
+		for (int dy = -radius; dy <= radius; dy++)
+		{
+			for (int dx = -radius; dx <= radius; dx++)
+			{
+				boolean everyHeading = true;
+				for (int heading = 0; heading < HEADINGS && everyHeading; heading++)
+				{
+					everyHeading = covers(heading, dx, dy);
+				}
+				if (!everyHeading) continue;
+				if (count + 2 > offsets.length) offsets = Arrays.copyOf(offsets, offsets.length * 2);
+				offsets[count++] = dx;
+				offsets[count++] = dy;
+			}
+		}
+		return Arrays.copyOf(offsets, count);
+	}
+
+	/**
+	 * Whether tile (x, y, z) blocks a boat: it is blocked, or a side of it can't be crossed into the open tile beyond.
+	 */
+	public static boolean blocksBoat(CollisionMap map, int x, int y, int z)
+	{
+		if (map.isBlocked(x, y, z)) return true;
+		return (!map.n(x, y, z) && !map.isBlocked(x, y + 1, z)) || (!map.s(x, y, z) && !map.isBlocked(x, y - 1, z))
+			|| (!map.e(x, y, z) && !map.isBlocked(x + 1, y, z)) || (!map.w(x, y, z) && !map.isBlocked(x - 1, y, z));
 	}
 
 	/**
 	 * Whether the hull, facing {@code heading}, can sail (dx, dy) tiles from tile (x, y, z) without overlapping a tile
-	 * that blocks it anywhere along the way — or only ones it doesn't already cover, when {@code exemptStart} marks
-	 * the search's first move: a berthed boat's hull can overlap blocked tiles where it starts (a moored boat may sit
-	 * over marked tiles), and like {@link SailingSearch#canSailLine}'s first-tile escape they can't stop it leaving.
-	 * Later moves keep the full start check, which also catches the hull turning onto a blocked tile between moves.
+	 * that blocks it anywhere along the way, where it starts and ends included. A move from a state the boat can't be
+	 * in (its hull over a blocked tile) is never allowed, so the start check also catches the hull turning onto a
+	 * blocked tile between moves.
 	 */
-	public boolean canMove(CollisionMap map, int x, int y, int z, int heading, int dx, int dy, boolean exemptStart)
+	public boolean canMove(CollisionMap map, int x, int y, int z, int heading, int dx, int dy)
 	{
 		final int[] shape = shape(heading, dx, dy);
-		final int[] start = exemptStart ? shape(heading, 0, 0) : EMPTY_SHAPE;
 		for (int row = 0; row < rows(shape); row++)
 		{
-			final int rowY = shape[0] + row;
-			final int lo = shape[1 + 2 * row];
-			final int hi = shape[2 + 2 * row];
-			final int startRow = rowY - start[0];
-			if (startRow < 0 || startRow >= rows(start))
-			{
-				if (anyBlocked(map, x + lo, x + hi, y + rowY, z))
-				{
-					return false;
-				}
-				continue;
-			}
-			if (anyBlocked(map, x + lo, x + Math.min(hi, start[1 + 2 * startRow] - 1), y + rowY, z)
-				|| anyBlocked(map, x + Math.max(lo, start[2 + 2 * startRow] + 1), x + hi, y + rowY, z))
+			if (anyBlocked(map, x + shape[1 + 2 * row], x + shape[2 + 2 * row], y + shape[0] + row, z))
 			{
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/** Whether the boat can be on tile (x, y, z) facing some heading: its hull then overlaps no tile that blocks it. */
+	public boolean fits(CollisionMap map, int x, int y, int z)
+	{
+		for (int heading = 0; heading < HEADINGS; heading++)
+		{
+			if (canMove(map, x, y, z, heading, 0, 0)) return true;
+		}
+		return false;
 	}
 
 	/**

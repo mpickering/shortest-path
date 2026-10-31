@@ -118,10 +118,10 @@ public class BoatHullTest
 		int start = WorldPointUtil.packWorldPoint(2948, 3074, 0);
 		int target = WorldPointUtil.packWorldPoint(3074, 2983, 0);
 
-		List<PathStep> pointPath = findPath(start, target, moves, null);
+		List<PathStep> raftPath = findPath(start, target, moves, hull(RAFT, 0, 0));
 		List<PathStep> sloopPath = findPath(start, target, moves, hull(SLOOP, 0, 0));
 
-		assertNotNull("Steering only the boat's centre clear takes a sloop over rocks", hullHit(pointPath, moves, 1.5, 3, 7));
+		assertNotNull("A raft's route takes a sloop over rocks", hullHit(raftPath, moves, 1.5, 3, 7));
 		assertNull(hullHit(sloopPath, moves, 1.5, 3, 7));
 	}
 
@@ -150,69 +150,56 @@ public class BoatHullTest
 	public void testSloopCantGetPastTheElidDeltaIslands()
 	{
 		// As in game, the channels between the islands are too narrow for a sloop
-		SailingPathfinder pathfinder = new SailingPathfinder(pathfinderConfig, UNKAH_HARBOUR, Set.of(TOP_OF_ELID_DELTA),
-			null, SailingMoves.forSpeed(1.5), hull(SLOOP, 0, 0));
-		pathfinder.run();
-
-		assertFalse(pathfinder.getResult().isReached());
+		assertNull(TestSail.sail(map, SailingMoves.forSpeed(1.5), hull(SLOOP, 0, 0), -1, UNKAH_HARBOUR,
+			TOP_OF_ELID_DELTA));
 	}
 
 	@Test
-	public void testBoatSailsOutOfTilesItsHullSitsOn()
+	public void testABoatOverBlockedTilesCannotMove()
 	{
-		// Moored on the 3x2 shipwreck at (2704-2706, 3050-3051), a raft's hull overlaps blocked tiles
-		// where it starts; like a boat on a blocked tile it can sail out of them with its first move,
-		// but not over other blocked tiles its hull doesn't already cover
+		// On the 3x2 shipwreck at (2704-2706, 3050-3051) a raft's hull overlaps blocked tiles: no boat can be there,
+		// so no move leaves it; a moored boat sets out from where it casts off instead
 		BoatHull raft = hull(RAFT, 0, 0);
-		assertTrue("North over the wreck row its hull sits on", raft.canMove(map, 2705, 3050, 0, NORTH, 0, 3, true));
-		assertTrue("South out of the wreck", raft.canMove(map, 2705, 3050, 0, SOUTH, 0, -3, true));
-		assertFalse("Only the first move gets the escape", raft.canMove(map, 2705, 3050, 0, NORTH, 0, 3));
-		assertFalse("Facing along the wreck, its hull doesn't cover the other row",
-			raft.canMove(map, 2705, 3050, 0, WEST, 0, 3, true));
-
-		int start = WorldPointUtil.packWorldPoint(2705, 3050, 0);
-		int target = WorldPointUtil.packWorldPoint(2705, 3042, 0);
-		findPath(start, target, SailingMoves.forSpeed(1.5), raft);
-	}
-
-	@Test
-	public void testSailingSearchesWhenNoGoalIsViable()
-	{
-		// A target on the shipwreck is blocked, and with the unreachable distance at 0 it resolves to
-		// no goal tiles: a walking search is skipped outright, but a sailing search still runs — its
-		// hull covering the target doesn't need a walkable goal tile
-		config.set("unreachableTargetDistanceThreshold", 0);
-		pathfinderConfig.refresh();
-		int start = WorldPointUtil.packWorldPoint(2705, 3044, 0);
-		int target = WorldPointUtil.packWorldPoint(2705, 3050, 0);
-
-		Pathfinder walking = new Pathfinder(pathfinderConfig, start, Set.of(target));
-		walking.run();
-		assertEquals(0, walking.getResult().getNodesChecked());
-
-		SailingPathfinder sailing = new SailingPathfinder(pathfinderConfig, start, Set.of(target), null,
-			SailingMoves.forSpeed(1.5), hull(RAFT, 0, 0));
-		sailing.run();
-		assertTrue(sailing.getResult().getNodesChecked() > 0);
+		assertFalse(raft.fits(map, 2705, 3050, 0));
+		assertFalse("North over the wreck", raft.canMove(map, 2705, 3050, 0, NORTH, 0, 3));
+		assertFalse("South out of the wreck", raft.canMove(map, 2705, 3050, 0, SOUTH, 0, -3));
+		assertTrue("Clear of it", raft.fits(map, 2705, 3046, 0));
 	}
 
 	@Test
 	public void testACostlierMoveStillQueuesWhenItWouldArrive()
 	{
-		// With the target a tile east, a raft only covers it facing east: if the cheapest route to
-		// that tile faces another way, a costlier move facing east must still be queued
+		// With the target a tile east of where the moves end, a raft only passes over it sailing east: if the
+		// cheapest route to that tile came another way, a costlier move sailing east must still be queued
 		SailingMoves moves = SailingMoves.forSpeed(1.5);
 		int target = WorldPointUtil.packWorldPoint(2706, 3049, 0);
-		SailingSearch search = new SailingSearch(moves, hull(RAFT, 0, 0), new int[]{target}, new int[]{target});
+		SailingSearch search = search(moves, hull(RAFT, 0, 0), target, -1);
 
-		int tile = WorldPointUtil.packWorldPoint(2705, 3049, 0);
 		int eastMove = moves.indexOf(3, 0);
 		int northMove = moves.indexOf(0, 3);
-		assertTrue(search.queueArrival(tile, eastMove, 2705, 3049, 0, BankVisitState.CARRIED));
-		assertFalse("A move is only let through once", search.queueArrival(tile, eastMove, 2705, 3049, 0, BankVisitState.CARRIED));
-		assertFalse("Facing north doesn't cover the target", search.queueArrival(tile, northMove, 2705, 3049, 0, BankVisitState.CARRIED));
-		assertFalse("Without a hull, facing doesn't matter", new SailingSearch(moves, null, new int[]{target},
-			new int[]{target}).queueArrival(tile, eastMove, 2705, 3049, 0, BankVisitState.CARRIED));
+		assertEquals(target, search.arrivedByMove(WorldPointUtil.packWorldPoint(2702, 3049, 0), eastMove));
+		assertEquals("Sailing north passes beside the target", WorldPointUtil.UNDEFINED,
+			search.arrivedByMove(WorldPointUtil.packWorldPoint(2705, 3046, 0), northMove));
+		assertTrue(search.queueArrival(true, eastMove, 2705, 3049, 0));
+		assertFalse("A move is only let through once", search.queueArrival(true, eastMove, 2705, 3049, 0));
+		assertFalse("A move that doesn't arrive isn't let through", search.queueArrival(false, northMove, 2705, 3049, 0));
+	}
+
+	@Test
+	public void testAMoveArrivesWhenItsHullPassesOverTheTarget()
+	{
+		// At 2.5 tiles a tick a raft sails 5 tiles east in a move, longer than its hull: the tiles 2 and 3 east of
+		// where it sets out are under it neither there nor where it ends, only as it passes
+		SailingMoves moves = SailingMoves.forSpeed(2.5);
+		int eastMove = moves.indexOf(5, 0);
+		BoatHull raft = hull(RAFT, 0, 0);
+		int heading = moves.heading(eastMove);
+		assertFalse(raft.covers(heading, 2, 0) || raft.covers(heading, -3, 0));
+		int target = WorldPointUtil.packWorldPoint(2702, 3049, 0);
+		SailingSearch search = search(moves, raft, target, -1);
+		assertEquals(target, search.arrivedByMove(WorldPointUtil.packWorldPoint(2700, 3049, 0), eastMove));
+		assertEquals("A tile off to the side is never under it", WorldPointUtil.UNDEFINED,
+			search.arrivedByMove(WorldPointUtil.packWorldPoint(2700, 3052, 0), eastMove));
 	}
 
 	@Test
@@ -227,11 +214,11 @@ public class BoatHullTest
 		int node = graph.createWeightedTile(WorldPointUtil.packWorldPoint(2950, 3074, 0), start, 2000, 0,
 			BankVisitState.CARRIED, move);
 
-		SailingSearch facingSouth = new SailingSearch(moves, null, new int[0], new int[0], SOUTH);
+		SailingSearch facingSouth = new SailingSearch(moves, hull(RAFT, 0, 0), new int[0], SOUTH, tile -> 0);
 		assertEquals(SOUTH, facingSouth.arrivalHeading(graph, start));
 		assertEquals("A move's own heading wins", EAST, facingSouth.arrivalHeading(graph, node));
 
-		SailingSearch facingUnknown = new SailingSearch(moves, null, new int[0], new int[0]);
+		SailingSearch facingUnknown = new SailingSearch(moves, hull(RAFT, 0, 0), new int[0], -1, tile -> 0);
 		assertEquals("An unknown start heading still tries them all", WorldPointUtil.UNDEFINED,
 			facingUnknown.arrivalHeading(graph, start));
 	}
@@ -242,14 +229,12 @@ public class BoatHullTest
 		// A sloop reaches 7 tiles toward its bow but only 3 astern: a target 5 tiles north is under the
 		// hull only facing north
 		int here = WorldPointUtil.packWorldPoint(2948, 3074, 0);
-		int[] target = {WorldPointUtil.packWorldPoint(2948, 3079, 0)};
-		SailingSearch search = new SailingSearch(SailingMoves.ESTIMATE, hull(SLOOP, 0, 0), target, target);
+		int target = WorldPointUtil.packWorldPoint(2948, 3079, 0);
+		BoatHull sloop = hull(SLOOP, 0, 0);
 
-		assertEquals("Facing south the target is astern, out of the hull", WorldPointUtil.UNDEFINED,
-			search.arrivedTarget(here, SOUTH));
-		assertEquals("Facing north it's under the bow", target[0], search.arrivedTarget(here, NORTH));
-		assertEquals("Unknown heading tries them all", target[0],
-			search.arrivedTarget(here, WorldPointUtil.UNDEFINED));
+		assertFalse("Facing south the target is astern, out of the hull", SailingSearch.arrivedAt(sloop, target, here, SOUTH));
+		assertTrue("Facing north it's under the bow", SailingSearch.arrivedAt(sloop, target, here, NORTH));
+		assertTrue("Unknown heading tries them all", SailingSearch.arrivedAt(sloop, target, here, -1));
 	}
 
 	@Test
@@ -261,26 +246,16 @@ public class BoatHullTest
 		int start = WorldPointUtil.packWorldPoint(2948, 3074, 0);
 		int target = WorldPointUtil.packWorldPoint(2948, 3079, 0);
 
-		SailingPathfinder astern = new SailingPathfinder(pathfinderConfig, start, Set.of(target), null,
-			SailingMoves.forSpeed(1.5), hull(SLOOP, 0, 0), SOUTH);
-		astern.run();
-		assertFalse("Arrived on the spot facing away from the target",
-			astern.getResult().isReached() && astern.getPath().size() <= 1);
-		assertTrue("But still reached it by sailing", astern.getResult().isReached());
-		assertTrue(astern.getPath().size() > 1);
+		SailingMoves moves = SailingMoves.forSpeed(1.5);
+		List<PathStep> astern = TestSail.sail(map, moves, hull(SLOOP, 0, 0), SOUTH, start, target);
+		assertNotNull("Still reached it by sailing", astern);
+		assertTrue("Not on the spot facing away from the target", astern.size() > 1);
 
-		SailingPathfinder facing = new SailingPathfinder(pathfinderConfig, start, Set.of(target), null,
-			SailingMoves.forSpeed(1.5), hull(SLOOP, 0, 0), NORTH);
-		facing.run();
-		assertTrue(facing.getResult().isReached());
-		assertEquals("A target already under the bow still arrives on the spot", 1, facing.getPath().size());
+		List<PathStep> facing = TestSail.sail(map, moves, hull(SLOOP, 0, 0), NORTH, start, target);
+		assertEquals("A target already under the bow still arrives on the spot", 1, facing.size());
 
-		SailingPathfinder noHeading = new SailingPathfinder(pathfinderConfig, start, Set.of(target), null,
-			SailingMoves.forSpeed(1.5), hull(SLOOP, 0, 0));
-		noHeading.run();
-		assertTrue(noHeading.getResult().isReached());
-		assertEquals("An unknown heading still counts an under-hull target as arrived", 1,
-			noHeading.getPath().size());
+		List<PathStep> noHeading = TestSail.sail(map, moves, hull(SLOOP, 0, 0), -1, start, target);
+		assertEquals("An unknown heading still counts an under-hull target as arrived", 1, noHeading.size());
 	}
 
 	@Test
@@ -293,6 +268,12 @@ public class BoatHullTest
 
 		assertTrue(endsCovering(path, moves, hull(RAFT, 0, 0), west));
 		assertNull(hullHit(path, moves, 0.5, 1.5, 1.5));
+	}
+
+	// A search with hull for target, the boat setting out facing heading
+	private static SailingSearch search(SailingMoves moves, BoatHull hull, int target, int heading)
+	{
+		return new SailingSearch(moves, hull, new int[] {target}, heading, tile -> 0);
 	}
 
 	// The boat sitting (pivotX, pivotY) local units from the centre of its tile
@@ -314,10 +295,9 @@ public class BoatHullTest
 
 	private List<PathStep> findPath(int start, int target, SailingMoves moves, BoatHull hull)
 	{
-		SailingPathfinder pathfinder = new SailingPathfinder(pathfinderConfig, start, Set.of(target), null, moves, hull);
-		pathfinder.run();
-		assertTrue("Target should be reachable", pathfinder.getResult().isReached());
-		return pathfinder.getPath();
+		List<PathStep> path = TestSail.sail(map, moves, hull, -1, start, target);
+		assertNotNull("Target should be reachable", path);
+		return path;
 	}
 
 	// Checks every move independently of BoatHull: samples the hull's rectangle every quarter tile along the move and

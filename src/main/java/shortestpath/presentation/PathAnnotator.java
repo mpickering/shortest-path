@@ -31,6 +31,7 @@ import shortestpath.pathfinder.PathStep;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.pathfinder.PathfinderResult;
 import shortestpath.pathfinder.TransportAvailability;
+import shortestpath.pathfinder.Traversal;
 import shortestpath.poh.PohService;
 import shortestpath.presentation.BankPickupRequirements.BankPickupResult;
 import shortestpath.requirement.TransportEligibility;
@@ -287,13 +288,33 @@ public class PathAnnotator
 		return stepTransports;
 	}
 
+	/** Next step for display hints, skipping the expanded sea moves when boarding a boat. */
 	public PathStep nextPathStep(List<PathStep> path, int index)
 	{
 		if (path == null || index < 0 || index + 1 >= path.size())
 		{
 			return null;
 		}
-		return path.get(index + 1);
+		PathStep current = path.get(index);
+		PathStep next = path.get(index + 1);
+		if (current.getTraversal() != Traversal.SAILING && next.getTraversal() == Traversal.SAILING)
+		{
+			// Expanded sailing legs keep their transport on the landing; show its hint where boarding starts.
+			int landing = index + 1;
+			while (landing < path.size() && path.get(landing).getTraversal() == Traversal.SAILING) landing++;
+			if (landing < path.size())
+			{
+				Transport transport = path.get(landing).getTransport();
+				if (transport != null && transport.getType().isSailing()
+					&& transport.getOrigin() == current.getPackedPosition()) return path.get(landing);
+			}
+		}
+		Transport transport = next.getTransport();
+		if (current.getTraversal() == Traversal.SAILING && transport != null && transport.getType().isSailing())
+		{
+			return null;
+		}
+		return next;
 	}
 
 	public String formatTransportDisplay(Transport transport)

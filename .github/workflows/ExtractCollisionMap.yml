@@ -90,6 +90,14 @@ jobs:
           zip -r collision-map.zip .
           mv collision-map.zip ../src/main/resources/collision-map.zip
 
+      # The sailing layer (the sea and each boat's pieces of it) is made from the collision map and written into it,
+      # and the sailing transports are timed on it; so it comes before the routing cuts, whose fingerprint covers the
+      # whole collision map.
+      - name: Generate sailing data
+        run: |
+          cd tooling
+          ./gradlew sailingData -PshortestPathDir=..
+
       # The exact pathfinder's routing cuts are derived from the collision map, so they are
       # regenerated with it and committed in the same commit.
       - name: Restore KaHIP
@@ -125,6 +133,7 @@ jobs:
         run: |
           unzip -t src/main/resources/collision-map.zip > /dev/null
           test -s src/main/resources/routing-cuts.bin
+          unzip -l src/main/resources/collision-map.zip | grep -q ' sailing/index$'
           ls -lh src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin
 
       - name: Build and test plugin with new data
@@ -135,11 +144,11 @@ jobs:
           rm -rf runelite cache output cache.jar keys.json cache.zip tooling
 
       # `add` is an explicit pathspec so the commit can only ever contain the
-      # two generated artifacts, regardless of what else is left in the
+      # generated artifacts, regardless of what else is left in the
       # workspace.
       - name: Commit changes
         uses: EndBug/add-and-commit@v11
         with:
           default_author: github_actions
-          add: "src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin"
+          add: "src/main/resources/collision-map.zip src/main/resources/routing-cuts.bin src/main/resources/transports/sailing_raft.tsv src/main/resources/transports/sailing_skiff.tsv src/main/resources/transports/sailing_sloop.tsv"
           message: "Update collision map"

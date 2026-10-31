@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Quest;
 import shortestpath.WorldPointUtil;
 import shortestpath.leagues.LeagueRegion;
+import shortestpath.sailing.LegTimes;
+import shortestpath.sailing.SeaArea;
 import shortestpath.transport.parser.FieldParser;
 import shortestpath.transport.parser.ItemRequirementParser;
 import shortestpath.transport.parser.QuestParser;
@@ -117,6 +119,15 @@ public class Transport
 	 */
 	@Getter
 	private LeagueRegion regionOverride = null;
+	/**
+	 * For sailing between moorings: the restricted sea areas the leg sails through at any speed it was timed at, with
+	 * every part the boat can be fitted with. Empty for every other transport.
+	 */
+	@Getter
+	private Set<SeaArea> seaAreas = SeaArea.NONE;
+	/** For sailing between moorings: the leg's time at each speed a hull gives; {@code null} for every other transport. */
+	@Getter
+	private LegTimes legTimes = null;
 
 	/**
 	 * Creates a new transport from an origin-only transport
@@ -140,7 +151,9 @@ public class Transport
 			.objectInfo(origin.objectInfo)
 			.varRequirements(origin.varRequirements)
 			.varRequirements(destination.varRequirements)
-			.regionOverride(destination.regionOverride != null ? destination.regionOverride : origin.regionOverride);
+			.regionOverride(destination.regionOverride != null ? destination.regionOverride : origin.regionOverride)
+			.seaAreas(origin.seaAreas)
+			.seaAreas(destination.seaAreas);
 
 		Transport builtTransport = builder.build();
 		copyFrom(builtTransport);
@@ -204,9 +217,19 @@ public class Transport
 		{
 			builder.regionOverride(record.getRegionOverride());
 		}
+		if (record.has(TransportRecord.Fields.SEA_AREAS))
+		{
+			builder.seaAreas(SeaArea.parse(record.getSeaAreas()));
+		}
 
 		Transport builtTransport = builder.build();
 		copyFrom(builtTransport);
+		if (record.hasKey(LegTimes.column(0)))
+		{
+			String[] cells = new String[LegTimes.SPEEDS.length];
+			for (int i = 0; i < cells.length; i++) cells[i] = record.get(LegTimes.column(i));
+			legTimes = LegTimes.parse(cells);
+		}
 	}
 
 	private void copyFrom(Transport t)
@@ -224,6 +247,8 @@ public class Transport
 		this.objectInfo = t.objectInfo;
 		this.varRequirements = t.varRequirements;
 		this.regionOverride = t.regionOverride;
+		this.seaAreas = t.seaAreas;
+		this.legTimes = t.legTimes;
 	}
 
 	private Transport()
@@ -241,6 +266,18 @@ public class Transport
 		Transport copy = new Transport();
 		copy.copyFrom(this);
 		copy.itemRequirements = items;
+		return copy;
+	}
+
+	/**
+	 * A copy of this transport taking {@code ticks}: for one whose time depends on the account, such as sailing the
+	 * player's own boat, priced for the account's boat at availability-build time.
+	 */
+	public Transport withDuration(int ticks)
+	{
+		Transport copy = new Transport();
+		copy.copyFrom(this);
+		copy.duration = ticks;
 		return copy;
 	}
 
@@ -351,6 +388,7 @@ public class Transport
 		private int maxWildernessLevel = -1;
 		private String objectInfo = null;
 		private LeagueRegion regionOverride = null;
+		private final Set<SeaArea> seaAreas = EnumSet.noneOf(SeaArea.class);
 
 		public TransportBuilder origin(int origin)
 		{
@@ -505,6 +543,12 @@ public class Transport
 			return this;
 		}
 
+		public TransportBuilder seaAreas(Set<SeaArea> areas)
+		{
+			seaAreas.addAll(areas);
+			return this;
+		}
+
 		public TransportBuilder regionOverride(String value)
 		{
 			if (value != null && !value.isEmpty())
@@ -555,6 +599,7 @@ public class Transport
 			transport.objectInfo = this.objectInfo;
 			transport.varRequirements = compact(this.varRequirements);
 			transport.regionOverride = this.regionOverride;
+			transport.seaAreas = seaAreas.isEmpty() ? SeaArea.NONE : Collections.unmodifiableSet(EnumSet.copyOf(seaAreas));
 
 			// Post-build validation/refinement
 			if (transport.type != null && transport.type.isTeleport())

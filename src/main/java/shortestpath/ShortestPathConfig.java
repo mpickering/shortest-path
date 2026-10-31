@@ -61,8 +61,8 @@ public interface ShortestPathConfig extends Config
 	@ConfigItem(
 		keyName = "useSailingMoves",
 		name = "Sail On Boats",
-		description = "While on a boat, find a path that sails the boat's 16 headings at its base speed<br>" +
-			"with its whole hull clear, and draw it in blue, instead of a walking path",
+		description = "Route with your own boats: sail on from the boat you are on, and board your moored boats<br>" +
+			"to sail between moorings and to targets at sea. Sailing legs are drawn in blue",
 		position = 12,
 		section = sectionSettings
 	)

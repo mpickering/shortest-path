@@ -15,8 +15,7 @@ import lombok.experimental.Accessors;
  * quarter tiles across and 7 up per tick (23.2 degrees, not 22.5). Holding a heading for 1, 2 or 4
  * ticks always lands a whole number of tiles away, with the boat at the same spot within its tile.
  * Each move here is one heading held for the fewest such ticks, so every leg of a path is a direction
- * the boat can actually sail. The search looks for the shortest route rather than the quickest, so each
- * move costs the distance it sails ({@link #length}).
+ * the boat can actually sail, and costs the ticks it takes.
  * <p>
  * The search uses the boat's base speed for the whole route, since speed boosts are random and
  * temporary; {@link #ESTIMATE} is the fallback when the base speed can't be read.
@@ -45,20 +44,12 @@ public final class SailingMoves
 
 	public static final SailingMoves ESTIMATE = forSpeed(ESTIMATED_SPEED);
 
-	/**
-	 * {@link #length} is in thousandths of a tile, so that adding lengths up is exact.
-	 */
-	public static final int LENGTH_UNITS_PER_TILE = 1000;
-
 	@Getter @Accessors(fluent = true) private final double speed;
 	private final int[] dx;
 	private final int[] dy;
 	private final int[] ticks;
-	private final int[] lengths;
 	private final int[] headings;
 	private final String[] names;
-
-
 
 	/**
 	 * @param tilesPerTick boat speed, e.g. 1.5 or 2.0; an out-of-range value (including NaN) gives the estimate
@@ -72,7 +63,6 @@ public final class SailingMoves
 		int[] dx = new int[HEADING_NAMES.length];
 		int[] dy = new int[HEADING_NAMES.length];
 		int[] ticks = new int[HEADING_NAMES.length];
-		int[] lengths = new int[HEADING_NAMES.length];
 		int[] headings = new int[HEADING_NAMES.length];
 		String[] names = new String[HEADING_NAMES.length];
 		int count = 0;
@@ -95,8 +85,6 @@ public final class SailingMoves
 			dx[count] = k * quarterX / 4;
 			dy[count] = k * quarterY / 4;
 			ticks[count] = k;
-			// Rounded up, so a route never costs less than its real length and the search's estimate stays a lower bound
-			lengths[count] = (int) Math.ceil(Math.hypot(dx[count], dy[count]) * LENGTH_UNITS_PER_TILE);
 			headings[count] = heading;
 			names[count] = HEADING_NAMES[heading];
 			count++;
@@ -108,7 +96,7 @@ public final class SailingMoves
 			return ESTIMATE;
 		}
 		return new SailingMoves(tilesPerTick, Arrays.copyOf(dx, count), Arrays.copyOf(dy, count),
-			Arrays.copyOf(ticks, count), Arrays.copyOf(lengths, count), Arrays.copyOf(headings, count),
+			Arrays.copyOf(ticks, count), Arrays.copyOf(headings, count),
 			Arrays.copyOf(names, count));
 	}
 
@@ -118,8 +106,6 @@ public final class SailingMoves
 		double local = Math.signum(localUnits) * Math.round(Math.abs(localUnits));
 		return (int) (Math.signum(local) * Math.round(Math.abs(local) / 32.0));
 	}
-
-
 
 	public int size()
 	{
@@ -154,12 +140,60 @@ public final class SailingMoves
 		return names[move];
 	}
 
-	/**
-	 * How far the move sails in a straight line, in thousandths of a tile ({@link #LENGTH_UNITS_PER_TILE}), rounded up.
-	 */
-	public int length(int move)
+	/** How far the move sails in a straight line, in tiles. */
+	public double distance(int move)
 	{
-		return lengths[move];
+		return Math.hypot(dx[move], dy[move]);
+	}
+
+	/** The farthest any move sails, in tiles. */
+	public double longestMove()
+	{
+		double longest = 0;
+		for (int move = 0; move < size(); move++) longest = Math.max(longest, distance(move));
+		return longest;
+	}
+
+	/** The fastest any move sails in a straight line, in tiles per tick. */
+	public double topSpeed()
+	{
+		double top = 0;
+		for (int move = 0; move < size(); move++) top = Math.max(top, distance(move) / ticks[move]);
+		return top;
+	}
+
+	/** The most tiles any move covers per tick counting a diagonal step as one: its Chebyshev distance per tick. */
+	public double chebyshevSpeed()
+	{
+		double top = 0;
+		for (int move = 0; move < size(); move++)
+			top = Math.max(top, (double) Math.max(Math.abs(dx[move]), Math.abs(dy[move])) / ticks[move]);
+		return top;
+	}
+
+	/** The most tiles any move covers per tick counting a diagonal step as two: its Manhattan distance per tick. */
+	public double manhattanSpeed()
+	{
+		double top = 0;
+		for (int move = 0; move < size(); move++)
+			top = Math.max(top, (double) (Math.abs(dx[move]) + Math.abs(dy[move])) / ticks[move]);
+		return top;
+	}
+
+	/** The longest any move goes counting a diagonal step as one, in tiles. */
+	public int longestChebyshev()
+	{
+		int longest = 0;
+		for (int move = 0; move < size(); move++) longest = Math.max(longest, Math.max(Math.abs(dx[move]), Math.abs(dy[move])));
+		return longest;
+	}
+
+	/** The longest any move goes counting a diagonal step as two, in tiles. */
+	public int longestManhattan()
+	{
+		int longest = 0;
+		for (int move = 0; move < size(); move++) longest = Math.max(longest, Math.abs(dx[move]) + Math.abs(dy[move]));
+		return longest;
 	}
 
 	/**
