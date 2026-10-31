@@ -174,11 +174,10 @@ public class PathScheduler
 					sailingPivotX = aboard == null ? 0 : aboard.pivotX();
 					sailingPivotY = aboard == null ? 0 : aboard.pivotY();
 					AStarPathfinder aStar = new AStarPathfinder(pathfinderConfig, aStarRoutingStatic(),
-						aStarRoutingSession, start, ends, responder::postPluginMessages,
+						aStarRoutingSession, aboard == null ? start : aboard.tile(), ends, responder::postPluginMessages,
 						pathfinderConfig.getAStarHeuristicWeight(), sailingCapability);
-					// Recalculating towards the same targets: keep the old route drawn until
-					// the new one is ready.
-					if (ends.equals(previousTargets))
+					// Aboard, the old route may have been planned for a different hull.
+					if (aboard == null && ends.equals(previousTargets))
 						aStar.showUntilDone(previousPath);
 					pathfinder = aStar;
 				}

@@ -387,6 +387,24 @@ public class SailingServiceTest
 	}
 
 	@Test
+	public void boardingAnotherPersonalBoatInvalidatesTheRoute()
+	{
+		stubVarbits(1, 192, 384, 96);
+		when(client.getVarbitValue(VarbitID.SAILING_LAST_PERSONAL_BOAT_BOARDED)).thenReturn(1);
+		RefreshCoordinator coordinator = mock(RefreshCoordinator.class);
+		SailingService service = SailingService.forTesting(client, coordinator);
+		service.refresh(source());
+
+		when(client.getVarbitValue(VarbitID.SAILING_LAST_PERSONAL_BOAT_BOARDED)).thenReturn(2);
+		service.onVarbitChanged(VarbitID.SAILING_LAST_PERSONAL_BOAT_BOARDED);
+
+		assertEquals(2, service.getState().getBoardedSlot());
+		ArgumentCaptor<SailingChange> captor = ArgumentCaptor.forClass(SailingChange.class);
+		verify(coordinator).sailingChanged(captor.capture());
+		assertTrue(captor.getValue().getEffects().contains(Effect.ROUTE_INVALIDATING));
+	}
+
+	@Test
 	public void boardingDeclaresARouteInvalidatingFact()
 	{
 		stubVarbits(0, 192, 384, 96);
