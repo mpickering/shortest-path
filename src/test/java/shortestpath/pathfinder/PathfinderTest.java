@@ -681,7 +681,11 @@ public class PathfinderTest
 				origins.add(t.getOrigin());
 			}
 		}
-		assertEquals(284, jungle.size());
+		assertEquals(208, jungle.size());
+		// Only the jungle is chopped: a tropical tree (2817 2936) under a jungle tree's canopy is not crossed
+		int tropicalTree = WorldPointUtil.packWorldPoint(2817, 2936, 0);
+		assertFalse(jungle.stream().anyMatch(t -> t.getOrigin() == WorldPointUtil.packWorldPoint(2817, 2935, 0)
+			|| t.getOrigin() == tropicalTree || t.getDestination() == tropicalTree));
 		for (Transport t : jungle)
 		{
 			int d = t.getDestination();
