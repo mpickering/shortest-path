@@ -66,6 +66,12 @@ public interface SeaEnds
 		return true;
 	}
 
+	/** The boarding action for a route ending at sea, or null when already aboard. */
+	default Transport boardingTransport(int link)
+	{
+		return null;
+	}
+
 	/** The land tile a start link lands on. */
 	default int landTile(int link)
 	{

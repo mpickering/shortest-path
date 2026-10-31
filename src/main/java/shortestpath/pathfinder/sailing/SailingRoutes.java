@@ -29,7 +29,8 @@ public final class SailingRoutes
 	{
 		for (PathStep step : path)
 		{
-			if (step.getTransport() != null && step.getTransport().getType().isSailing()) return true;
+			if (step.getTraversal() != Traversal.SAILING && step.getTransport() != null
+				&& step.getTransport().getType().isSailing()) return true;
 		}
 		return false;
 	}

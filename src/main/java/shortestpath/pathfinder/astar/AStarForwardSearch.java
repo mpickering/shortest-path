@@ -12,6 +12,7 @@ import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.BankVisitState;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.PathStep;
+import shortestpath.pathfinder.Traversal;
 import shortestpath.pathfinder.WildernessChecker;
 import shortestpath.transport.Transport;
 
@@ -321,7 +322,7 @@ public final class AStarForwardSearch
 			BankVisitState banked = state >= 0 && (state & 1) != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED;
 			int legStart = state < 0 ? 0 : ctx.best.get(state);
 			return Result.reachedAtSea(cost, ctx.counters.snapshot(ctx.bestBankCost[0]),
-				append(walk, sea.leg(link), legStart, banked, false), sea.seaTarget(link));
+				append(walk, sea.leg(link), legStart, banked, sea.boardingTransport(link)), sea.seaTarget(link));
 		}
 
 		/**
@@ -364,7 +365,7 @@ public final class AStarForwardSearch
 			int firstState = ctx.space.state(first.getPackedPosition(), first.getBankVisitState());
 			int[] landing = landings.get(firstState);
 			if (landing == null || landing[1] != ctx.best.get(firstState)) return walk;
-			AStarRoute leg = append(null, sea.leg(landing[0]), 0, first.getBankVisitState(), true);
+			AStarRoute leg = append(null, sea.leg(landing[0]), 0, first.getBankVisitState(), null);
 			// The landing step itself is stepping off the boat
 			List<PathStep> steps = new ArrayList<>(leg.size() + walk.size());
 			int[] costs = new int[leg.size() + walk.size()];
@@ -386,7 +387,7 @@ public final class AStarForwardSearch
 
 		// walk (if any), then the leg's tiles as sailing steps from legStart
 		private static AStarRoute append(AStarRoute walk, int[][] leg, int legStart, BankVisitState banked,
-			boolean fromStart)
+			Transport boarding)
 		{
 			int before = walk == null ? 0 : walk.size();
 			List<PathStep> steps = new ArrayList<>(before + leg[0].length);
@@ -400,7 +401,7 @@ public final class AStarForwardSearch
 			}
 			for (int i = 0; i < leg[0].length; i++)
 			{
-				steps.add(PathStep.sailing(leg[0][i], banked));
+				steps.add(new PathStep(leg[0][i], banked, i == 0 ? boarding : null, Traversal.SAILING));
 				costs[before + i] = CostArithmetic.add(legStart, leg[1][i]);
 			}
 			return new AStarRoute(steps, arrivals, costs);

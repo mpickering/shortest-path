@@ -20,6 +20,7 @@ import net.runelite.api.gameval.DBTableID;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import shortestpath.TestShortestPathConfig;
+import shortestpath.presentation.PathAnnotator;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.astar.RoutingStatic;
 import shortestpath.pathfinder.sailing.SailingFleet;
@@ -195,6 +196,29 @@ public class AStarSailingRoutesTest
 		assertEquals(SailingVessel.Kind.SLOOP,
 			SailingTransports.kind(search.getPath().get(landing).getTransport().getType()));
 		assertNotNull(search.debugStats().get("Sailing legs"));
+	}
+
+	@Test
+	public void recoveryHintForASeaTargetIsAttachedAtTheDock()
+	{
+		SailingVessel raft = SailingVessel.of(SailingVessel.Kind.RAFT, 2.0);
+		SailingFleet fleet = new SailingFleet(List.of(raft), SailingFleet.BoatLocations.EVERY_MOORING,
+			null, (dock, boat) -> 4125, 4125);
+		AStarPathfinder sailing = search(fleet, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE);
+		assertTrue(sailing.getResult().isReached());
+		List<PathStep> path = sailing.getPath();
+		int boarding = transportIndex(path);
+		assertTrue(boarding > 0);
+		Transport transport = path.get(boarding).getTransport();
+		assertEquals(path.get(boarding - 1).getPackedPosition(), transport.getOrigin());
+		assertEquals(Traversal.SAILING, path.get(boarding).getTraversal());
+		assertTrue(transport.getDisplayInfo().startsWith("Recover boat (4125 gp)"));
+		assertEquals(4125, transport.getItemRequirements().getRequirements().get(0).getBranches().get(0).getQuantity());
+		PathAnnotator annotator = PathAnnotator.forTesting();
+		assertEquals(Set.of(transport), annotator.transportsForEdge(path.get(boarding - 1),
+			annotator.nextPathStep(path, boarding - 1)));
+		assertTrue(annotator.transportsForEdge(path.get(path.size() - 2),
+			annotator.nextPathStep(path, path.size() - 2)).isEmpty());
 	}
 
 	@Test

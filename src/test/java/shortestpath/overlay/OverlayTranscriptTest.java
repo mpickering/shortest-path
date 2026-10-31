@@ -409,6 +409,33 @@ public class OverlayTranscriptTest
 	}
 
 	@Test
+	public void recoveryHintForASeaTargetIsDrawnAtBoardingInEveryStyle()
+	{
+		int dock = packed(BASE + 20, BASE + 20);
+		String hint = "Recover boat (4125 gp), then board raft";
+		Transport boat = transport(dock, packed(BASE + 30, BASE + 24), TransportType.SAILING_RAFT, hint);
+		List<PathStep> path = List.of(step(BASE + 20, BASE + 20),
+			new PathStep(packed(BASE + 21, BASE + 20), shortestpath.pathfinder.BankVisitState.CARRIED,
+				boat, shortestpath.pathfinder.Traversal.SAILING),
+			PathStep.sailing(packed(BASE + 30, BASE + 24), shortestpath.pathfinder.BankVisitState.CARRIED));
+		when(search.getPath()).thenReturn(path);
+		org.mockito.Mockito.doCallRealMethod().when(annotator).nextPathStep(any(), anyInt());
+		when(annotator.transportsForEdge(any(), any())).thenCallRealMethod();
+		when(annotator.formatTransportDisplay(any())).thenCallRealMethod();
+		for (String style : List.of("Tiles", "Lines", "Arrow line", "Turn markers", "Tracer", "Sprite markers"))
+		{
+			override("pathStyle", style);
+			List<String> transcript = new ArrayList<>();
+			Graphics2D graphics = new RecordingGraphics2D(
+				new BufferedImage(800, 600, BufferedImage.TYPE_INT_ARGB).createGraphics(), transcript);
+			tileOverlay.render(graphics);
+			graphics.dispose();
+			org.junit.Assert.assertEquals(style + ": one label plus its shadow", 2,
+				transcript.stream().filter(line -> line.contains("drawString") && line.contains(hint)).count());
+		}
+	}
+
+	@Test
 	public void infoTransportLabels()
 	{
 		Set<Transport> transports = new LinkedHashSet<>(List.of(

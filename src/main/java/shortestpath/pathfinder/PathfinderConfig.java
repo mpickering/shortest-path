@@ -966,12 +966,7 @@ public class PathfinderConfig
 				}
 				offered = SailingTransports.boundFor(offered, vessel);
 				int recoveryCost = fleet.recoveryCost(SailingTransports.from(offered), vessel);
-				if (recoveryCost > 0)
-				{
-					offered = offered.withItemRequirements(TransportItems.merge(offered.getItemRequirements(),
-						new TransportItems(List.of(new ItemRequirement(new int[]{ItemID.COINS}, null, null, recoveryCost)))));
-					offered = offered.withDisplayInfo("Recover boat (" + recoveryCost + " gp), then " + offered.getDisplayInfo());
-				}
+				offered = SailingTransports.withRecovery(offered, recoveryCost);
 			}
 
 			// The named gates run first; a transport failing any of them is

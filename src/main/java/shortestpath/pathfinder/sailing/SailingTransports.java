@@ -9,6 +9,9 @@ import java.util.Map;
 import java.util.function.Predicate;
 import java.util.zip.CRC32;
 import net.runelite.api.Quest;
+import net.runelite.api.gameval.ItemID;
+import shortestpath.requirement.model.TransportItems;
+import shortestpath.requirement.model.ItemRequirement;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.sailing.SeaArea;
@@ -122,6 +125,15 @@ public final class SailingTransports
 			if (!started.test(quest)) return false;
 		}
 		return true;
+	}
+
+	public static Transport withRecovery(Transport transport, int cost)
+	{
+		if (cost <= 0) return transport;
+		return transport.withItemRequirements(TransportItems.merge(
+			transport.getItemRequirements(), new TransportItems(List.of(
+				new ItemRequirement(new int[]{ItemID.COINS}, null, null, cost)))))
+			.withDisplayInfo("Recover boat (" + cost + " gp), then " + transport.getDisplayInfo());
 	}
 
 	/** The account's boat that sails {@code transport}: one of its kind available where it boards, or {@code null}. */

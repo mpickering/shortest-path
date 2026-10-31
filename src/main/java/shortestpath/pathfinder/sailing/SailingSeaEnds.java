@@ -432,6 +432,18 @@ public final class SailingSeaEnds implements SeaEnds
 	}
 
 	@Override
+	public Transport boardingTransport(int link)
+	{
+		if (kinds.get(link) != TARGET) return null;
+		SailingMooring mooring = moorings.get(link);
+		SailingVessel vessel = vessels.get(link);
+		Transport boarding = new Transport.TransportBuilder().origin(mooring.landTile()).destination(seaTarget(link))
+			.type(SailingTransports.type(vessel.kind())).duration(SailingMooring.BOARD_TICKS)
+			.displayInfo("Board " + vessel.kind().name().toLowerCase(java.util.Locale.ROOT) + " at " + mooring.name()).build();
+		return SailingTransports.withRecovery(boarding, fleet.recoveryCost(mooring, vessel));
+	}
+
+	@Override
 	public int seaTarget(int link)
 	{
 		return reached[link];
