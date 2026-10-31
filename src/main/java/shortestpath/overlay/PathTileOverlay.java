@@ -574,6 +574,7 @@ public class PathTileOverlay extends Overlay
 	void drawTransportInfo(Graphics2D graphics, PathStep currentStep, PathStep nextStep, List<PathStep> path,
 		int pathIndex, ActiveSearch search)
 	{
+		nextStep = annotator.nextPathStep(path, pathIndex);
 		int location = currentStep.getPackedPosition();
 		int lx = WorldPointUtil.unpackWorldX(location);
 		int ly = WorldPointUtil.unpackWorldY(location);
