@@ -659,6 +659,61 @@ public class PathfinderTest
 	}
 
 	@Test
+	public void testKharaziJungleTransportsNeverStrandThePlayer()
+	{
+		setupInventory(
+			new Item(ItemID.MACHETTE, 1),
+			new Item(ItemID.RUNE_AXE, 1));
+		setupConfig(QuestState.FINISHED, 99, TeleportationItem.NONE);
+		CollisionMap map = pathfinderConfig.getMap();
+		List<Transport> jungle = new ArrayList<>();
+		Set<Integer> origins = new HashSet<>();
+		for (Transport t : activeTransportList())
+		{
+			int x = WorldPointUtil.unpackWorldX(t.getOrigin());
+			int y = WorldPointUtil.unpackWorldY(t.getOrigin());
+			boolean chop = t.getObjectInfo() != null && t.getObjectInfo().startsWith("Chop-down Jungle");
+			boolean stepOff = (t.getObjectInfo() == null || t.getObjectInfo().isEmpty())
+				&& x >= 2755 && x <= 2945 && y >= 2930 && y <= 2945;
+			if (chop || stepOff)
+			{
+				jungle.add(t);
+				origins.add(t.getOrigin());
+			}
+		}
+		assertEquals(284, jungle.size());
+		for (Transport t : jungle)
+		{
+			int d = t.getDestination();
+			boolean walkable = !map.isBlocked(WorldPointUtil.unpackWorldX(d), WorldPointUtil.unpackWorldY(d), 0);
+			assertTrue("Kharazi jungle transport strands the player at " + WorldPointUtil.unpackWorldPoint(d),
+				walkable || origins.contains(d));
+		}
+
+		// North-to-south and back through each patch of jungle trees and bushes
+		int[][] crossings = {
+			{2762, 2944, 2762, 2933},
+			{2795, 2944, 2795, 2934},
+			{2816, 2942, 2816, 2934},
+			{2866, 2942, 2866, 2933},
+			{2932, 2944, 2932, 2935},
+		};
+		for (int[] c : crossings)
+		{
+			int north = WorldPointUtil.packWorldPoint(c[0], c[1], 0);
+			int south = WorldPointUtil.packWorldPoint(c[2], c[3], 0);
+			for (int[] route : new int[][]{{north, south}, {south, north}})
+			{
+				AStarPathfinder search = new AStarPathfinder(pathfinderConfig, TestWorldData.routingStatic(),
+					null, route[0], Set.of(route[1]), null, 1);
+				search.run();
+				assertTrue(WorldPointUtil.unpackWorldPoint(route[0]) + " -> " + WorldPointUtil.unpackWorldPoint(route[1]),
+					search.getResult().isReached());
+			}
+		}
+	}
+
+	@Test
 	public void testKingAwowogeiEntranceRequiresMonkeyMadnessII()
 	{
 		int outside = WorldPointUtil.packWorldPoint(2802, 2756, 0);
