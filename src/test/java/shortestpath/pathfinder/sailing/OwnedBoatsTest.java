@@ -59,6 +59,20 @@ public class OwnedBoatsTest
 	}
 
 	@Test
+	public void manualStartPreservesRecoveryFees()
+	{
+		SailingVessel vessel = SailingVessel.of(SailingVessel.Kind.RAFT, 128);
+		SailingMooring mooring = mooring("Catherby");
+		SailingFleet fleet = new SailingFleet(List.of(SailingFleet.Boat.at(vessel, -1, 4125)),
+			new SailingFleet.Aboard(0, 0, vessel, 0, 0), 1000);
+		PreparedSailingCapability onFoot = new PreparedSailingCapability(fleet, List.of(mooring)).onFoot();
+
+		assertTrue(onFoot.fleet().aboard() == null);
+		assertEquals(4125, onFoot.fleet().boats().get(0).boardingCost(mooring));
+		assertEquals(1000, onFoot.fleet().carriedCoins());
+	}
+
+	@Test
 	public void noBoatsNoSailing()
 	{
 		pathfinderConfig.refresh();
@@ -133,6 +147,121 @@ public class OwnedBoatsTest
 		pathfinderConfig.refresh();
 
 		assertTrue(legs(null).isEmpty());
+	}
+
+	@Test
+	public void recoveryUsesAnInclusiveGpLimitAndOnlyShipwrightPorts()
+	{
+		recoverableSkiff(4125);
+		config.set("boatRecoveryThreshold", 4124);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+		assertTrue(canBoardAt("Catherby"));
+
+		config.set("boatRecoveryThreshold", 4125);
+		pathfinderConfig.refresh();
+		assertTrue(canBoardAt("Port Roberts"));
+		assertFalse(canBoardAt("Dognose Island"));
+		assertTrue(legs(null).stream().filter(t -> SailingTransports.from(t).name().equals("Port Roberts"))
+			.anyMatch(t -> t.getDisplayInfo().startsWith("Recover boat (4125 gp)")));
+
+		config.set("boatRecoveryThreshold", 0);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+	}
+
+	@Test
+	public void recoveryRequiresEnoughCoinsAndAKnownFee()
+	{
+		recoverableSkiff(4124);
+		config.set("boatRecoveryThreshold", 4125);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_RETRIEVAL_COST, 0)).thenReturn(null);
+		coins(100000);
+		pathfinderConfig.refresh();
+		assertFalse(canBoardAt("Port Roberts"));
+		assertTrue(canBoardAt("Catherby"));
+	}
+
+	@Test
+	public void bankCoinsCanPayRecoveryWithBankTeleportsDisabled()
+	{
+		recoverableSkiff(0);
+		config.set("boatRecoveryThreshold", 4125);
+		ItemContainer bank = mock(ItemContainer.class);
+		when(bank.getItems()).thenReturn(new Item[]{new Item(ItemID.COINS, 4125)});
+		ItemStateService items = ItemStateService.forTesting();
+		items.onContainerChanged(InventoryID.BANK, bank);
+		pathfinderConfig.setItemStateService(items);
+		pathfinderConfig.refresh();
+		assertTrue(canBoardAt("Port Roberts"));
+		assertTrue("bank routing enabled for recovery", pathfinderConfig.prepareAStarRoutingAccount(true).bankPathEnabled());
+		assertTrue(legs(null).stream().noneMatch(t -> SailingTransports.from(t).name().equals("Port Roberts")));
+		Transport recovery = legs(BankVisitState.BANKED).stream()
+			.filter(t -> SailingTransports.from(t).name().equals("Port Roberts")).findFirst().orElseThrow();
+		assertEquals(Long.valueOf(4125), pathfinderConfig.getEligibility().bankPickupPlan(recovery).items.get(ItemID.COINS));
+
+		coins(1000);
+		pathfinderConfig.refresh();
+		recovery = legs(BankVisitState.BANKED).stream()
+			.filter(t -> SailingTransports.from(t).name().equals("Port Roberts")).findFirst().orElseThrow();
+		assertEquals(Long.valueOf(3125), pathfinderConfig.getEligibility().bankPickupPlan(recovery).items.get(ItemID.COINS));
+
+		coins(4125);
+		pathfinderConfig.refresh();
+		assertTrue(legs(null).stream().anyMatch(t -> SailingTransports.from(t).name().equals("Port Roberts")));
+
+		coins(Integer.MAX_VALUE);
+		pathfinderConfig.refresh();
+		assertTrue(legs(BankVisitState.BANKED).stream().anyMatch(t -> SailingTransports.from(t).name().equals("Port Roberts")));
+	}
+
+	@Test
+	public void aBoatAlreadyAtTheDockIsPreferredToPayingRecovery()
+	{
+		recoverableSkiff(4125);
+		config.set("boatRecoveryThreshold", 4125);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_2_OWNED)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_2_TYPE)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_2_PORT)).thenReturn(PORT_ROBERTS);
+		pathfinderConfig.refresh();
+		List<Transport> roberts = new ArrayList<>();
+		for (Transport t : legs(null)) if (SailingTransports.from(t).name().equals("Port Roberts")) roberts.add(t);
+		assertFalse(roberts.isEmpty());
+		assertTrue(roberts.stream().noneMatch(t -> t.getDisplayInfo().startsWith("Recover boat")));
+	}
+
+	private boolean canBoardAt(String name)
+	{
+		PreparedSailingCapability capability = pathfinderConfig.prepareSailingCapability();
+		return capability.fleet().boats().stream().anyMatch(boat -> capability.canBoard(mooring(name), boat));
+	}
+
+	private void recoverableSkiff(int coins)
+	{
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_OWNED)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_TYPE)).thenReturn(1);
+		when(client.getVarbitValue(VarbitID.SAILING_BOAT_1_PORT)).thenReturn(CATHERBY);
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_RETRIEVAL_COST, 0)).thenReturn(new Object[]{3750});
+		when(client.getDBTableField(DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.COL_HULL_OPTION, 0)).thenReturn(new Object[]{100});
+		when(client.getDBTableField(100, DBTableID.SailingBoatHull.COL_FACILITY_STATS, 0))
+			.thenReturn(new Object[]{101});
+		when(client.getDBTableField(101, DBTableID.SailingBoatFacilityStats.COL_BOAT_ADDITIONAL_RECOVERY_COST_PERCENTAGE, 0))
+			.thenReturn(new Object[]{10});
+		pathfinderConfig.setSailingService(SailingService.forTesting(client));
+		coins(coins);
+	}
+
+	private void coins(int amount)
+	{
+		ItemContainer inventory = mock(ItemContainer.class);
+		when(inventory.getItems()).thenReturn(new Item[]{new Item(ItemID.COINS, amount)});
+		when(client.getItemContainer(InventoryID.INV)).thenReturn(inventory);
 	}
 
 	// The sailing transports the account is offered

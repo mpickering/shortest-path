@@ -12,6 +12,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.IntUnaryOperator;
 import shortestpath.PrimitiveIntHashMap;
 import shortestpath.WorldPointUtil;
+import shortestpath.pathfinder.BankVisitState;
 import shortestpath.pathfinder.CollisionMap;
 import shortestpath.pathfinder.astar.SeaEnds;
 import shortestpath.sailing.LegTimes;
@@ -326,6 +327,14 @@ public final class SailingSeaEnds implements SeaEnds
 	}
 
 	@Override
+	public boolean usable(int link, BankVisitState banked)
+	{
+		Link sailed = links.get(link);
+		return sailed.boat == null || banked == BankVisitState.BANKED
+			|| sailed.boat.boardingCost(sailed.mooring) <= fleet.carriedCoins();
+	}
+
+	@Override
 	public int landTile(int link)
 	{
 		Link sailed = links.get(link);
@@ -555,10 +564,11 @@ public final class SailingSeaEnds implements SeaEnds
 	{
 		Link link = links.get(index);
 		if (link.kind != Kind.TARGET) return null;
-		return new Transport.TransportBuilder().origin(link.mooring.landTile()).destination(link.reached)
+		Transport boarding = new Transport.TransportBuilder().origin(link.mooring.landTile()).destination(link.reached)
 			.type(link.vessel.kind().transportType()).duration(SailingMooring.BOARD_TICKS)
 			.displayInfo("Board " + link.vessel.kind().name().toLowerCase(Locale.ROOT) + " at " + link.mooring.name())
 			.build();
+		return SailingTransports.withRecovery(boarding, link.boat.boardingCost(link.mooring));
 	}
 
 	@Override

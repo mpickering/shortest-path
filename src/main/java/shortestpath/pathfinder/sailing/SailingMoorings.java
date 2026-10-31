@@ -97,7 +97,7 @@ public final class SailingMoorings
 			String dock = field(header, fields, "Dock");
 			moorings.add(new SailingMooring(moorings.size(), name, land, berth, requirements,
 				quests(field(header, fields, "Quests started")), vessels(field(header, fields, "Vessels")),
-				dock.isEmpty() ? -1 : Integer.parseInt(dock)));
+				dock.isEmpty() ? -1 : Integer.parseInt(dock), shipwright(field(header, fields, "Shipwright"))));
 		}
 		return List.copyOf(moorings);
 	}
@@ -109,6 +109,13 @@ public final class SailingMoorings
 			if (header[i].equals(column)) return i < fields.length ? fields[i].trim() : "";
 		}
 		throw new IllegalStateException(RESOURCE + " has no " + column + " column");
+	}
+
+	private static boolean shipwright(String value)
+	{
+		if (value.isEmpty()) return false;
+		if (value.equals("yes")) return true;
+		throw new IllegalStateException(RESOURCE + ": Shipwright is yes or empty, not " + value);
 	}
 
 	private static Set<Quest> quests(String value)

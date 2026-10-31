@@ -23,8 +23,12 @@ public final class SailingFleets
 	/**
 	 * The player's boats from {@code state}: each boat they own moored at its dock, with its own parts and its hull's
 	 * base speed, and the boat they are aboard, if any, which is then not at its dock.
+	 *
+	 * @param recoveryLimit the most coins a route may spend having a shipwright bring a boat
+	 * @param coinsOwned    the coins the player has, carried and banked: a recovery can cost no more
+	 * @param coinsCarried  the coins the player carries: a dearer recovery needs a bank visit first
 	 */
-	public static SailingFleet fromState(SailingState state)
+	public static SailingFleet fromState(SailingState state, int recoveryLimit, long coinsOwned, int coinsCarried)
 	{
 		List<SailingFleet.Boat> boats = new ArrayList<>();
 		for (SailingBoat boat : state.getBoats())
@@ -32,9 +36,11 @@ public final class SailingFleets
 			SailingVessel.Kind kind = SailingVessel.Kind.ofGameType(boat.getType());
 			if (kind == null || boat.getSlot() == state.getBoardedSlot()) continue;
 			SailingVessel vessel = SailingVessel.of(kind, speed(boat.getBaseSpeed())).withAreas(boat.getSeaAreas());
-			boats.add(SailingFleet.Boat.at(vessel, boat.getDock()));
+			int cost = boat.getRecoveryCost();
+			boolean recoverable = cost > 0 && cost <= recoveryLimit && cost <= coinsOwned;
+			boats.add(SailingFleet.Boat.at(vessel, boat.getDock(), recoverable ? cost : SailingFleet.UNAVAILABLE));
 		}
-		return new SailingFleet(boats, aboard(state));
+		return new SailingFleet(boats, aboard(state), coinsCarried);
 	}
 
 	/** The boat the player is aboard, or {@code null} unless it is in the scene with its bounds and tile known. */

@@ -171,6 +171,7 @@ public final class AStarForwardSearch
 			{
 				for (int link : sea.targetLinksFrom(tile))
 				{
+					if (!sea.usable(link, banked)) continue;
 					int bound = CostArithmetic.add(cost, sea.bound(link));
 					if (bound != CostArithmetic.INF) links.offerTarget(link, state, bound);
 				}

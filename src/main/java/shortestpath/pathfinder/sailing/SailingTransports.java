@@ -15,7 +15,10 @@ import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import net.runelite.api.Quest;
+import net.runelite.api.gameval.ItemID;
 import shortestpath.pathfinder.CollisionMap;
+import shortestpath.requirement.model.ItemRequirement;
+import shortestpath.requirement.model.TransportItems;
 import shortestpath.sailing.BoatSpeed;
 import shortestpath.sailing.LegTimes;
 import shortestpath.sailing.SeaArea;
@@ -96,6 +99,19 @@ public final class SailingTransports
 		SailingMooring from = from(transport), to = to(transport);
 		if (!sailable(transport, vessel) || !waters.sails(map, vessel, from, to)) return false;
 		return from.questsStarted().stream().allMatch(started) && to.questsStarted().stream().allMatch(started);
+	}
+
+	/**
+	 * {@code transport} for a boat that a shipwright must first bring to where it boards, for {@code cost} coins: it
+	 * then needs the coins, and says so. Unchanged for a boat moored there ({@code cost} 0).
+	 */
+	public static Transport withRecovery(Transport transport, int cost)
+	{
+		if (cost <= 0) return transport;
+		return transport.withItemRequirements(TransportItems.merge(
+			transport.getItemRequirements(), new TransportItems(List.of(
+				new ItemRequirement(new int[]{ItemID.COINS}, null, null, cost)))))
+			.withDisplayInfo("Recover boat (" + cost + " gp), then " + transport.getDisplayInfo());
 	}
 
 	/**

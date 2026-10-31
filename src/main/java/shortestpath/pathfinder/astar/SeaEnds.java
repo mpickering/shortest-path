@@ -1,6 +1,7 @@
 package shortestpath.pathfinder.astar;
 
 import java.util.function.BooleanSupplier;
+import shortestpath.pathfinder.BankVisitState;
 import shortestpath.transport.Transport;
 
 /**
@@ -57,6 +58,12 @@ public interface SeaEnds
 	default int crossingLink(Transport transport)
 	{
 		return -1;
+	}
+
+	/** Whether this link can be boarded with the route's current inventory. */
+	default boolean usable(int link, BankVisitState banked)
+	{
+		return true;
 	}
 
 	/** The boarding action for a route ending at sea, or null when already aboard. */

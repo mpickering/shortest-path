@@ -7,6 +7,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Keybind;
+import net.runelite.client.config.Range;
 import shortestpath.settings.TeleportationItem;
 
 @ConfigGroup(ShortestPathPlugin.CONFIG_GROUP)
@@ -69,6 +70,19 @@ public interface ShortestPathConfig extends Config
 	default boolean useSailingMoves()
 	{
 		return true;
+	}
+
+	@Range(min = 0)
+	@ConfigItem(
+		keyName = "boatRecoveryThreshold",
+		name = "Boat Recovery Limit (GP)",
+		description = "Maximum coins per boat recovery at a shipwright (0 disables recovery).<br>Recovery can discard cargo.",
+		position = 206,
+		section = sectionSettings
+	)
+	default int boatRecoveryThreshold()
+	{
+		return 0;
 	}
 
 	@ConfigItem(

@@ -21,6 +21,7 @@ import net.runelite.api.WorldEntity;
 import net.runelite.api.WorldEntityConfig;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.DBTableID;
 import shortestpath.WorldPointUtil;
 import shortestpath.requirement.ClientPlayerStateSource;
 import shortestpath.requirement.PlayerStateSource;
@@ -189,7 +190,35 @@ public class SailingService
 		if ((type == SailingBoat.SKIFF && values[HOTSPOT_5] == 1) || (type == SailingBoat.SLOOP && values[HOTSPOT_9] == 1))
 			areas.add(SeaArea.FETID);
 		int hull = values[HULL];
-		return new SailingBoat(slot, type, values[PORT], areas, BoatSpeed.ofHull(hull));
+		return new SailingBoat(slot, type, values[PORT], areas, BoatSpeed.ofHull(hull),
+			recoveryCost(client, type, hull, values[PORT]));
+	}
+
+	static int recoveryCost(Client client, int type, int hull, int dock)
+	{
+		int[] rows = {DBTableID.SailingBoat.Row.SAILING_BOAT_RAFT,
+			DBTableID.SailingBoat.Row.SAILING_BOAT_SKIFF,
+			DBTableID.SailingBoat.Row.SAILING_BOAT_SLOOP};
+		if (client == null || type < 0 || type >= rows.length || BoatSpeed.ofHull(hull) == 0) return -1;
+		int row = rows[type];
+		int base = dbInt(client, row, DBTableID.SailingBoat.COL_RETRIEVAL_COST, 0);
+		int hullRow = dbInt(client, row, DBTableID.SailingBoat.COL_HULL_OPTION, hull);
+		if (base <= 0 || hullRow < 0) return -1;
+		int stats = dbInt(client, hullRow, DBTableID.SailingBoatHull.COL_FACILITY_STATS, 0);
+		if (stats < 0) return -1;
+		int percent = dbInt(client, stats,
+			DBTableID.SailingBoatFacilityStats.COL_BOAT_ADDITIONAL_RECOVERY_COST_PERCENTAGE, 0);
+		if (percent < 0) return -1;
+		// Game script 9090: hull surcharge, plus 50% if capsized (port 254), or 100% if bottled (255).
+		long cost = base + (long) base * percent / 100 + (dock == 254 ? base / 2 : dock == 255 ? base : 0);
+		return cost > Integer.MAX_VALUE ? -1 : (int) cost;
+	}
+
+	private static int dbInt(Client client, int row, int column, int index)
+	{
+		Object[] values = client.getDBTableField(row, column, 0);
+		return values != null && index >= 0 && index < values.length && values[index] instanceof Integer
+			? (Integer) values[index] : -1;
 	}
 
 	private static boolean isBoatVarbit(int varbitId)

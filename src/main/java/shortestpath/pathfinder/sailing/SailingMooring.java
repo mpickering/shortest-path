@@ -48,9 +48,11 @@ public final class SailingMooring
 	private final Set<SailingVessel.Kind> vessels;
 	/** The game's id for the dock, which a boat's port varbit holds; -1 if unknown. */
 	private final int dock;
+	/** Whether a shipwright here can bring the player's boat from wherever it is. */
+	private final boolean shipwright;
 
 	public SailingMooring(int id, String name, int landTile, int berthTile, DestinationRequirements requirements,
-		Set<Quest> questsStarted, Set<SailingVessel.Kind> vessels, int dock)
+		Set<Quest> questsStarted, Set<SailingVessel.Kind> vessels, int dock, boolean shipwright)
 	{
 		this.id = id;
 		this.name = name;
@@ -63,6 +65,7 @@ public final class SailingMooring
 			? Collections.unmodifiableSet(EnumSet.allOf(SailingVessel.Kind.class))
 			: Collections.unmodifiableSet(EnumSet.copyOf(vessels));
 		this.dock = dock;
+		this.shipwright = shipwright;
 	}
 
 	/** Whether {@code vessel} fits this mooring. */

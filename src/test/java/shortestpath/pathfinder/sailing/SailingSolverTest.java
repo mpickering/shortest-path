@@ -29,7 +29,7 @@ public class SailingSolverTest
 		// An exit nobody docks at makes the search undirected
 		List<SailingMooring> exits = directed ? List.of() : List.of(new SailingMooring(0, "nowhere",
 			WorldPointUtil.packWorldPoint(1000, 1000, 0), WorldPointUtil.packWorldPoint(1000, 1000, 0), null, null, null,
-			-1));
+			-1, false));
 		SailingSolver solver = new SailingSolver(map, SailingQuery.of(raft.moves(), raft.hull())
 			.withTargets(new int[] {target}).withExits(exits));
 		solver.castOff(new int[] {start}, 0);

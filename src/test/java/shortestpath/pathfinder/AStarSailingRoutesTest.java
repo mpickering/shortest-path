@@ -73,6 +73,17 @@ public class AStarSailingRoutesTest
 	}
 
 	@Test
+	public void sailingToASeaTargetCannotSpendBankCoinsBeforeVisitingABank()
+	{
+		SailingVessel raft = SailingVessel.of(SailingVessel.Kind.RAFT, 256);
+		SailingFleet needsBank = recoveredFor(raft, 4125, 0);
+		// This account has no bank paths enabled, so recovery must not bypass the missing coins.
+		assertFalse(search(needsBank, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE).getResult().isReached());
+		SailingFleet carried = recoveredFor(raft, 4125, 4125);
+		assertTrue(search(carried, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE).getResult().isReached());
+	}
+
+	@Test
 	public void aWalkCheaperThanSailingIsKept()
 	{
 		AStarPathfinder walking = search(SailingFleet.NONE, 99, PORT_SARIM_DOCK, WYDINS);
@@ -199,6 +210,28 @@ public class AStarSailingRoutesTest
 		assertEquals(SailingVessel.Kind.SLOOP,
 			SailingVessel.Kind.ofTransport(search.getPath().get(landing).getTransport().getType()));
 		assertNotNull(search.debugStats().get("Sailing legs"));
+	}
+
+	@Test
+	public void recoveryHintForASeaTargetIsAttachedAtTheDock()
+	{
+		SailingVessel raft = SailingVessel.of(SailingVessel.Kind.RAFT, 256);
+		SailingFleet fleet = recoveredFor(raft, 4125, 4125);
+		AStarPathfinder sailing = search(fleet, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE);
+		assertTrue(sailing.getResult().isReached());
+		List<PathStep> path = sailing.getPath();
+		int boarding = transportIndex(path);
+		assertTrue(boarding > 0);
+		Transport transport = path.get(boarding).getTransport();
+		assertEquals(path.get(boarding - 1).getPackedPosition(), transport.getOrigin());
+		assertEquals(Traversal.SAILING, path.get(boarding).getTraversal());
+		assertTrue(transport.getDisplayInfo().startsWith("Recover boat (4125 gp)"));
+		assertEquals(4125, transport.getItemRequirements().getRequirements().get(0).getBranches().get(0).getQuantity());
+		PathAnnotator annotator = PathAnnotator.forTesting();
+		assertEquals(Set.of(transport), annotator.transportsForEdge(path.get(boarding - 1),
+			annotator.nextPathStep(path, boarding - 1)));
+		assertTrue(annotator.transportsForEdge(path.get(path.size() - 2),
+			annotator.nextPathStep(path, path.size() - 2)).isEmpty());
 	}
 
 	@Test
@@ -336,7 +369,14 @@ public class AStarSailingRoutesTest
 	// The boat moored at no known mooring: it can't be boarded anywhere
 	private static SailingFleet nowhere(SailingVessel vessel)
 	{
-		return new SailingFleet(List.of(SailingFleet.Boat.at(vessel, -1)), null);
+		return new SailingFleet(List.of(SailingFleet.Boat.at(vessel, -1, SailingFleet.UNAVAILABLE)), null,
+			Integer.MAX_VALUE);
+	}
+
+	// The boat moored at no known mooring, which a shipwright brings for cost coins; the player carries carried
+	private static SailingFleet recoveredFor(SailingVessel vessel, int cost, int carried)
+	{
+		return new SailingFleet(List.of(SailingFleet.Boat.at(vessel, -1, cost)), null, carried);
 	}
 
 	// Aboard a boat with every part, as the plugin takes the boat the player is on to be: only its hull limits it

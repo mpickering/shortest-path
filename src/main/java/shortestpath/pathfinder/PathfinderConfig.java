@@ -19,6 +19,7 @@ import net.runelite.api.GameState;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.ItemID;
 import shortestpath.requirement.model.DestinationRequirements;
 import shortestpath.poh.JewelleryBoxTier;
 import shortestpath.requirement.model.ItemRequirement;
@@ -29,6 +30,7 @@ import shortestpath.settings.ConfigKey;
 import shortestpath.settings.EffectiveConfig;
 import shortestpath.settings.TeleportationItem;
 import shortestpath.items.ItemStateService;
+import shortestpath.items.OwnedItems;
 import shortestpath.leagues.LeagueModeState;
 import shortestpath.pathfinder.astar.PreparedRoutingAccount;
 import shortestpath.pathfinder.sailing.PreparedSailingCapability;
@@ -282,6 +284,7 @@ public class PathfinderConfig
 	}
 	/** Whether routes sail the player's boats: "Sail on boats" on, logged in. */
 	private volatile boolean sailingBoats;
+	private volatile int boatRecoveryThreshold;
 
 	public PathfinderConfig(Client client, ShortestPathConfig config)
 	{
@@ -448,7 +451,10 @@ public class PathfinderConfig
 		{
 			return SailingFleet.NONE;
 		}
-		return SailingFleets.fromState(sailing.getState());
+		int carried = heldItems.carried().getOrDefault(ItemID.COINS, 0);
+		long owned = (long) carried + OwnedItems.collect(itemState.getBank()).getOrDefault(ItemID.COINS, 0);
+		return SailingFleets.fromState(sailing.getState(), Math.min(boatRecoveryThreshold, currencyThreshold), owned,
+			carried);
 	}
 
 	public boolean hasDestination(String destinationType)
@@ -500,12 +506,12 @@ public class PathfinderConfig
 
 		// Other settings (useTeleportationItems is now managed by transportTypeConfig)
 		currencyThreshold = effective.num(ConfigKey.CURRENCY_THRESHOLD);
-		// Banked teleport items are only usable from the bankVisited path state, so a
-		// mode that collects bank contents must also enable bank-path traversal —
-		// otherwise the banked items are gathered but can never be offered.
+		boatRecoveryThreshold = Math.max(0, effective.num(ConfigKey.BOAT_RECOVERY_THRESHOLD));
+		// Banked items and boat recovery coins require bank-path traversal before they can be spent.
 		TeleportationItem teleportationItemSetting = transportTypeConfig.getTeleportationItemSetting();
 		includeBankPath = effective.bool(ConfigKey.INCLUDE_BANK_PATH)
-			|| TeleportationItemPolicy.includesBank(teleportationItemSetting);
+			|| TeleportationItemPolicy.includesBank(teleportationItemSetting)
+			|| boatRecoveryThreshold > 0;
 		respawnPrifddinas = effective.bool(ConfigKey.RESPAWN_PRIFDDINAS);
 
 		// Unlocks come from detected account state or config declarations.
@@ -850,7 +856,8 @@ public class PathfinderConfig
 				{
 					continue;
 				}
-				offered = SailingTransports.boundFor(offered, boat.vessel());
+				offered = SailingTransports.withRecovery(SailingTransports.boundFor(offered, boat.vessel()),
+					boat.boardingCost(SailingTransports.from(offered)));
 			}
 
 			// The named gates run first; a transport failing any of them is

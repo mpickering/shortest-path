@@ -14,7 +14,7 @@ import lombok.experimental.Accessors;
 public final class SailingFleet
 {
 	/** No boats: routes walk. */
-	public static final SailingFleet NONE = new SailingFleet(List.of(), null);
+	public static final SailingFleet NONE = new SailingFleet(List.of(), null, Integer.MAX_VALUE);
 
 	/** {@link Boat#boardingCost} for a mooring the boat can't be boarded at. */
 	public static final int UNAVAILABLE = -1;
@@ -30,17 +30,23 @@ public final class SailingFleet
 		private final SailingVessel vessel;
 		/** The game's id of the dock the boat is moored at, or {@link #EVERYWHERE}; matches no mooring if unknown. */
 		private final int dock;
+		/** Coins to have the boat brought to a shipwright's mooring, or {@link #UNAVAILABLE}. */
+		private final int recoveryCost;
 
-		private Boat(SailingVessel vessel, int dock)
+		private Boat(SailingVessel vessel, int dock, int recoveryCost)
 		{
 			this.vessel = vessel;
 			this.dock = dock;
+			this.recoveryCost = recoveryCost;
 		}
 
-		/** A boat moored at the dock with the game's id {@code dock}. */
-		public static Boat at(SailingVessel vessel, int dock)
+		/**
+		 * A boat moored at the dock with the game's id {@code dock}, which a shipwright can bring to their own mooring
+		 * for {@code recoveryCost} coins ({@link #UNAVAILABLE} if not).
+		 */
+		public static Boat at(SailingVessel vessel, int dock, int recoveryCost)
 		{
-			return new Boat(vessel, dock);
+			return new Boat(vessel, dock, recoveryCost);
 		}
 
 		/**
@@ -49,13 +55,14 @@ public final class SailingFleet
 		 */
 		public static Boat everywhere(SailingVessel vessel)
 		{
-			return new Boat(vessel, EVERYWHERE);
+			return new Boat(vessel, EVERYWHERE, UNAVAILABLE);
 		}
 
-		/** Coins to board the boat at {@code mooring}: 0 where it is moored, else {@link #UNAVAILABLE}. */
+		/** Coins to board the boat at {@code mooring}: 0 where it is moored, its recovery at a shipwright's, else {@link #UNAVAILABLE}. */
 		public int boardingCost(SailingMooring mooring)
 		{
-			return dock == EVERYWHERE || mooring.dock() >= 0 && mooring.dock() == dock ? 0 : UNAVAILABLE;
+			if (dock == EVERYWHERE || mooring.dock() >= 0 && mooring.dock() == dock) return 0;
+			return mooring.shipwright() ? recoveryCost : UNAVAILABLE;
 		}
 	}
 
@@ -85,11 +92,14 @@ public final class SailingFleet
 	private final List<Boat> boats;
 	/** The boat the player is aboard, or {@code null}. */
 	private final Aboard aboard;
+	/** The coins the player carries, which pay for a recovery without a bank visit. */
+	private final int carriedCoins;
 
-	public SailingFleet(List<Boat> boats, Aboard aboard)
+	public SailingFleet(List<Boat> boats, Aboard aboard, int carriedCoins)
 	{
 		this.boats = List.copyOf(boats);
 		this.aboard = aboard;
+		this.carriedCoins = carriedCoins;
 	}
 
 	/** Each of {@code vessels} moored at every mooring ({@link Boat#everywhere}), none aboard. */
@@ -97,19 +107,19 @@ public final class SailingFleet
 	{
 		List<Boat> boats = new ArrayList<>();
 		for (SailingVessel vessel : vessels) boats.add(Boat.everywhere(vessel));
-		return new SailingFleet(boats, null);
+		return new SailingFleet(boats, null, Integer.MAX_VALUE);
 	}
 
 	/** Aboard {@code aboard}, with no other boats. */
 	public static SailingFleet aboard(Aboard aboard)
 	{
-		return new SailingFleet(List.of(), aboard);
+		return new SailingFleet(List.of(), aboard, Integer.MAX_VALUE);
 	}
 
 	/** This fleet with the player on foot: no boat aboard. */
 	public SailingFleet ashore()
 	{
-		return aboard == null ? this : new SailingFleet(boats, null);
+		return aboard == null ? this : new SailingFleet(boats, null, carriedCoins);
 	}
 
 	/**
