@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntUnaryOperator;
+import shortestpath.pathfinder.BankVisitState;
 import shortestpath.PrimitiveIntHashMap;
 import shortestpath.WorldPointUtil;
 import shortestpath.pathfinder.CollisionMap;
@@ -152,6 +153,13 @@ public final class SailingSeaEnds implements SeaEnds
 			}
 		}
 		grow();
+	}
+
+	@Override
+	public boolean usable(int link, BankVisitState banked)
+	{
+		return banked == BankVisitState.BANKED
+			|| fleet.recoveryCost(moorings.get(link), vessels.get(link)) <= fleet.carriedCoins();
 	}
 
 	/**

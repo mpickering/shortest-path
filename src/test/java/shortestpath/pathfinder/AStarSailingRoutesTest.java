@@ -72,6 +72,19 @@ public class AStarSailingRoutesTest
 	}
 
 	@Test
+	public void sailingToASeaTargetCannotSpendBankCoinsBeforeVisitingABank()
+	{
+		SailingVessel raft = SailingVessel.of(SailingVessel.Kind.RAFT, 2.0);
+		SailingFleet needsBank = new SailingFleet(List.of(raft), SailingFleet.BoatLocations.EVERY_MOORING,
+			null, (dock, boat) -> 4125, 0);
+		// This account has no bank paths enabled, so recovery must not bypass the missing coins.
+		assertFalse(search(needsBank, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE).getResult().isReached());
+		SailingFleet carried = new SailingFleet(List.of(raft), SailingFleet.BoatLocations.EVERY_MOORING,
+			null, (dock, boat) -> 4125, 4125);
+		assertTrue(search(carried, 99, PORT_SARIM_DOCK, MUDSKIPPER_DIVE).getResult().isReached());
+	}
+
+	@Test
 	public void aWalkCheaperThanSailingIsKept()
 	{
 		AStarPathfinder walking = search(SailingFleet.NONE, 99, PORT_SARIM_DOCK, WYDINS);

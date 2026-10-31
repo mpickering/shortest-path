@@ -489,7 +489,7 @@ public class PathfinderConfig
 			vessels.add(vessel);
 			boats.put(vessel, boat);
 		}
-		int recoveryLimit = boatRecoveryThreshold;
+		int recoveryLimit = Math.min(boatRecoveryThreshold, currencyThreshold);
 		long coins = (long) heldItems.carried().getOrDefault(ItemID.COINS, 0)
 			+ OwnedItems.collect(itemState.getBank()).getOrDefault(ItemID.COINS, 0);
 		SailingFleet.BoatLocations locations = (mooring, vessel) ->
@@ -501,7 +501,8 @@ public class PathfinderConfig
 			return mooring.hasShipwright() && cost > 0 && cost <= recoveryLimit && cost <= coins;
 		};
 		return new SailingFleet(vessels, locations, aboard(state),
-			(mooring, vessel) -> boats.get(vessel).getDock() == mooring.dock() ? 0 : boats.get(vessel).getRecoveryCost());
+			(mooring, vessel) -> boats.get(vessel).getDock() == mooring.dock() ? 0 : boats.get(vessel).getRecoveryCost(),
+			heldItems.carried().getOrDefault(ItemID.COINS, 0));
 	}
 
 	// The boat the player is aboard, with sailing moves on, or null
@@ -595,12 +596,11 @@ public class PathfinderConfig
 		// Other settings (useTeleportationItems is now managed by transportTypeConfig)
 		currencyThreshold = effective.num(ConfigKey.CURRENCY_THRESHOLD);
 		boatRecoveryThreshold = Math.max(0, effective.num(ConfigKey.BOAT_RECOVERY_THRESHOLD));
-		// Banked teleport items are only usable from the bankVisited path state, so a
-		// mode that collects bank contents must also enable bank-path traversal —
-		// otherwise the banked items are gathered but can never be offered.
+		// Banked items and boat recovery coins require bank-path traversal before they can be spent.
 		TeleportationItem teleportationItemSetting = transportTypeConfig.getTeleportationItemSetting();
 		includeBankPath = effective.bool(ConfigKey.INCLUDE_BANK_PATH)
-			|| TeleportationItemPolicy.includesBank(teleportationItemSetting);
+			|| TeleportationItemPolicy.includesBank(teleportationItemSetting)
+			|| boatRecoveryThreshold > 0;
 		respawnPrifddinas = effective.bool(ConfigKey.RESPAWN_PRIFDDINAS);
 
 		// Unlocks come from detected account state or config declarations.
@@ -968,6 +968,8 @@ public class PathfinderConfig
 				int recoveryCost = fleet.recoveryCost(SailingTransports.from(offered), vessel);
 				if (recoveryCost > 0)
 				{
+					offered = offered.withItemRequirements(TransportItems.merge(offered.getItemRequirements(),
+						new TransportItems(List.of(new ItemRequirement(new int[]{ItemID.COINS}, null, null, recoveryCost)))));
 					offered = offered.withDisplayInfo("Recover boat (" + recoveryCost + " gp), then " + offered.getDisplayInfo());
 				}
 			}

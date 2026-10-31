@@ -61,6 +61,7 @@ public final class SailingFleet
 	/** The boat the player is aboard, or {@code null}. */
 	private final Aboard aboard;
 	private final ToIntBiFunction<SailingMooring, SailingVessel> recoveryCosts;
+	private final int carriedCoins;
 
 	public SailingFleet(List<SailingVessel> vessels, BoatLocations locations, Aboard aboard)
 	{
@@ -70,6 +71,13 @@ public final class SailingFleet
 	public SailingFleet(List<SailingVessel> vessels, BoatLocations locations, Aboard aboard,
 		ToIntBiFunction<SailingMooring, SailingVessel> recoveryCosts)
 	{
+		this(vessels, locations, aboard, recoveryCosts, Integer.MAX_VALUE);
+	}
+
+	public SailingFleet(List<SailingVessel> vessels, BoatLocations locations, Aboard aboard,
+		ToIntBiFunction<SailingMooring, SailingVessel> recoveryCosts, int carriedCoins)
+	{
+		this.carriedCoins = carriedCoins;
 		this.vessels = List.copyOf(vessels);
 		this.locations = locations == null ? BoatLocations.UNKNOWN : locations;
 		this.aboard = aboard;

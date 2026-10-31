@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import shortestpath.ItemVariations;
 import shortestpath.WorldPointUtil;
@@ -168,6 +169,11 @@ public final class TransportEligibility
 			: carriedItems;
 		Map<Integer, Integer> bankHas = new HashMap<>();
 		OwnedItems.addContainer(bankHas, bank);
+		if (includeBankPath && !TeleportationItemPolicy.includesBank(teleportationItemSetting))
+		{
+			bankPathItems.merge(ItemID.COINS, bankHas.getOrDefault(ItemID.COINS, 0),
+				(carried, stored) -> (int) Math.min(Integer.MAX_VALUE, (long) carried + stored));
+		}
 		int bankPouchId = -1;
 		for (int pouchId : OwnedItems.RUNE_POUCHES)
 		{

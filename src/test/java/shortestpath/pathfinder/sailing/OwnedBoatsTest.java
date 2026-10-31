@@ -64,11 +64,12 @@ public class OwnedBoatsTest
 		SailingVessel vessel = SailingVessel.of(SailingVessel.Kind.RAFT, 1);
 		SailingMooring mooring = mooring("Catherby");
 		SailingFleet fleet = new SailingFleet(List.of(vessel), SailingFleet.BoatLocations.EVERY_MOORING,
-			new SailingFleet.Aboard(0, 0, vessel, 0, 0), (dock, boat) -> 4125);
+			new SailingFleet.Aboard(0, 0, vessel, 0, 0), (dock, boat) -> 4125, 1000);
 		PreparedSailingCapability onFoot = new PreparedSailingCapability(fleet, List.of(mooring)).onFoot();
 
 		assertTrue(onFoot.fleet().aboard() == null);
 		assertEquals(4125, onFoot.fleet().recoveryCost(mooring, vessel));
+		assertEquals(1000, onFoot.fleet().carriedCoins());
 	}
 
 	@Test
@@ -197,6 +198,25 @@ public class OwnedBoatsTest
 		pathfinderConfig.setItemStateService(items);
 		pathfinderConfig.refresh();
 		assertTrue(canBoardAt("Port Roberts"));
+		assertTrue("bank routing enabled for recovery", pathfinderConfig.prepareAStarRoutingAccount(true).bankPathEnabled());
+		assertTrue(legs(null).stream().noneMatch(t -> SailingTransports.from(t).name().equals("Port Roberts")));
+		Transport recovery = legs(BankVisitState.BANKED).stream()
+			.filter(t -> SailingTransports.from(t).name().equals("Port Roberts")).findFirst().orElseThrow();
+		assertEquals(Long.valueOf(4125), pathfinderConfig.getEligibility().bankPickupPlan(recovery).items.get(ItemID.COINS));
+
+		coins(1000);
+		pathfinderConfig.refresh();
+		recovery = legs(BankVisitState.BANKED).stream()
+			.filter(t -> SailingTransports.from(t).name().equals("Port Roberts")).findFirst().orElseThrow();
+		assertEquals(Long.valueOf(3125), pathfinderConfig.getEligibility().bankPickupPlan(recovery).items.get(ItemID.COINS));
+
+		coins(4125);
+		pathfinderConfig.refresh();
+		assertTrue(legs(null).stream().anyMatch(t -> SailingTransports.from(t).name().equals("Port Roberts")));
+
+		coins(Integer.MAX_VALUE);
+		pathfinderConfig.refresh();
+		assertTrue(legs(BankVisitState.BANKED).stream().anyMatch(t -> SailingTransports.from(t).name().equals("Port Roberts")));
 	}
 
 	@Test
@@ -245,10 +265,10 @@ public class OwnedBoatsTest
 	}
 
 	// The sailing transports the account is offered
-	private List<Transport> legs(Void unused)
+	private List<Transport> legs(BankVisitState banked)
 	{
 		List<Transport> legs = new ArrayList<>();
-		shortestpath.PrimitiveIntHashMap<Transport[]> packed = pathfinderConfig.getTransportsPacked(BankVisitState.CARRIED);
+		shortestpath.PrimitiveIntHashMap<Transport[]> packed = pathfinderConfig.getTransportsPacked(banked == null ? BankVisitState.CARRIED : banked);
 		for (int origin : packed.keys())
 		{
 			for (Transport transport : packed.get(origin)) if (transport.getType().isSailing()) legs.add(transport);
