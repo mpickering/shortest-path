@@ -4,8 +4,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -100,6 +107,90 @@ public class AlternativeRoutesTest
 		assertTrue(alternatives(3, teleport(FAST), teleport(FAST, 4), local(FAST, TARGET, 98)).isEmpty());
 	}
 
+	/** The penalised search, heuristic included, agrees with Dijkstra over the same penalised edges. */
+	@Test
+	public void penalisedSearchMatchesAPlainDijkstra()
+	{
+		Random random = new Random(20261104);
+		int reached = 0;
+		for (int graph = 0; graph < 300; graph++)
+		{
+			int[] tiles = new int[8];
+			for (int i = 0; i < tiles.length; i++)
+			{
+				// Tiles a step apart make some transports doors; the rest are journeys.
+				tiles[i] = WorldPointUtil.packWorldPoint(1000 + (i / 2) * 100 + i % 2, 1000, 0);
+			}
+			List<Transport> transports = new ArrayList<>();
+			for (int edge = 0; edge < 14; edge++)
+			{
+				int from = tiles[random.nextInt(tiles.length)], to = tiles[random.nextInt(tiles.length)];
+				if (from != to) transports.add(local(from, to, 1 + random.nextInt(30)));
+			}
+			for (int global = 0; global < 3; global++)
+			{
+				transports.add(teleport(tiles[1 + random.nextInt(tiles.length - 1)], 1 + random.nextInt(30)));
+			}
+			Set<Integer> chosen = new HashSet<>();
+			for (int i = 0; i < 3; i++) chosen.add(tiles[random.nextInt(tiles.length)]);
+			ReusePenalty penalty = new ReusePenalty(chosen, 1 + random.nextInt(40), CostArithmetic.INF - 1);
+
+			int start = tiles[0], target = tiles[tiles.length - 1];
+			int expected = dijkstra(tiles, transports, penalty, start, target);
+			PreparedRoutingAccount account = PreparedRoutingAccount.compile(
+				TransportAvailabilityFixture.of(transports.toArray(new Transport[0])),
+				TransportAvailabilityFixture.of(), false, Set.of(), 0, true, ignored -> 0);
+			TargetOverlay overlay = new TargetOverlay(new SiteGraph(routingStatic(tiles), account), emptyCollision(), target);
+			AStarForwardSearch.Result found = AStarForwardSearch.search(overlay,
+				PreparedHeuristic.prepare(overlay, ReverseLabels.compute(overlay)), start, () -> false, false, 1,
+				SearchRestrictions.none(), AStarForwardSearch.NO_PROGRESS, (tile, banked) -> overlay.isTarget(tile), penalty);
+
+			assertEquals("graph " + graph + " reached", expected != CostArithmetic.INF, found.reached());
+			if (!found.reached()) continue;
+			reached++;
+			int duration = 0, reuses = 0;
+			for (PathStep step : found.route().steps())
+			{
+				if (step.getTransport() == null) continue;
+				duration += step.getTransport().getDuration();
+				reuses += penalty.reuses(step.getTransport());
+			}
+			assertEquals("graph " + graph + " reports the duration", duration, found.cost());
+			assertEquals("graph " + graph + " score", expected, duration + reuses * penalty.perReuse());
+		}
+		assertTrue("the graphs exercise the search: " + reached, reached > 100);
+	}
+
+	private static int dijkstra(int[] tiles, List<Transport> transports, ReusePenalty penalty, int start, int target)
+	{
+		Map<Integer, Integer> best = new HashMap<>();
+		PriorityQueue<int[]> queue = new PriorityQueue<>(Comparator.comparingInt((int[] entry) -> entry[0]));
+		for (Transport transport : transports)
+		{
+			if (transport.getOrigin() == Transport.UNDEFINED_ORIGIN)
+				queue.add(new int[] {score(transport, penalty), transport.getDestination()});
+		}
+		queue.add(new int[] {0, start});
+		while (!queue.isEmpty())
+		{
+			int[] entry = queue.poll();
+			if (best.containsKey(entry[1])) continue;
+			best.put(entry[1], entry[0]);
+			if (entry[1] == target) return entry[0];
+			for (Transport transport : transports)
+			{
+				if (transport.getOrigin() == entry[1])
+					queue.add(new int[] {entry[0] + score(transport, penalty), transport.getDestination()});
+			}
+		}
+		return CostArithmetic.INF;
+	}
+
+	private static int score(Transport transport, ReusePenalty penalty)
+	{
+		return transport.getDuration() + penalty.reuses(transport) * penalty.perReuse();
+	}
+
 	private static List<AlternativeRoutes.Alternative> alternatives(int max, Transport... transports)
 	{
 		PreparedRoutingAccount account = PreparedRoutingAccount.compile(TransportAvailabilityFixture.of(transports),
@@ -140,10 +231,15 @@ public class AlternativeRoutesTest
 			.duration(cost).maxWildernessLevel(30).build();
 	}
 
-	/** One site per tile, no walking: every move is a transport. */
 	private static RoutingStatic routingStatic()
 	{
-		int[] sites = Arrays.stream(TILES).map(t -> t ^ Integer.MIN_VALUE).sorted().map(t -> t ^ Integer.MIN_VALUE).toArray();
+		return routingStatic(TILES);
+	}
+
+	/** One site per tile, no walking: every move is a transport. */
+	private static RoutingStatic routingStatic(int[] tiles)
+	{
+		int[] sites = Arrays.stream(tiles).map(t -> t ^ Integer.MIN_VALUE).sorted().map(t -> t ^ Integer.MIN_VALUE).toArray();
 		int n = sites.length;
 		int[] offsets = new int[n + 1], ids = new int[n], members = new int[n];
 		for (int i = 0; i <= n; i++) offsets[i] = i;
