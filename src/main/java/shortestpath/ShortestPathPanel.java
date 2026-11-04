@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
+import java.util.function.IntConsumer;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -70,6 +71,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import shortestpath.items.ItemStateService;
+import shortestpath.presentation.RouteChoices;
 import shortestpath.settings.ConfigItems;
 import shortestpath.settings.Settings;
 import shortestpath.settings.TeleportationItem;
@@ -195,6 +197,18 @@ public class ShortestPathPanel extends PluginPanel
 	 */
 	private final JPanel body = new JPanel(new CardLayout());
 	private final List<Tile> tiles = new ArrayList<>();
+	private final RoutesSection routes = new RoutesSection();
+
+	/** Lists the routes to choose between, hiding the section when there are none. Swing thread only. */
+	void showRoutes(List<RouteChoices.Choice> choices)
+	{
+		routes.show(choices);
+	}
+
+	void onRouteChosen(IntConsumer chosen)
+	{
+		routes.onChosen(chosen);
+	}
 
 	ShortestPathPanel(Settings settings, Client client,
 		ClientThread clientThread, ItemManager itemManager,
@@ -247,6 +261,7 @@ public class ShortestPathPanel extends PluginPanel
 		topPanel.setBorder(new EmptyBorder(8, 10, 8, 10));
 		topPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
 		topPanel.add(searchBar, BorderLayout.CENTER);
+		topPanel.add(routes, BorderLayout.SOUTH);
 		add(topPanel, BorderLayout.NORTH);
 
 		// The sections build in drill order — each registers its

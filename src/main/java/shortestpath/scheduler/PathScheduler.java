@@ -19,6 +19,7 @@ import javax.inject.Singleton;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Player;
@@ -70,6 +71,8 @@ public class PathScheduler
 	private PathfinderConfig pathfinderConfig;
 	private SailingService sailing;
 	private QueryResponder responder;
+	// Told, on any thread, when the active search's routes or selected route may have changed.
+	@Setter private volatile Runnable routesListener = () -> { };
 
 	private WorldMapPoint marker;
 	private int lastLocation = WorldPointUtil.packWorldPoint(0, 0, 0);
@@ -183,6 +186,7 @@ public class PathScheduler
 					}
 				}
 				ActiveSearch search = pathfinder;
+				routesListener.run();
 				debugState.searchStarted(search);
 				pathfinderFuture = pathfindingExecutor.submit(() ->
 				{
@@ -215,6 +219,10 @@ public class PathScheduler
 		{
 			log.warn("Failed to find alternative routes", error);
 		}
+		if (search == pathfinder)
+		{
+			routesListener.run();
+		}
 	}
 
 	/** Shows the active search's next route, wrapping round to its first. */
@@ -223,7 +231,18 @@ public class PathScheduler
 		ActiveSearch search = pathfinder;
 		if (search != null)
 		{
-			search.selectRoute((search.getSelectedRoute() + 1) % (search.getAlternatives().size() + 1));
+			selectRoute((search.getSelectedRoute() + 1) % (search.getAlternatives().size() + 1));
+		}
+	}
+
+	/** Shows route {@code route} of the active search, numbered as in {@link ActiveSearch#getSelectedRoute()}. */
+	public void selectRoute(int route)
+	{
+		ActiveSearch search = pathfinder;
+		if (search != null)
+		{
+			search.selectRoute(route);
+			routesListener.run();
 		}
 	}
 
@@ -557,6 +576,7 @@ public class PathScheduler
 				}
 				pathfinder = null;
 			}
+			routesListener.run();
 
 			worldMapPointManager.removeIf(x -> x == marker);
 			marker = null;

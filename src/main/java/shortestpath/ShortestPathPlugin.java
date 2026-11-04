@@ -3,7 +3,9 @@ package shortestpath;
 import com.google.inject.Inject;
 import com.google.inject.Provides;
 import java.awt.event.KeyEvent;
+import java.util.List;
 import java.util.Set;
+import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -237,6 +239,13 @@ public class ShortestPathPlugin extends Plugin
 
 		panel = new ShortestPathPanel(settings, client, clientThread, itemManager,
 			spriteManager, itemState, eventBus, this);
+		ShortestPathPanel routesPanel = panel;
+		routesPanel.onRouteChosen(scheduler::selectRoute);
+		scheduler.setRoutesListener(() ->
+		{
+			List<RouteChoices.Choice> choices = RouteChoices.choices(scheduler.getActiveSearch());
+			SwingUtilities.invokeLater(() -> routesPanel.showRoutes(choices));
+		});
 		navButton = NavigationButton.builder()
 			.tooltip("Shortest Path")
 			.icon(ImageUtil.loadImageResource(ShortestPathPlugin.class, "/shortestpath/panel_icon.png"))
@@ -269,6 +278,7 @@ public class ShortestPathPlugin extends Plugin
 			navButton = null;
 		}
 
+		scheduler.setRoutesListener(() -> { });
 		if (panel != null)
 		{
 			// The settings service is a singleton — release this panel's

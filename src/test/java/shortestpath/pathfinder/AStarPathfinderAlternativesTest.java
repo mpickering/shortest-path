@@ -48,6 +48,25 @@ public class AStarPathfinderAlternativesTest
 	}
 
 	@Test
+	public void theSidebarListsEveryRouteWithItsJourneys() throws Exception
+	{
+		AStarPathfinder search = search(global(TARGET, 2), global(NEAR, 5), local(NEAR, TARGET, 3));
+		assertTrue("nothing to choose yet", RouteChoices.choices(search).isEmpty());
+		search.loadAlternatives();
+		search.selectRoute(1);
+
+		List<RouteChoices.Choice> choices = RouteChoices.choices(search);
+		assertEquals(2, choices.size());
+		assertEquals("Fastest", choices.get(0).getTitle());
+		assertEquals("2 ticks", choices.get(0).getTicks());
+		assertEquals("teleportation minigame", choices.get(0).getJourneys());
+		assertFalse(choices.get(0).isSelected());
+		assertEquals("+6 ticks", choices.get(1).getTitle());
+		assertEquals("8 ticks", choices.get(1).getTicks());
+		assertTrue(choices.get(1).isSelected());
+	}
+
+	@Test
 	public void aRouteOutOfRangeIsIgnored() throws Exception
 	{
 		AStarPathfinder search = search(global(TARGET, 2));

@@ -53,6 +53,7 @@ import net.runelite.api.ItemContainer;
 import net.runelite.api.MenuAction;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.SpriteID;
+import shortestpath.presentation.RouteChoices;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.events.ConfigChanged;
@@ -330,6 +331,47 @@ public class ShortestPathPanelLayoutTest
 
 
 
+
+	@Test
+	public void routesAppearWhenThereIsAChoiceAndTellWhichWasClicked() throws Exception
+	{
+		newPanel();
+		List<Integer> clicked = new ArrayList<>();
+		panel.onRouteChosen(clicked::add);
+		SwingUtilities.invokeAndWait(() -> panel.showRoutes(List.of(
+			new RouteChoices.Choice(0, "Fastest", "10 ticks", "Varrock Teleport", true),
+			new RouteChoices.Choice(1, "+4 ticks", "14 ticks", "Walk & <run>", false))));
+
+		List<JButton> rows = new ArrayList<>();
+		collectRouteRows(panel, rows);
+		assertEquals(2, rows.size());
+		assertTrue(rows.get(1).getText().contains("Walk &amp; &lt;run&gt;"));
+		rows.get(1).doClick();
+		assertEquals(List.of(1), clicked);
+
+		SwingUtilities.invokeAndWait(() -> panel.showRoutes(List.of()));
+		rows.clear();
+		collectRouteRows(panel, rows);
+		assertTrue(rows.isEmpty());
+	}
+
+	private static void collectRouteRows(Container root, List<JButton> rows)
+	{
+		for (Component child : root.getComponents())
+		{
+			if (child instanceof RoutesSection)
+			{
+				for (Component row : ((RoutesSection) child).getComponents())
+				{
+					if (row instanceof JButton) rows.add((JButton) row);
+				}
+			}
+			else if (child instanceof Container)
+			{
+				collectRouteRows((Container) child, rows);
+			}
+		}
+	}
 
 	@Test
 	public void theScrollViewIsViewportWidth()

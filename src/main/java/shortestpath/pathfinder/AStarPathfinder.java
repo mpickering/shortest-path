@@ -585,6 +585,12 @@ public final class AStarPathfinder implements ActiveSearch
 		if (route >= 0 && route <= alternatives.size()) selectedRoute = route;
 	}
 
+	@Override
+	public List<PathStep> getRoutePath(int route)
+	{
+		return route == 0 ? path : alternatives.get(route - 1).getPathSteps();
+	}
+
 	private AlternativeRoute selectedAlternative()
 	{
 		int route = selectedRoute;

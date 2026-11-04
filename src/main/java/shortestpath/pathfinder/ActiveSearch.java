@@ -86,6 +86,12 @@ public interface ActiveSearch extends Runnable
 		return 0;
 	}
 
+	/** The steps of route {@code route}, numbered as in {@link #getSelectedRoute()}. */
+	default List<PathStep> getRoutePath(int route)
+	{
+		return getPath();
+	}
+
 	/** Shows route {@code route}, numbered as in {@link #getSelectedRoute()}; ignored when out of range. */
 	default void selectRoute(int route)
 	{
