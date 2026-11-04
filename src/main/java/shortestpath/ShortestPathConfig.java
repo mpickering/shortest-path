@@ -569,6 +569,18 @@ public interface ShortestPathConfig extends Config
 		return Keybind.NOT_SET;
 	}
 
+	@ConfigItem(
+		keyName = "nextRouteHotkey",
+		name = "Next Route",
+		description = "Switch to the next alternative route",
+		position = 202,
+		section = sectionHotkeys
+	)
+	default Keybind nextRouteHotkey()
+	{
+		return Keybind.NOT_SET;
+	}
+
 	@ConfigSection(
 		name = "Debug Options",
 		description = "Debugging options",

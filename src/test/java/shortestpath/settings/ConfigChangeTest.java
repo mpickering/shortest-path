@@ -208,6 +208,7 @@ public class ConfigChangeTest
 		assertDisplayOnly("finishDistance");
 		assertDisplayOnly("postTransports");
 		assertDisplayOnly("clearPathHotkey");
+		assertDisplayOnly("nextRouteHotkey");
 		assertDisplayOnly("builtTeleportationBoxes");
 		assertDisplayOnly("builtTeleportationPortalsPoh");
 	}

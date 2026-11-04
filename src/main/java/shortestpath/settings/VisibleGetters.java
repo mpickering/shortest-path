@@ -32,6 +32,7 @@ final class VisibleGetters
 		Map.entry("COLOUR_TELEPORT_PULSE", ShortestPathConfig::colourTeleportPulse),
 		Map.entry("COLOUR_BANK_PICKUP_HIGHLIGHT", ShortestPathConfig::colourBankPickupHighlight),
 		Map.entry("CLEAR_PATH_HOTKEY", ShortestPathConfig::clearPathHotkey),
+		Map.entry("NEXT_ROUTE_HOTKEY", ShortestPathConfig::nextRouteHotkey),
 		Map.entry("DRAW_TRANSPORTS", ShortestPathConfig::drawTransports),
 		Map.entry("DRAW_COLLISION_MAP", ShortestPathConfig::drawCollisionMap),
 		Map.entry("DRAW_DEBUG_PANEL", ShortestPathConfig::drawDebugPanel),

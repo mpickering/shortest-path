@@ -5,6 +5,7 @@ import com.google.inject.Provides;
 import java.awt.event.KeyEvent;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.Player;
@@ -55,9 +56,11 @@ import shortestpath.overlay.PathTileOverlay;
 import shortestpath.overlay.PluginOverlays;
 import shortestpath.overlay.ScrollBookHighlightOverlay;
 import shortestpath.overlay.SpellbookHighlightOverlay;
+import shortestpath.pathfinder.ActiveSearch;
 import shortestpath.pathfinder.PathfinderConfig;
 import shortestpath.poh.PohService;
 import shortestpath.presentation.PathAnnotator;
+import shortestpath.presentation.RouteChoices;
 import shortestpath.sailing.SailingService;
 import shortestpath.scheduler.PathScheduler;
 import shortestpath.scheduler.RefreshCoordinator;
@@ -148,7 +151,7 @@ public class ShortestPathPlugin extends Plugin
 	// Built in startUp — the overlay references it bundles are @Inject
 	// fields, so the composite cannot exist before injection completes.
 	private PluginOverlays pluginOverlays;
-	private final KeyListener clearPathKeylistener = new KeyListener()
+	private final KeyListener hotkeyListener = new KeyListener()
 	{
 		@Override
 		public void keyTyped(KeyEvent e)
@@ -162,6 +165,11 @@ public class ShortestPathPlugin extends Plugin
 			{
 				scheduler.setTarget(WorldPointUtil.UNDEFINED);
 			}
+			if (config.nextRouteHotkey().matches(e))
+			{
+				scheduler.selectNextRoute();
+				clientThread.invokeLater(ShortestPathPlugin.this::announceSelectedRoute);
+			}
 		}
 
 		@Override
@@ -169,6 +177,15 @@ public class ShortestPathPlugin extends Plugin
 		{
 		}
 	};
+
+	private void announceSelectedRoute()
+	{
+		ActiveSearch search = scheduler.getActiveSearch();
+		if (search != null)
+		{
+			client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", RouteChoices.describeSelected(search), null);
+		}
+	}
 
 	@Provides
 	public ShortestPathConfig provideConfig(ConfigManager configManager)
@@ -214,7 +231,7 @@ public class ShortestPathPlugin extends Plugin
 			spellbookHighlightOverlay, inventoryHighlightOverlay, scrollBookHighlightOverlay, debugOverlayPanel);
 		pluginOverlays.register(overlayManager, settings.lifecycle().drawDebugPanel());
 
-		keyManager.registerKeyListener(clearPathKeylistener);
+		keyManager.registerKeyListener(hotkeyListener);
 		pohService.loadFromProfile();
 		itemState.loadFromProfile();
 
@@ -244,7 +261,7 @@ public class ShortestPathPlugin extends Plugin
 
 		scheduler.shutdown();
 
-		keyManager.unregisterKeyListener(clearPathKeylistener);
+		keyManager.unregisterKeyListener(hotkeyListener);
 
 		if (navButton != null)
 		{

@@ -60,6 +60,37 @@ public interface ActiveSearch extends Runnable
 		return Map.of();
 	}
 
+	/**
+	 * Looks for routes distinct from the one this completed search found, on the calling thread;
+	 * backends without alternatives have nothing to do.
+	 */
+	default void loadAlternatives()
+	{
+	}
+
+	/** The routes besides the search's own, empty until {@link #loadAlternatives()} has found them. */
+	default List<AlternativeRoute> getAlternatives()
+	{
+		return List.of();
+	}
+
+	/** Whether {@link #getAlternatives()} is final for this search. */
+	default boolean isAlternativesLoaded()
+	{
+		return false;
+	}
+
+	/** Which route {@link #getPath()} shows: 0 the search's own, then the alternatives in order. */
+	default int getSelectedRoute()
+	{
+		return 0;
+	}
+
+	/** Shows route {@code route}, numbered as in {@link #getSelectedRoute()}; ignored when out of range. */
+	default void selectRoute(int route)
+	{
+	}
+
 	PathfinderResult getResult();
 
 	PathfinderStats getStats();

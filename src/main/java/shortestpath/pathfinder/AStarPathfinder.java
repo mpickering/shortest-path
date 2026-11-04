@@ -71,6 +71,9 @@ public final class AStarPathfinder implements ActiveSearch
 	// What findAlternatives needs from a search that reached a target.
 	private volatile PreparedTarget reachedTarget;
 	private volatile AStarRoute reachedRoute;
+	private volatile List<AlternativeRoute> alternatives = List.of();
+	private volatile boolean alternativesLoaded;
+	private volatile int selectedRoute;
 
 	public AStarPathfinder(PathfinderConfig config, RoutingStatic routingStatic, int start, Set<Integer> targets,
 		Runnable completionCallback)
@@ -240,7 +243,9 @@ public final class AStarPathfinder implements ActiveSearch
 	public List<PathStep> getPath()
 	{
 		List<PathStep> shown = provisionalPath;
-		return shown != null ? shown : path;
+		if (shown != null) return shown;
+		AlternativeRoute selected = selectedAlternative();
+		return selected != null ? selected.getPathSteps() : path;
 	}
 
 	/**
@@ -285,6 +290,8 @@ public final class AStarPathfinder implements ActiveSearch
 	@Override
 	public PathfinderResult getResult()
 	{
+		AlternativeRoute selected = selectedAlternative();
+		if (selected != null) return selected.getResult();
 		return stats.started && stats.ended ? result : null;
 	}
 
@@ -346,7 +353,9 @@ public final class AStarPathfinder implements ActiveSearch
 	 */
 	@Override
 	public List<Integer> getClickPoints()
-	{ return clickPoints;
+	{
+		AlternativeRoute selected = selectedAlternative();
+		return selected != null ? selected.getClickPoints() : clickPoints;
 	}
 
 	/**
@@ -363,6 +372,7 @@ public final class AStarPathfinder implements ActiveSearch
 	}
 
 	/** Whether this search's target set was already prepared in the session. */
+	private static final int MAX_ALTERNATIVES = 2;
 	// Static data is built once; only the search that built it spends measurable time on it.
 	private static final long STATIC_BUILD_THRESHOLD_NANOS = 1_000_000;
 
@@ -544,6 +554,43 @@ public final class AStarPathfinder implements ActiveSearch
 		}
 	}
 
+	@Override
+	public void loadAlternatives()
+	{
+		alternatives = List.copyOf(findAlternatives(MAX_ALTERNATIVES));
+		alternativesLoaded = true;
+	}
+
+	@Override
+	public List<AlternativeRoute> getAlternatives()
+	{
+		return alternatives;
+	}
+
+	@Override
+	public boolean isAlternativesLoaded()
+	{
+		return alternativesLoaded;
+	}
+
+	@Override
+	public int getSelectedRoute()
+	{
+		return selectedRoute;
+	}
+
+	@Override
+	public void selectRoute(int route)
+	{
+		if (route >= 0 && route <= alternatives.size()) selectedRoute = route;
+	}
+
+	private AlternativeRoute selectedAlternative()
+	{
+		int route = selectedRoute;
+		return route == 0 ? null : alternatives.get(route - 1);
+	}
+
 	/**
 	 * Up to {@code maxAlternatives} routes distinct from the route this completed search found,
 	 * searched on the calling thread; empty when it found no route. The calculation cutoff applies
@@ -561,8 +608,13 @@ public final class AStarPathfinder implements ActiveSearch
 		{
 			AStarWalkCanonicalizer.Result canonical = new AStarWalkCanonicalizer(collision, account, restrictions)
 				.canonicalize(found.route());
-			routes.add(new AlternativeRoute(new InGameWalkRewriter(collision, restrictions).rewrite(canonical).path(),
-				found.duration(), found.reused(), found.counters().statesPopped(), found.searchNanos()));
+			InGameWalkRewriter.Result walked = new InGameWalkRewriter(collision, restrictions).rewrite(canonical);
+			List<PathStep> steps = walked.path();
+			PathfinderResult route = new PathfinderResult(start, last(steps), true, steps, last(steps), found.duration(),
+				found.counters().statesPopped(), found.counters().transportCandidates(), found.searchNanos(),
+				PathTerminationReason.TARGET_REACHED, null, arrival(steps));
+			routes.add(new AlternativeRoute(route, walked.clickPoints(), found.reused(),
+				found.duration() - first.cost(first.size() - 1), found.searchNanos()));
 		}
 		return routes;
 	}

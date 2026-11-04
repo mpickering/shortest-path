@@ -256,6 +256,12 @@ public final class EffectiveConfig implements ShortestPathConfig
 	}
 
 	@Override
+	public Keybind nextRouteHotkey()
+	{
+		return base.nextRouteHotkey();
+	}
+
+	@Override
 	public boolean drawTransports()
 	{
 		return bool(ConfigKey.DRAW_TRANSPORTS);

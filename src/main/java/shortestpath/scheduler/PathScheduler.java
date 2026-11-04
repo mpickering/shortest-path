@@ -195,8 +195,35 @@ public class PathScheduler
 						debugState.searchError(error, client.getTickCount());
 						throw error;
 					}
+					loadAlternatives(search);
 				});
 			}
+		}
+	}
+
+	/** The route is already showing, so a failure here only means it has no alternatives. */
+	private void loadAlternatives(ActiveSearch search)
+	{
+		try
+		{
+			if (search == pathfinder)
+			{
+				search.loadAlternatives();
+			}
+		}
+		catch (RuntimeException error)
+		{
+			log.warn("Failed to find alternative routes", error);
+		}
+	}
+
+	/** Shows the active search's next route, wrapping round to its first. */
+	public void selectNextRoute()
+	{
+		ActiveSearch search = pathfinder;
+		if (search != null)
+		{
+			search.selectRoute((search.getSelectedRoute() + 1) % (search.getAlternatives().size() + 1));
 		}
 	}
 
