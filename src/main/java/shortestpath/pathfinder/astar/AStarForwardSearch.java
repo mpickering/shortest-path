@@ -58,12 +58,24 @@ public final class AStarForwardSearch
 		BooleanSupplier cancelled, boolean optimized, double heuristicWeight, SearchRestrictions restrictions,
 		Runnable progressed, GoalTest goal)
 	{
+		return search(target, heuristic, start, cancelled, optimized, heuristicWeight, restrictions, progressed, goal,
+			null);
+	}
+
+	/**
+	 * {@code reuse} searches for an alternative route, see {@link ReusePenalty}; {@code null} searches
+	 * by duration alone. The result's costs are durations either way.
+	 */
+	static Result search(TargetOverlay target, PreparedHeuristic heuristic, int start,
+		BooleanSupplier cancelled, boolean optimized, double heuristicWeight, SearchRestrictions restrictions,
+		Runnable progressed, GoalTest goal, ReusePenalty reuse)
+	{
 		if (target == null || heuristic == null || cancelled == null || restrictions == null || progressed == null
 			|| goal == null)
 			throw new NullPointerException();
 		if (heuristic.overlay() != target) throw new IllegalArgumentException("heuristic belongs to another target overlay");
 		validateHeuristicWeight(heuristicWeight);
-		SearchCtx ctx = new SearchCtx(target, heuristic, start, optimized, heuristicWeight, restrictions);
+		SearchCtx ctx = new SearchCtx(target, heuristic, start, optimized, heuristicWeight, restrictions, reuse);
 		AStarRoute startPath = AStarRoute.of(List.of(new PathStep(start, BankVisitState.CARRIED)), new int[1]);
 		Closest closest = new Closest(target);
 		if (cancelled.getAsBoolean()) return Result.cancelled(ctx.counters.snapshot(ctx.bestBankCost[0]), startPath);
@@ -118,7 +130,7 @@ public final class AStarForwardSearch
 			}
 			ctx.counters.statesPopped++;
 			if (target.isTarget(tile) && goal.accepts(tile, banked))
-				return Result.reached(cost, state, ctx.counters.snapshot(ctx.bestBankCost[0]), ctx.reconstruct(startState, state));
+				return Result.reached(ctx.duration(state), state, ctx.counters.snapshot(ctx.bestBankCost[0]), ctx.reconstruct(startState, state));
 			if (closest.consider(state, tile, cost))
 				progressed.run();
 			if (ctx.space.isBase(node))
@@ -250,6 +262,9 @@ public final class AStarForwardSearch
 		final TransportWins transportWins = new TransportWins();
 		final MutableCounters counters;
 		final PagedSearchArray best, previous;
+		/** With {@link #reuse}: the journeys reused on the way to each state; {@code best} holds its score. */
+		final ReusePenalty reuse;
+		final PagedSearchArray reused;
 		final int[] globalBounds;
 		final int[] bestBankCost = {CostArithmetic.INF};
 		final boolean restrictedHeuristic, optimized;
@@ -257,8 +272,9 @@ public final class AStarForwardSearch
 		final int tileStates;
 
 		SearchCtx(TargetOverlay target, PreparedHeuristic heuristic, int start, boolean optimized,
-			double heuristicWeight, SearchRestrictions restrictions)
+			double heuristicWeight, SearchRestrictions restrictions, ReusePenalty reuse)
 		{
+			this.reuse = reuse;
 			this.target = target;
 			this.heuristic = heuristic;
 			this.optimized = optimized;
@@ -269,6 +285,7 @@ public final class AStarForwardSearch
 			int stateCount = tileStates + (capability == TeleportCapability.ALL ? 0 : HUB_STATES);
 			best = new PagedSearchArray(stateCount, CostArithmetic.INF);
 			previous = new PagedSearchArray(stateCount, 0);
+			reused = reuse == null ? null : new PagedSearchArray(stateCount, 0);
 			restrictedHeuristic = capability != TeleportCapability.ALL && hasGlobals(target.account());
 			counters = new MutableCounters(capability, !restrictedHeuristic);
 			globalBounds = restrictedHeuristic ? computeGlobalBounds() : null;
@@ -367,7 +384,9 @@ public final class AStarForwardSearch
 
 		private void relaxState(int from, int state, int cost, int stepCost, Transport transport, int pushKind)
 		{
-			int candidate = CostArithmetic.add(cost, stepCost);
+			int reuses = reuse == null ? 0 : reused.get(from) + reuse.reuses(transport);
+			int candidate = CostArithmetic.add(cost, reuse == null ? stepCost
+				: CostArithmetic.add(stepCost, (reuses - reused.get(from)) * reuse.perReuse()));
 			if (candidate == CostArithmetic.INF) return;
 			if (pushKind == PUSH_WALKING) counters.walkingRelaxations++; else counters.transportRelaxations++;
 			if (candidate >= best.get(state)) return;
@@ -376,8 +395,10 @@ public final class AStarForwardSearch
 			if (h == CostArithmetic.INF)
 	{ counters.heuristicUnreachable++; return;
 	}
+			if (overruns(candidate, reuses, h)) return;
 			boolean newState = best.get(state) == CostArithmetic.INF;
 			best.set(state, candidate); previous.set(state, from); transportWins.record(state, transport, candidate);
+			if (reuse != null) reused.set(state, reuses);
 			push(state, candidate, priority(candidate, h, heuristicWeight), newState, pushKind);
 			if (pushKind == PUSH_LOCAL || pushKind == PUSH_GLOBAL) counters.successfulTransportRelaxations++;
 		}
@@ -395,7 +416,10 @@ public final class AStarForwardSearch
 				int node = space.node(destination);
 				if (node < 0) continue;
 				int state = stateForNode(node, BankVisitState.CARRIED);
-				int cost = target.account().globalCost(capability, BankVisitState.CARRIED, i);
+				Transport transport = target.account().globalTransport(capability, BankVisitState.CARRIED, i);
+				int reuses = reuse == null ? 0 : reuse.reuses(transport);
+				int cost = CostArithmetic.add(target.account().globalCost(capability, BankVisitState.CARRIED, i),
+					reuse == null ? 0 : reuses * reuse.perReuse());
 				if (cost < best.get(state))
 				{
 					updateBestBank(state, cost);
@@ -405,8 +429,10 @@ public final class AStarForwardSearch
 						counters.heuristicUnreachable++;
 						continue;
 					}
+					if (overruns(cost, reuses, h)) continue;
 					best.set(state, cost); previous.set(state, startState);
-					transportWins.record(state, target.account().globalTransport(capability, BankVisitState.CARRIED, i), cost);
+					transportWins.record(state, transport, cost);
+					if (reuse != null) reused.set(state, reuses);
 					push(state, cost, priority(cost, h, heuristicWeight), true, PUSH_GLOBAL);
 					counters.successfulTransportRelaxations++;
 		}
@@ -422,6 +448,7 @@ public final class AStarForwardSearch
 			{
 				boolean newState = best.get(state) == CostArithmetic.INF;
 				best.set(state, cost); previous.set(state, from);
+				if (reuse != null) reused.set(state, reused.get(from));
 				push(state, cost, cost, newState, PUSH_GLOBAL);
 		}
 		}
@@ -441,16 +468,34 @@ public final class AStarForwardSearch
 				int node = space.node(destination);
 				if (node < 0) continue;
 				int stepCost = target.account().globalCost(hubCap, banked, i);
+				Transport transport = target.account().globalTransport(hubCap, banked, i);
+				int reuses = reuse == null ? 0 : reused.get(state) + reuse.reuses(transport);
+				if (reuse != null)
+					stepCost = CostArithmetic.add(stepCost, (reuses - reused.get(state)) * reuse.perReuse());
 				int next = stateForNode(node, banked), candidate = CostArithmetic.add(cost, stepCost);
 				if (candidate == CostArithmetic.INF) continue;
 				counters.transportRelaxations++;
 				if (candidate >= best.get(next)) continue;
+				if (reuse != null && overruns(candidate, reuses, effectiveHeuristic(next, candidate))) continue;
 				boolean newState = best.get(next) == CostArithmetic.INF;
 				best.set(next, candidate); previous.set(next, state);
-				transportWins.record(next, target.account().globalTransport(hubCap, banked, i), candidate);
+				transportWins.record(next, transport, candidate);
+				if (reuse != null) reused.set(next, reuses);
 				push(next, candidate, candidate, newState, PUSH_GLOBAL);
 				counters.successfulTransportRelaxations++;
 			}
+		}
+
+		/** Whether a path scoring {@code score} with {@code reuses} reused journeys overruns the duration limit. */
+		private boolean overruns(int score, int reuses, int h)
+		{
+			return reuse != null && reuse.overruns(score - reuses * reuse.perReuse(), h);
+		}
+
+		/** The duration of the best path to {@code state}, which {@code best} holds unless reuse adds to it. */
+		private int duration(int state)
+		{
+			return reuse == null ? best.get(state) : best.get(state) - reused.get(state) * reuse.perReuse();
 		}
 
 		private AStarRoute reconstruct(int start, int terminal)
@@ -470,7 +515,7 @@ public final class AStarForwardSearch
 				result.add(new PathStep(space.tile(state / 2),
 					(state & 1) != 0 ? BankVisitState.BANKED : BankVisitState.CARRIED,
 					transportWins.at(state, best.get(state))));
-				costs[count] = state == start ? 0 : best.get(state);
+				costs[count] = state == start ? 0 : duration(state);
 				int from = state == start ? start : previous.get(state);
 				arrivals[count++] = from < tileStates ? AStarRoute.FROM_STEP
 					: AStarRoute.fromHub(hubCapability(tileStates, from));

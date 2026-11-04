@@ -1,5 +1,6 @@
 package shortestpath.pathfinder;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 import shortestpath.leagues.LeagueModeState;
+import shortestpath.pathfinder.astar.AlternativeRoutes;
 import shortestpath.pathfinder.astar.AStarForwardSearch;
 import shortestpath.pathfinder.astar.AStarRoute;
 import shortestpath.pathfinder.astar.AStarRoutingSession;
@@ -66,6 +68,9 @@ public final class AStarPathfinder implements ActiveSearch
 	private volatile List<Integer> keptStepIndices = List.of();
 	private volatile boolean graphReused;
 	private volatile boolean targetReused;
+	// What findAlternatives needs from a search that reached a target.
+	private volatile PreparedTarget reachedTarget;
+	private volatile AStarRoute reachedRoute;
 
 	public AStarPathfinder(PathfinderConfig config, RoutingStatic routingStatic, int start, Set<Integer> targets,
 		Runnable completionCallback)
@@ -472,6 +477,8 @@ public final class AStarPathfinder implements ActiveSearch
 				{
 					best = current;
 					found = current.route();
+					reachedTarget = prepared.value();
+					reachedRoute = found;
 				}
 				else if (timedOut.get() && !cancelled)
 				{
@@ -535,6 +542,29 @@ public final class AStarPathfinder implements ActiveSearch
 			stats.end();
 			if (completionCallback != null) completionCallback.run();
 		}
+	}
+
+	/**
+	 * Up to {@code maxAlternatives} routes distinct from the route this completed search found,
+	 * searched on the calling thread; empty when it found no route. The calculation cutoff applies
+	 * to them together.
+	 */
+	public List<AlternativeRoute> findAlternatives(int maxAlternatives)
+	{
+		PreparedTarget target = reachedTarget;
+		AStarRoute first = reachedRoute;
+		if (target == null || first == null) return List.of();
+		SearchDeadline deadline = new SearchDeadline(cutoffMillis);
+		List<AlternativeRoute> routes = new ArrayList<>();
+		for (AlternativeRoutes.Alternative found : AlternativeRoutes.find(target, start, first, maxAlternatives,
+			restrictions, goals::accepts, () -> cancelled || deadline.expired()))
+		{
+			AStarWalkCanonicalizer.Result canonical = new AStarWalkCanonicalizer(collision, account, restrictions)
+				.canonicalize(found.route());
+			routes.add(new AlternativeRoute(new InGameWalkRewriter(collision, restrictions).rewrite(canonical).path(),
+				found.duration(), found.reused(), found.counters().statesPopped(), found.searchNanos()));
+		}
+		return routes;
 	}
 
 	/** The arrival of a route that reached a goal, read from where and in which layer it ends. */
