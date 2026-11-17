@@ -7,6 +7,9 @@ player's own teleports and transport items to carry so that the expected trip
 from one clue step to the next is as cheap as possible. The question it answers
 is "what should my standard clue inventory be for this tier?".
 
+Clues are the first example, not the only one. The engine takes any list of
+target tiles; a clue tier is one way to get such a list.
+
 ## Objective
 
 Let `T` be the clue locations of one tier, deduplicated by tile, each equally
