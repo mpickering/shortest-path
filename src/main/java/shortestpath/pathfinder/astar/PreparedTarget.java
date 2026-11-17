@@ -88,6 +88,15 @@ public final class PreparedTarget
 			restrictions, progressed, goal, startOverlay);
 	}
 
+	/**
+	 * The cheapest cost from {@code start} to each of {@link #packedTargets()}, in that order; see
+	 * {@link AStarForwardSearch#searchAll}. Null when cancelled.
+	 */
+	public int[] searchAll(int start, BooleanSupplier cancelled, SearchRestrictions restrictions, GoalTest goal)
+	{
+		return AStarForwardSearch.searchAll(overlay, heuristic, start, cancelled, restrictions, goal);
+	}
+
 
 
 	/** The target tiles, in unsigned order. */

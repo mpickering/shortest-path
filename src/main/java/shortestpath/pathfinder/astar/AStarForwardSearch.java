@@ -60,9 +60,37 @@ public final class AStarForwardSearch
 		BooleanSupplier cancelled, boolean optimized, double heuristicWeight, SearchRestrictions restrictions,
 		Runnable progressed, GoalTest goal, StartOverlay startOverlay)
 	{
+		return search(target, heuristic, start, cancelled, optimized, heuristicWeight, restrictions, progressed,
+			goal, startOverlay, null);
+	}
+
+	/**
+	 * The cheapest cost from {@code start} to each target of {@code target}, indexed by target index,
+	 * with {@link CostArithmetic#INF} for a target the search cannot reach; null when cancelled.
+	 * Rather than finish at the first target, the search records each target as it pops it and runs
+	 * on until every target is settled. The prepared heuristic is the minimum over the targets, so it
+	 * never over-estimates the distance to any one of them, and with weight 1 and re-expansion each
+	 * popped target's cost is optimal.
+	 */
+	public static int[] searchAll(TargetOverlay target, PreparedHeuristic heuristic, int start,
+		BooleanSupplier cancelled, SearchRestrictions restrictions, GoalTest goal)
+	{
+		int[] costs = new int[target.targetCount()];
+		Arrays.fill(costs, CostArithmetic.INF);
+		Result result = search(target, heuristic, start, cancelled, true, 1, restrictions, NO_PROGRESS, goal,
+			StartOverlay.none(target.routingStatic()), costs);
+		return result.cancelled() ? null : costs;
+	}
+
+	// With allCosts null the search ends at the first accepted target; otherwise it fills allCosts.
+	private static Result search(TargetOverlay target, PreparedHeuristic heuristic, int start,
+		BooleanSupplier cancelled, boolean optimized, double heuristicWeight, SearchRestrictions restrictions,
+		Runnable progressed, GoalTest goal, StartOverlay startOverlay, int[] allCosts)
+	{
 		if (target == null || heuristic == null || cancelled == null || restrictions == null || progressed == null
 			|| goal == null || startOverlay == null)
 			throw new NullPointerException();
+		int unsettled = allCosts == null ? 0 : allCosts.length;
 		if (heuristic.overlay() != target) throw new IllegalArgumentException("heuristic belongs to another target overlay");
 		if (!startOverlay.belongsTo(target.routingStatic()))
 			throw new IllegalArgumentException("start overlay belongs to other routing data");
@@ -122,7 +150,17 @@ public final class AStarForwardSearch
 			}
 			ctx.counters.statesPopped++;
 			if (target.isTarget(tile) && goal.accepts(tile, banked))
-				return Result.reached(cost, state, ctx.counters.snapshot(ctx.bestBankCost[0]), ctx.reconstruct(startState, state));
+			{
+				if (allCosts == null)
+					return Result.reached(cost, state, ctx.counters.snapshot(ctx.bestBankCost[0]), ctx.reconstruct(startState, state));
+				int index = target.targetIndex(tile);
+				if (allCosts[index] == CostArithmetic.INF)
+				{
+					allCosts[index] = cost;
+					if (--unsettled == 0)
+						return Result.reached(cost, state, ctx.counters.snapshot(ctx.bestBankCost[0]), startPath);
+				}
+			}
 			if (closest.consider(state, tile, cost))
 				progressed.run();
 			if (ctx.space.isBase(node))
