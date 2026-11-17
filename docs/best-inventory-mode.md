@@ -12,31 +12,47 @@ target tiles; a clue tier is one way to get such a list.
 
 ## Objective
 
-Let `T` be the clue locations of one tier, deduplicated by tile, each equally
-likely. Clue steps are treated as independent draws, so a leg starts at one
-clue tile and ends at another. For a carried set `S`:
+Let `T` be the target tiles, deduplicated, each equally likely. For a carried
+set `S`:
 
 ```text
-minimise  (1 / |T|²) · Σ_{s∈T} Σ_{t∈T} cost(s → t | S)
+minimise  (1 / |T|) · Σ_{t∈T} cost(t | S)
 
-cost(s → t | S) = min( free(s, t),
-                       min over destinations d of items in S: tp(d) + free(d, t),
-                       bank(s, t) )
+cost(t | S) = min( base(t),
+                   min over destinations d of items in S: tp(d) + free(d, t) )
 ```
 
 - `free(a, b)` is the route cost using only transports that need no carried
   item: walking, shortcuts, unlocked transports, item-free teleports.
 - `tp(d)` is the cost of the teleport to destination `d`. An item with several
   destinations, such as a games necklace, opens all of them for one slot.
-- `bank(s, t)` is the fallback: detour to a bank, pay `COST_BANK_VISIT`, then
-  take the best route to `t` using anything the player owns. It doesn't depend
-  on `S`, so it caps what a missing item can cost. Each item is valued against
-  "fetch it from the bank", not against walking across the map.
+- `base(t)` is the cost of reaching `t` without anything from `S`: from a
+  virtual start joined to every always-available teleport (home teleport,
+  minigame teleports, other item-free ones), capped by the bank fallback
+  (detour to a bank, pay `COST_BANK_VISIT`, then take the best route using
+  anything the player owns). Each item is valued against that, not against
+  walking across the map.
+
+This is facility location with `|T|` clients, so it has diminishing returns.
 
 `S` is fixed for the whole session. Swapping items at the bank between legs
 would turn this into a sequential decision problem, which is out of scope.
 
 The report also gives the baseline (`S` = nothing extra carried) and the saving.
+
+### Why one start instead of every start
+
+The original formulation summed over legs `s → t` for every pair of target
+tiles, with `free(s, t)` and `bank(s, t)` as alternatives. The teleport term
+`tp(d) + free(d, t)` doesn't depend on `s`, because a teleport costs the same
+wherever it's cast. Only walking does, and targets spread over the map are
+rarely within walking distance of each other. Dropping `s` needs `D + 1`
+searches (`D` teleport destinations) instead of `D + |T|`. It slightly
+overvalues teleports into clusters of nearby targets, where the pairwise model
+would walk between them.
+
+Check this once offline: run the pairwise model for one tier and compare the
+chosen sets for k = 5…20. If they match, the pairwise model stays out.
 
 ### Approximation
 
@@ -70,11 +86,9 @@ for example a dramen staff and an elemental staff both want the weapon slot.
 
 ## Algorithm
 
-1. **Precompute** `free(s, ·)` for every `s ∈ T` and `free(d, ·)` for every
-   teleport destination `d`. Each is one search that runs until every tile in
-   `T` is settled. The A* pathfinder currently stops at the first target it
-   reaches, so this needs an "all targets" search mode, either a Dijkstra-style
-   run or `Targets` with a settle-all goal rule. Also precompute `bank(s, t)`.
+1. **Precompute** `free(d, ·)` for every teleport destination `d`, and
+   `base(·)`. Each is one `AStarForwardSearch.searchAll` run, which settles
+   every tile in `T`; run them in parallel on all cores.
 2. **Enumerate enabler subsets.** There are only a few enablers, so loop over
    the owned, relevant subsets `E` and recompute `free` with `E` enabled.
    Cache the results per subset.
