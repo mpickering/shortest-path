@@ -118,7 +118,7 @@ public class AStarSearchAllTest
 		settings.set("useTeleportationItems", TeleportationItem.ALL);
 
 		PathfinderConfig config = new TestPathfinderConfig(client, settings, QuestState.FINISHED, true, true);
-		config.setItemStateService(shortestpath.items.ItemStateService.forTesting());
+		config.setItemStateService(shortestpath.items.ItemStateTestServices.forTesting());
 		config.refresh();
 		return config;
 	}
