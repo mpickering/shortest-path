@@ -29,9 +29,13 @@ Keep worktrees next to the repo, never under `/tmp`.
   the hard tiles from three starts, on a maxed account with no items.
 
 The generator script, `scripts/build_clue_locations.py`, is on branch
-`feature/best-inventory-clues` of shortest-path-tooling. That branch has only
-been committed locally, on the old machine. It is only needed to regenerate the
-TSV.
+`handoff/best-inventory-clues` of `mpickering/shortest-path-tooling`. It is
+only needed to regenerate the TSV:
+
+```sh
+git fetch mpickering handoff/best-inventory-clues
+git worktree add ../shortest-path-tooling-best-inventory mpickering/handoff/best-inventory-clues -b feature/best-inventory-clues
+```
 
 ## Decisions so far
 
